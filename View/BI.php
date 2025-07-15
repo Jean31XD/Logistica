@@ -8,7 +8,7 @@ date_default_timezone_set('America/Santo_Domingo');
 
 // Verificar si el usuario está autenticado
 if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario'])) {
-    header('Location: ../View/index.php');
+    header('Location: ../index.php');
     exit();
 }
 
@@ -305,6 +305,8 @@ $stmt = sqlsrv_query($conn, $sql, $params);
     <div class="card" style="background-color: #ffffffdd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 25px;">
         <form id="filtroForm" method="get" autocomplete="off">
             <h4 class="mb-4 text-center" style="color: #e31f25;">Filtros</h4>
+
+            
 
             <div class="mb-3">
                 <label for="desde" class="form-label">Desde:</label>

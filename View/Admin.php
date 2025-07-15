@@ -8,7 +8,7 @@ header("Pragma: no-cache");
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
 if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
-    header("Location: ../View/index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -447,7 +447,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <a href="../View/Reporte.php" class="btn btn-rojo w-100" role="link">Ingresar</a>
         </div>
       </article>
-
+       <article class="card" tabindex="0" aria-label="Acceso a Reporte de Facturas">
+        <div class="card-header">Reporte de facturas CXC</div>
+        <div class="card-body d-flex flex-column justify-content-between">
+          <p class="mb-3 text-muted">Reporte de Facturas faltantes.</p>
+          <a href="../View/BI.php" class="btn btn-rojo w-100" role="link">Ingresar</a>
+        </div>
+      </article>
      
     </div>
   </section>

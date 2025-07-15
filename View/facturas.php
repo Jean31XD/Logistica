@@ -15,7 +15,7 @@ if (isset($_SESSION['ultimo_acceso'])) {
     if ($tiempoInactivo > $inactividadLimite) {
         session_unset();
         session_destroy();
-        header("Location: ../View/index.php");
+        header("Location: ../index.php");
         exit();
     }
 }

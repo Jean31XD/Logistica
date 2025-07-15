@@ -8,7 +8,8 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '/conexionBD/conexion.php';
+
 
 $errorLogin = "";
 
@@ -51,19 +52,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     // Redirige según la pantalla
                     switch ($row['pantalla']) {
                         case 0:
-                            header("Location: ../View/Admin.php"); break;
+                            header("Location: View/Admin.php"); break;
                         case 1:
-                            header("Location: ../View/Inicio.php"); break;
+                            header("Location: View/Inicio.php"); break;
                         case 2:
-                            header("Location: ../View/facturas.php"); break;
+                            header("Location: View/facturas.php"); break;
                         case 3:
-                            header("Location: ../View/CXC.php"); break;
+                            header("Location: View/CXC.php"); break;
                             case 4:
-                            header("Location: ../View/Reporte.php"); break;
+                            header("Location: View/Reporte.php"); break;
                             case 5:
-                            header("Location: ../View/Paneladmin.php"); break;
+                            header("Location: View/Paneladmin.php"); break;
                             case 6:
-                            header("Location: ../View/Facturas_faltantes.php"); break;
+                            header("Location: View/Facturas_faltantes.php"); break;
                     }
                     exit();
                 } else {
@@ -95,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../View/styles.css"/>
+    <link rel="stylesheet" href="View/styles.css"/>
     <title>Iniciar sesión</title>
 </head>
 <body>
@@ -103,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="container" id="container">
     <div class="form-container sign-in">
         <form method="POST" action="">
-            <img src="../IMG/logo-new.png" class="img-fluid mb-4" alt="LOGO">
+            <img src="IMG/logo-new.png" class="img-fluid mb-4" alt="LOGO">
 
             <?php if (!empty($errorLogin)): ?>
                 <div class="alert alert-danger mt-3" role="alert">
@@ -119,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <?php
     $numeros = array_rand(array_flip(range(1, 7)), 7);
-    $imagenes = array_map(fn($n) => "../IMG/{$n}.jpg", $numeros);
+    $imagenes = array_map(fn($n) => "IMG/{$n}.jpg", $numeros);
     ?>
 
     <div class="toggle-container">

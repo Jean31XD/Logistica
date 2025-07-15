@@ -8,7 +8,7 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
 // Verificar que esté autenticado
 if (!isset($_SESSION['usuario'])) {
-    header("Location: ../View/index.php");
+    header("Location: ../index.php");
     exit();
 }
 require_once __DIR__ . '/../conexionBD/conexion.php';
