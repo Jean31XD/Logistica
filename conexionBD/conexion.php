@@ -1,5 +1,5 @@
 <?php
-$serverName = "10.11.0.11";
+$serverName = "sdb-apptransportistas-maco.database.windows.net";
 $database = "db-apptransportistas-maco";
 $username = "ServiceAppTrans";
 $password = "⁠nZ(#n41LJm)iLmJP";
