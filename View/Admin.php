@@ -492,7 +492,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <option value="4">Reportes</option>
               <option value="5">Admin-limitado</option>
               <option value="6">Reportes faltantes</option>
-              <option value="7">CXC</option>
             </select>
           </div>
           <button type="submit" class="btn btn-rojo w-100">Crear</button>
@@ -548,8 +547,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <option value="5">Admin-limitado</option>
               <option value="4">Reportes</option>
               <option value="6">Reporte de faltantes</option> 
-              <option value="7">CXC</option>
-
             </select>
           </div>
           <button type="submit" class="btn btn-rojo w-100">Modificar</button>
