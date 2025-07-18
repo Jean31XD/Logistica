@@ -1,4 +1,4 @@
-<?php  
+<?php 
 // Seguridad y sesión
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cookie_httponly', 1);
@@ -6,30 +6,34 @@ ini_set('session.cookie_samesite', 'Strict');
 session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
-// Verificar sesión
+// Verificar si el usuario está autenticado
+
+
 if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 6) {
     header("Location: ../index.php");
     exit();
 }
 
-// Conexión
+
+// Conexión a la base de datos
 include '../conexionBD/conexion.php';
 if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
-// POST o valores por defecto
-$filtroTransportista = $_POST['transportista'] ?? '';
-$desde = $_POST['desde'] ?? date('Y-m-d');
-$hasta = $_POST['hasta'] ?? date('Y-m-d');
-$estado = $_POST['estado'] ?? '';
-$usuario = $_POST['usuario'] ?? '';
-$entregadasCC = isset($_POST['entregadasCC']);
-$buscarFactura = $_POST['factura'] ?? '';
-$prefijo = $_POST['prefijo'] ?? '';
-$zona = $_POST['zona'] ?? '';
-$page = max(1, intval($_POST['page'] ?? 1));
+// Parámetros GET
+$filtroTransportista = $_GET['transportista'] ?? '';
+$desde = $_GET['desde'] ?? date('Y-m-d');
+$hasta = $_GET['hasta'] ?? date('Y-m-d');
+$estado = $_GET['estado'] ?? '';
+$usuario = $_GET['usuario'] ?? '';
+$entregadasCC = isset($_GET['entregadasCC']);
+$buscarFactura = $_GET['factura'] ?? '';
+$prefijo = $_GET['prefijo'] ?? '';
+$zona = $_GET['zona'] ?? '';
+$page = max(1, intval($_GET['page'] ?? 1));
 $limit = 50;
 $offset = ($page - 1) * $limit;
 
+// Validar fechas
 try {
     $fechaDesde = new DateTime($desde);
     $fechaHasta = new DateTime($hasta);
@@ -37,7 +41,7 @@ try {
     die("Fechas inválidas");
 }
 
-// Obtener filtros dinámicos
+// Obtener filtros dinámicos (excluyendo transportistas con "Contado")
 $transportistas = [];
 $tstmt = sqlsrv_query($conn, "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL AND Transportista NOT LIKE '%Contado%' ORDER BY Transportista");
 while ($t = sqlsrv_fetch_array($tstmt, SQLSRV_FETCH_ASSOC)) $transportistas[] = $t['Transportista'];
@@ -50,7 +54,7 @@ $zonas = [];
 $zstmt = sqlsrv_query($conn, "SELECT DISTINCT zona FROM custinvoicejour WHERE zona IS NOT NULL ORDER BY zona");
 while ($z = sqlsrv_fetch_array($zstmt, SQLSRV_FETCH_ASSOC)) $zonas[] = $z['zona'];
 
-// WHERE dinámico
+// WHERE dinámico (excluye todos los que contienen "Contado")
 $where = "WHERE Fecha BETWEEN ? AND ? AND Transportista NOT LIKE '%Contado%'";
 $params = [$fechaDesde->format('Y-m-d'), $fechaHasta->format('Y-m-d')];
 
@@ -65,7 +69,7 @@ if ($prefijo === 'NC') $where .= " AND Factura LIKE 'NC%'";
 if ($prefijo === 'FT') $where .= " AND Factura LIKE 'FT%'";
 if (!empty($zona)) { $where .= " AND zona = ?"; $params[] = $zona; }
 
-// Consulta resumen
+// Resumen
 $resumen_sql = "
 SELECT 
     SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
@@ -83,11 +87,13 @@ $resumen = sqlsrv_fetch_array($resumen_stmt, SQLSRV_FETCH_ASSOC);
 $totalFacturas = $resumen['Completadas'] + $resumen['RE'] + $resumen['SinEstado'];
 $noCompletadas = $resumen['RE'] + $resumen['SinEstado'];
 
+// Conteo y paginación
 $count_sql = "SELECT COUNT(*) AS total FROM custinvoicejour $where";
 $count_stmt = sqlsrv_query($conn, $count_sql, $params);
 $total_rows = sqlsrv_fetch_array($count_stmt)['total'];
 $total_pages = ceil($total_rows / $limit);
 
+// Consulta principal
 $sql = "
 SELECT
     Factura,
@@ -201,22 +207,50 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <div class="main-container">
     <div class="formulario">
         <h2>Reporte de Facturas</h2>
+
         <div class="resumen">
-            <!-- tarjetas resumen -->
-            <div class="card-resumen"><h5>Total Facturas</h5><p><?= $totalFacturas ?></p></div>
-            <div class="card-resumen"><h5>✅ Completadas</h5><p><?= $resumen['Completadas'] ?></p></div>
-            <div class="card-resumen"><h5>⚠️ No Completadas</h5><p><?= $noCompletadas ?></p></div>
-            <div class="card-resumen"><h5>📨 Entregadas a Créditos y Cobros</h5><p><?= $resumen['EntregadasCC'] ?></p></div>
-            <div class="card-resumen"><h5>📄 Facturas NC</h5><p><?= $resumen['NC'] ?></p></div>
-            <div class="card-resumen"><h5>📑 Facturas FT</h5><p><?= $resumen['FT'] ?></p></div>
-            <div class="card-resumen"><h5>✅ NC Completadas</h5><p><?= $resumen['NC_Completadas'] ?></p></div>
+            <div class="card-resumen">
+                <h5>Total Facturas</h5>
+                <p><?= $totalFacturas ?></p>
+            </div>
+            <div class="card-resumen">
+                <h5>✅ Completadas</h5>
+                <p><?= $resumen['Completadas'] ?></p>
+            </div>
+            <div class="card-resumen">
+                <h5>⚠️ No Completadas</h5>
+                <p><?= $noCompletadas ?></p>
+            </div>
+            <div class="card-resumen">
+                <h5>📨 Entregadas a Créditos y Cobros</h5>
+                <p><?= $resumen['EntregadasCC'] ?></p>
+            </div>
+            <div class="card-resumen">
+                <h5>📄 Facturas NC</h5>
+                <p><?= $resumen['NC'] ?></p>
+            </div>
+            <div class="card-resumen">
+                <h5>📑 Facturas FT</h5>
+                <p><?= $resumen['FT'] ?></p>
+            </div>
+            <div class="card-resumen">
+                <h5>✅ NC Completadas</h5>
+                <p><?= $resumen['NC_Completadas'] ?></p>
+            </div>
         </div>
 
         <table class="table">
             <thead>
                 <tr>
-                    <th>Fecha</th><th>Factura</th><th>Estado</th><th>Transportista</th>
-                    <th>Recepción ALM</th><th>Usuario ALM</th><th>Recepción CC</th><th>Usuario CC</th><th>Localización</th>
+                    <th>Fecha</th>
+                    <th>Factura</th>
+                    <th>Estado</th>
+                    <th>Transportista</th>
+                    <th>Recepción ALM</th>
+                    <th>Usuario ALM</th>
+                    <th>Recepción CC</th>
+                    <th>Usuario CC</th>
+                    <th>Localización</th>
                 </tr>
             </thead>
             <tbody>
@@ -226,9 +260,29 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                     <td><?= htmlspecialchars($row['Factura']) ?></td>
                     <td><?= htmlspecialchars($row['Estado']) ?></td>
                     <td><?= htmlspecialchars($row['Transportista']) ?></td>
-                    <td><?= !empty($row['Recepcion_ALM']) && is_object($row['Recepcion_ALM']) ? $row['Recepcion_ALM']->format('Y-m-d') : '' ?></td>
+<td>
+    <?php 
+    if (!empty($row['Recepcion_ALM']) && is_object($row['Recepcion_ALM'])) {
+        echo $row['Recepcion_CC']->format('Y-m-d');
+    } elseif (!empty($row['Recepcion_ALM'])) {
+        echo date('Y-m-d', strtotime($row['Recepcion_ALM']));
+    } else {
+        echo '';
+    }
+    ?>
+</td>
                     <td><?= htmlspecialchars($row['Usuario_ALM']) ?></td>
-                    <td><?= !empty($row['Recepcion_CC']) && is_object($row['Recepcion_CC']) ? $row['Recepcion_CC']->format('Y-m-d') : '' ?></td>
+<td>
+    <?php 
+    if (!empty($row['Recepcion_CC']) && is_object($row['Recepcion_CC'])) {
+        echo $row['Recepcion_CC']->format('Y-m-d');
+    } elseif (!empty($row['Recepcion_CC'])) {
+        echo date('Y-m-d', strtotime($row['Recepcion_CC']));
+    } else {
+        echo '';
+    }
+    ?>
+</td>
                     <td><?= htmlspecialchars($row['Usuario_CC']) ?></td>
                     <td><?= htmlspecialchars($row['Localizacion']) ?></td>
                 </tr>
@@ -237,27 +291,22 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         </table>
 
         <div class="paginacion">
-            <form method="post">
-                <?php foreach ($_POST as $key => $value): ?>
-                    <?php if ($key != 'page'): ?>
-                        <input type="hidden" name="<?= htmlspecialchars($key) ?>" value="<?= htmlspecialchars($value) ?>">
-                    <?php endif; ?>
-                <?php endforeach; ?>
-                <?php if ($page > 1): ?>
-                    <button name="page" value="<?= $page - 1 ?>" class="btn btn-outline-danger">&laquo; Anterior</button>
-                <?php endif; ?>
-                <span class="actual">Página <?= $page ?> de <?= $total_pages ?></span>
-                <?php if ($page < $total_pages): ?>
-                    <button name="page" value="<?= $page + 1 ?>" class="btn btn-outline-danger">Siguiente &raquo;</button>
-                <?php endif; ?>
-            </form>
+            <?php if ($page > 1): ?>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">&laquo; Anterior</a>
+            <?php endif; ?>
+
+            <span class="actual">Página <?= $page ?> de <?= $total_pages ?></span>
+
+            <?php if ($page < $total_pages): ?>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">Siguiente &raquo;</a>
+            <?php endif; ?>
         </div>
     </div>
 
 <!-- PARTE DERECHA RESTAURADA -->
 <aside class="sidebar" style="width: 320px;">
     <div class="card" style="background-color: #ffffffdd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 25px;">
-        <form id="filtroForm" method="post" autocomplete="off">
+        <form id="filtroForm" method="get" autocomplete="off">
             <h4 class="mb-4 text-center" style="color: #e31f25;">Filtros</h4>
 
             
@@ -353,18 +402,19 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-
 <script>
     $(document).ready(function() {
-        $('#listaTransportistas').select2({ placeholder: "Buscar transportista", allowClear: true, width: 'resolve' });
+        $('#listaTransportistas').select2({
+            placeholder: "Buscar transportista",
+            allowClear: true,
+            width: 'resolve'
+        });
+
+        $('#listaTransportistas').on('change', function() {
+            $('#filtroForm').submit();
+        });
     });
-
-    // Evita múltiples pasos en historial
-    if (window.history.replaceState) {
-        window.history.replaceState(null, null, window.location.href);
-    }
 </script>
-
 
 <!-- Bootstrap Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
