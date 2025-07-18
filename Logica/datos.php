@@ -1,41 +1,65 @@
 <?php
-
 header('Content-Type: text/html; charset=UTF-8');
-session_start();
+include("../conexion.php");
 
-date_default_timezone_set('America/Santo_Domingo');
-
-
-require_once __DIR__ . '/../conexionBD/conexion.php';
-$connectionInfo = array(
-    "Database" => $database,
-    "UID" => $username,
-    "PWD" => $password,
-    "TrustServerCertificate" => true
-);
-
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-
-if ($conn === false) {
-    echo '<div class="alert alert-danger text-center" role="alert">
-             <strong>Error de conexión:</strong> No se pudo conectar a la base de datos.
-         </div>';
-    exit;
-}
-
-$sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
-        FROM log 
-        LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
-
+// Consulta SQL
+$sql = "SELECT Tiket, NombreTR, Empresa, Estatus, ventanilla FROM [dbo].[Tiket] WHERE Estatus IN ('En proceso', 'Retencion', 'Facturación')";
 $stmt = sqlsrv_query($conn, $sql);
 
 if ($stmt === false) {
-    echo '<div class="alert alert-danger text-center" role="alert">
-         <strong>Error en la consulta:</strong> No se pudieron obtener los datos.
-          </div>';
-    exit;
+    echo "Error en la consulta: ";
+    die(print_r(sqlsrv_errors(), true));
 }
+
+$tieneDatos = false;
+
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    $tieneDatos = true;
+
+    // Convertir todos los campos a UTF-8 si son cadenas
+    foreach ($row as $key => $value) {
+        if (is_string($value)) {
+            $row[$key] = mb_convert_encoding($value, 'UTF-8', 'auto');
+        }
+    }
+
+    // Escapar caracteres peligrosos en HTML
+    $estatus = htmlspecialchars($row['Estatus']);
+    $claseFila = "";
+
+    if ($estatus === "Retencion") {
+        $claseFila = "table-danger";
+    } elseif ($estatus === "Facturación") {
+        $claseFila = "table-success";
+    }
+
+    $ticketID = htmlspecialchars($row['Tiket']);
+    $nombreID = "tiempo_" . $ticketID;
+
+    echo '<tr class="' . $claseFila . '" id="row_' . $ticketID . '" data-ticket="' . $ticketID . '">';
+    echo '<td>' . $ticketID . '</td>';
+    echo '<td>' . htmlspecialchars($row['NombreTR']) . '</td>';
+    echo '<td>' . htmlspecialchars($row['Empresa']) . '</td>';
+    echo '<td>' . $estatus . '</td>';
+
+    // Mostrar ventanilla si está definida
+    if (isset($row['ventanilla'])) {
+        echo '<td>' . htmlspecialchars($row['ventanilla']) . '</td>';
+    } else {
+        echo '<td><span class="text-danger">No asignado</span></td>';
+    }
+
+    echo '<td id="' . $nombreID . '"></td>';
+    echo '</tr>';
+}
+
+if (!$tieneDatos) {
+    echo '<tr><td colspan="6" class="text-center">No hay tickets en proceso.</td></tr>';
+}
+
+sqlsrv_free_stmt($stmt);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="es">
