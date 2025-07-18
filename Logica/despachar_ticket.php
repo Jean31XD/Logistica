@@ -45,6 +45,25 @@ foreach ($facturas as $factura) {
         exit();
     }
 }
+// Validar si viene la palabra Se fue
+$factura = $_POST['factura'];
+
+// Solo si no es "Se fue", haces validaciones de longitud, etc.
+if ($factura !== "Se fue") {
+    $facturasArray = array_filter(array_map('trim', explode(';', $factura)));
+    // Validaciones opcionales
+    foreach ($facturasArray as $f) {
+        if (strlen($f) !== 11) {
+            echo "Factura inválida: $f";
+            exit;
+        }
+    }
+    $factura = implode(';', $facturasArray);
+}
+
+// Luego haces tu UPDATE normal:
+$sql = "UPDATE tickets SET estado = 'Despachado', factura = ? WHERE id = ?";
+
 // Ejemplo parte relevante en despachar_ticket.php
 $facturasRaw = $_POST['factura'];
 // Puede venir "Se fue" o facturas separadas por ";"

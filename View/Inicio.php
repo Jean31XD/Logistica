@@ -70,24 +70,25 @@ header("Expires: 0");
     <div class="modal-content">
       <form id="formFactura">
         <div class="modal-header">
-          <h5 class="modal-title">Ingresar número(s) de factura</h5>
+          <h5 class="modal-title">Despachar Ticket</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-       <div class="modal-body">
-  <input type="hidden" id="facturaTiket">
-  <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" >
-  <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
-  
-  <div class="form-check mt-3">
-    <input class="form-check-input" type="checkbox" value="1" id="seFueCheckbox">
-    <label class="form-check-label" for="seFueCheckbox">
-      Marcar como <strong>Se fue</strong>
-    </label>
-  </div>
-</div>
+        <div class="modal-body">
+          <input type="hidden" id="facturaTiket">
+          <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335">
 
+          <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" value="1" id="seFueCheckbox">
+            <label class="form-check-label" for="seFueCheckbox">
+              Marcar como <strong>Se fue</strong>
+            </label>
+          </div>
+        </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Guardar y Despachar</button>
+          <button type="submit" class="btn btn-success">Enviar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         </div>
       </form>
     </div>
@@ -177,6 +178,77 @@ $('#formFactura').on('submit', function(e) {
     for (let f of listaFacturas) {
         despacharTicket(tiket, f);
     }
+});
+$(document).ready(function () {
+  // Deshabilita el campo factura si se marca "Se fue"
+  $('#seFueCheckbox').on('change', function () {
+    if ($(this).is(':checked')) {
+      $('#facturaNumero').val('').prop('disabled', true);
+    } else {
+      $('#facturaNumero').prop('disabled', false);
+    }
+  });
+
+  // Enviar formulario
+  $('#formFactura').on('submit', function (e) {
+    e.preventDefault();
+    let tiket = $('#facturaTiket').val();
+    let seFue = $('#seFueCheckbox').is(':checked');
+    let facturas = $('#facturaNumero').val().trim();
+
+    if (seFue) {
+      // Confirmación antes de despachar como "Se fue"
+      if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
+        despacharTicket(tiket, "Se fue");
+        let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+        modal.hide();
+      }
+      return;
+    }
+
+    // Validación normal de facturas
+    if (facturas === '') {
+      alert("Por favor ingrese al menos un número de factura.");
+      return;
+    }
+
+    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
+
+    for (let f of listaFacturas) {
+      if (f.length !== 11) {
+        alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
+        return;
+      }
+    }
+
+    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+    modal.hide();
+
+    for (let f of listaFacturas) {
+      despacharTicket(tiket, f);
+    }
+  });
+
+  // Esta función ya debe estar definida para enviar al backend
+  function despacharTicket(tiket, factura) {
+    $.ajax({
+      url: 'acciones/despachar_ticket.php',
+      method: 'POST',
+      data: { tiket: tiket, factura: factura },
+      success: function (respuesta) {
+        // Maneja la respuesta
+        if (respuesta === 'ok') {
+          alert('Despacho exitoso');
+          // Aquí puedes recargar tabla si lo necesitas
+        } else {
+          alert('Error al despachar: ' + respuesta);
+        }
+      },
+      error: function () {
+        alert('Error al conectarse con el servidor');
+      }
+    });
+  }
 });
 $('#seFueCheckbox').on('change', function() {
     if ($(this).is(':checked')) {
