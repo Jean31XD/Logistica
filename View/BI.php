@@ -208,6 +208,11 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <div class="main-container">
     <div class="formulario">
         <h2>Reporte de Facturas</h2>
+<div class="mb-3">
+    <button type="button" class="btn btn-outline-secondary" onclick="window.history.back();">
+        ← Volver a la página anterior
+    </button>
+</div>
 
         <div class="resumen">
             <div class="card-resumen">
