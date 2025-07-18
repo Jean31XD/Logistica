@@ -45,6 +45,17 @@ foreach ($facturas as $factura) {
         exit();
     }
 }
+// Ejemplo parte relevante en despachar_ticket.php
+$facturasRaw = $_POST['factura'];
+// Puede venir "Se fue" o facturas separadas por ";"
+if ($facturasRaw === 'Se fue') {
+    $facturasConcatenadas = 'Se fue';
+} else {
+    $facturas = array_filter(array_map('trim', explode(';', $facturasRaw)));
+    $facturasConcatenadas = implode(';', $facturas);
+}
+// Luego actualizas normalmente con $facturasConcatenadas
+
 
 $sqlUpdate = "UPDATE log SET Estatus = 'Despachado', Factura = ? WHERE Tiket = ?";
 $paramsUpdate = [$facturasConcatenadas, $tiket];
