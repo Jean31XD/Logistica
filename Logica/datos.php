@@ -1,10 +1,12 @@
 <?php
+
 header('Content-Type: text/html; charset=UTF-8');
 session_start();
+
 date_default_timezone_set('America/Santo_Domingo');
 
-require_once __DIR__ . '/../conexionBD/conexion.php';
 
+require_once __DIR__ . '/../conexionBD/conexion.php';
 $connectionInfo = array(
     "Database" => $database,
     "UID" => $username,
@@ -12,11 +14,29 @@ $connectionInfo = array(
     "TrustServerCertificate" => true
 );
 
+$conn = sqlsrv_connect($serverName, $connectionInfo);
 
-$stmt = sqlsrv_query($conn, $sql, [], ["CharacterSet" => "UTF-8"]); // << IMPORTANTE
+if ($conn === false) {
+    echo '<div class="alert alert-danger text-center" role="alert">
+             <strong>Error de conexión:</strong> No se pudo conectar a la base de datos.
+         </div>';
+    exit;
+}
+
+$sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
+        FROM log 
+        LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
+$stmt = sqlsrv_query($conn, $sql);
 
 
+if ($stmt === false) {
+    echo '<div class="alert alert-danger text-center" role="alert">
+         <strong>Error en la consulta:</strong> No se pudieron obtener los datos.
+          </div>';
+    exit;
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
