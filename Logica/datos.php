@@ -1,8 +1,9 @@
 <?php
-session_start();
-header('Content-Type: text/html; charset=UTF-8');
 
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+header('Content-Type: text/html; charset=UTF-8');
+session_start();
+
+date_default_timezone_set('America/Santo_Domingo');
 
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
