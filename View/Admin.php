@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'modificar':
             $usuarioMod = trim($_POST['usuario_modificar'] ?? '');
             $nuevaClave = trim($_POST['password_nuevo'] ?? '');
-            $pantallaNueva = filter_var($_POST['pantalla_nuevo'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 7]]);
+            $pantallaNueva = filter_var($_POST['pantalla_nuevo'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 6]]);
 
             if (!$usuarioMod) {
                 $mensajeModificar = "⚠️ Especifique el usuario a modificar.";
