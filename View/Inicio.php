@@ -143,42 +143,7 @@ function despacharTicket(tiket, factura) {
         }
     });
 }
-$('#formFactura').on('submit', function(e) {
-    e.preventDefault();
-    let tiket = $('#facturaTiket').val();
-    let seFue = $('#seFueCheckbox').is(':checked');
-    let facturas = $('#facturaNumero').val().trim();
 
-    if (seFue) {
-        // Enviar con factura = "Se fue"
-        despacharTicket(tiket, "Se fue");
-        let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-        modal.hide();
-        return;
-    }
-
-    // Validar facturas solo si NO está marcado "Se fue"
-    if (facturas === '') {
-        alert("Por favor ingrese al menos un número de factura.");
-        return;
-    }
-
-    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
-
-    for (let f of listaFacturas) {
-        if (f.length !== 11) {
-            alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
-            return;
-        }
-    }
-
-    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-    modal.hide();
-
-    for (let f of listaFacturas) {
-        despacharTicket(tiket, f);
-    }
-});
 $(document).ready(function () {
   // Deshabilita el campo factura si se marca "Se fue"
   $('#seFueCheckbox').on('change', function () {
@@ -189,7 +154,7 @@ $(document).ready(function () {
     }
   });
 
-  // Enviar formulario
+  // Manejo del formulario para despachar
   $('#formFactura').on('submit', function (e) {
     e.preventDefault();
     let tiket = $('#facturaTiket').val();
@@ -198,11 +163,12 @@ $(document).ready(function () {
 
     if (seFue) {
       // Confirmación antes de despachar como "Se fue"
-      if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
-        despacharTicket(tiket, "Se fue");
-        let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-        modal.hide();
+      if (!confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
+        return;
       }
+      despacharTicket(tiket, "Se fue");
+      let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+      modal.hide();
       return;
     }
 
@@ -228,36 +194,7 @@ $(document).ready(function () {
       despacharTicket(tiket, f);
     }
   });
-
-  // Esta función ya debe estar definida para enviar al backend
-  function despacharTicket(tiket, factura) {
-    $.ajax({
-      url: 'acciones/despachar_ticket.php',
-      method: 'POST',
-      data: { tiket: tiket, factura: factura },
-      success: function (respuesta) {
-        // Maneja la respuesta
-        if (respuesta === 'ok') {
-          alert('Despacho exitoso');
-          // Aquí puedes recargar tabla si lo necesitas
-        } else {
-          alert('Error al despachar: ' + respuesta);
-        }
-      },
-      error: function () {
-        alert('Error al conectarse con el servidor');
-      }
-    });
-  }
 });
-$('#seFueCheckbox').on('change', function() {
-    if ($(this).is(':checked')) {
-        $('#facturaNumero').val('').prop('disabled', true);
-    } else {
-        $('#facturaNumero').prop('disabled', false);
-    }
-});
-
 
 function cambiarEstatus(tiket, nuevoEstatus) {
     $.post('../Logica/actualizar_estatus.php', { tiket, estatus: nuevoEstatus }, function(response) {
@@ -310,6 +247,8 @@ $(document).on('click', '.btn-despachar', function() {
     let tiket = $(this).data('tiket');
     $('#facturaTiket').val(tiket);
     $('#facturaNumero').val('');
+    $('#seFueCheckbox').prop('checked', false);
+    $('#facturaNumero').prop('disabled', false);
     let modal = new bootstrap.Modal(document.getElementById('facturaModal'));
     modal.show();
 });
@@ -320,48 +259,13 @@ $('#facturaNumero').on('keydown', function(e) {
     }
 });
 
-$('#formFactura').on('submit', function(e) {
-    e.preventDefault();
-    let tiket = $('#facturaTiket').val();
-    let facturas = $('#facturaNumero').val().trim();
-
-    if (facturas === '') {
-        alert("Por favor ingrese al menos un número de factura.");
-        return;
-    }
-
-    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
-
-    for (let f of listaFacturas) {
-        if (f.length !== 11) {
-            alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
-            return;
-        }
-    }
-
-    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-    modal.hide();
-
-    for (let f of listaFacturas) {
-        despacharTicket(tiket, f);
-    }
-});
-
-
-
-$(document).on('click', '.btn-retencion', function () {
-    let tiket = $(this).data('tiket');
-    manejarRetencion(tiket, this);
-});
-
 window.addEventListener('pageshow', function(event) {
     if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
         window.location.reload(true);
     }
 });
-</script>
 
-<script>
+// Para formatear facturas en bloques de 11 caracteres separados por ';'
 document.getElementById('facturaNumero').addEventListener('input', function (e) {
     let valor = e.target.value.replace(/[^A-Za-z0-9]/g, ''); 
     let bloques = [];
@@ -371,11 +275,9 @@ document.getElementById('facturaNumero').addEventListener('input', function (e) 
     }
 
     e.target.value = bloques.join(';');
-
-    
 });
-
 </script>
+
 
 </body>
 </html>
