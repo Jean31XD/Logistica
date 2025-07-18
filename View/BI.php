@@ -7,10 +7,13 @@ session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
 // Verificar si el usuario está autenticado
-if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario'])) {
-    header('Location: ../index.php');
+
+
+if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 7) {
+    header("Location: ../index.php");
     exit();
 }
+
 
 // Conexión a la base de datos
 include '../conexionBD/conexion.php';

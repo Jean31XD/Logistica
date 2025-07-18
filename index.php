@@ -65,6 +65,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             header("Location: View/Paneladmin.php"); break;
                             case 6:
                             header("Location: View/Facturas_faltantes.php"); break;
+                            case 7:
+                            header("Location: View/BI.php"); break;
                     }
                     exit();
                 } else {
