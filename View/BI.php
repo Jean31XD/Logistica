@@ -307,7 +307,9 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <aside class="sidebar" style="width: 320px;">
     <div class="card" style="background-color: #ffffffdd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 25px;">
         <form id="filtroForm" method="get" autocomplete="off">
-            <h4 class="mb-4 text-center" style="color: #e31f25;">Filtros</h4>
+<div class="text-center mb-4">
+    <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 180px; height: auto;">
+</div>
 
             
 
@@ -414,6 +416,12 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             $('#filtroForm').submit();
         });
     });
+</script>
+
+<script>
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
 </script>
 
 <!-- Bootstrap Bundle JS -->
