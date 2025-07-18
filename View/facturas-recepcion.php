@@ -168,7 +168,7 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
         <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
     </div>
     <div class="sidebar">
-        <img src="../IMG/logo-new.png" alt="Logo lateral">
+        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo lateral">
 
         <label for="listaTransportistas" class="form-label">Transportista:</label>
         <select id="listaTransportistas" class="form-select">

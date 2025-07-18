@@ -43,7 +43,7 @@ header("Expires: 0");
 <body>
 <div class="container bg-white mt-2 p-2 mb-3 rounded shadow">
     <div class="d-flex justify-content-between align-items-center mb-1">
-        <div><img src="../IMG/logo-new.png" alt="Logo" class="img-fluid" style="max-height: 120px;"></div>
+        <div><img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" class="img-fluid" style="max-height: 120px;"></div>
         <h1 class="mt-3 text-dark">Bienvenido, <?php echo htmlspecialchars($_SESSION['usuario']); ?>!</h1>
         <div><a href="../Logica/logout.php" class="btn btn-danger">Cerrar Sesión</a></div>
     </div>
