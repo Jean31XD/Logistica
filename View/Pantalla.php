@@ -12,7 +12,7 @@
 <body>
 
     <div class="container-fluid px-0 text-center mt-5" >
-<img src="IMG\LOGO MC - NEGRO.png" class="mb-3" alt="LOGO" style="width: 500px; max-width: 100%;">
+<img src="../IMG/LOGO MC - NEGRO.png" class="mb-3" alt="LOGO" style="width: 500px; max-width: 100%;">
         <div id="tablaDatos">
             <?php include '../Logica/datos.php'; ?>
         </div>
