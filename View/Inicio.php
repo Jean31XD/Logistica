@@ -79,12 +79,12 @@ header("Expires: 0");
 
           <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
 
-          <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" value="1" id="seFueCheckbox">
-            <label class="form-check-label" for="seFueCheckbox">
-              Marcar como <strong>Se fue</strong>
-            </label>
-          </div>
+         <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
+  <label for="codigoSeFue" class="form-label">Ingrese código para despachar como "Se fue":</label>
+  <input type="password" id="codigoSeFue" class="form-control" placeholder="Código">
+</div>
+
+          
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success">Enviar</button>
@@ -145,12 +145,15 @@ function despacharTicket(tiket, factura) {
 }
 
 $(document).ready(function () {
-  // Deshabilita el campo factura si se marca "Se fue"
+  // Mostrar/ocultar input de código según checkbox
   $('#seFueCheckbox').on('change', function () {
     if ($(this).is(':checked')) {
       $('#facturaNumero').val('').prop('disabled', true);
+      $('#codigoSeFueContainer').show();
     } else {
       $('#facturaNumero').prop('disabled', false);
+      $('#codigoSeFueContainer').hide();
+      $('#codigoSeFue').val('');
     }
   });
 
@@ -162,7 +165,11 @@ $(document).ready(function () {
     let facturas = $('#facturaNumero').val().trim();
 
     if (seFue) {
-      // Confirmación antes de despachar como "Se fue"
+      let codigoIngresado = $('#codigoSeFue').val().trim();
+      if (codigoIngresado !== '658358') {
+        alert('Código incorrecto para despachar como "Se fue".');
+        return;
+      }
       if (!confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
         return;
       }
