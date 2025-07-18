@@ -65,34 +65,46 @@ header("Expires: 0");
     <tbody></tbody>
 </table>
 
-<div class="modal fade" id="facturaModal" tabindex="-1" aria-labelledby="facturaModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+<!-- Modal de Despacho -->
+<div class="modal fade" id="modalDespacho" tabindex="-1" aria-labelledby="modalDespachoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <form id="formFactura">
-        <div class="modal-header">
-          <h5 class="modal-title">Ingresar número(s) de factura</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-       <div class="modal-body">
-  <input type="hidden" id="facturaTiket">
-  <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" >
-  <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
-  
-  <div class="form-check mt-3">
-    <input class="form-check-input" type="checkbox" value="1" id="seFueCheckbox">
-    <label class="form-check-label" for="seFueCheckbox">
-      Marcar como <strong>Se fue</strong>
-    </label>
-  </div>
-</div>
 
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Guardar y Despachar</button>
-        </div>
-      </form>
+      <!-- Encabezado del modal -->
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modalDespachoLabel">Despachar Ticket</h5>
+        <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <!-- Cuerpo del modal -->
+      <div class="modal-body">
+        <form id="formDespacho">
+
+          <!-- ID oculto del ticket -->
+          <input type="hidden" id="id_ticket_despacho" name="id_ticket_despacho">
+
+          <!-- Transportista se fue sin ser despachado -->
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="fueSinDespachar" name="fue_sin_despachar">
+            <label class="form-check-label" for="fueSinDespachar">
+              El transportista se fue sin ser despachado
+            </label>
+          </div>
+
+          <!-- Puedes agregar más campos aquí si los necesitas -->
+
+        </form>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="limpiarFormulario()">Cerrar</button>
+        <button type="button" class="btn btn-success" onclick="guardarDespacho()">Guardar</button>
+      </div>
     </div>
   </div>
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -130,6 +142,41 @@ function cargarTickets() {
         });
     });
 }
+function guardarDespacho() {
+  const idTicket = document.getElementById("id_ticket_despacho").value;
+  const fueSinDespachar = document.getElementById("fueSinDespachar").checked;
+
+  if (!fueSinDespachar) {
+    alert("Debes marcar que el transportista se fue sin despachar.");
+    return;
+  }
+
+  // Puedes usar fetch o AJAX para enviar al servidor
+  fetch("../Logica/guardar_despacho.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: `id=${idTicket}&fue_sin_despachar=1`
+  })
+  .then(response => response.text())
+  .then(data => {
+    alert("Despacho guardado correctamente.");
+    limpiarFormulario();
+    var modal = bootstrap.Modal.getInstance(document.getElementById('modalDespacho'));
+    modal.hide();
+    // Puedes recargar tabla o lista aquí si es necesario
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    alert("Hubo un error al guardar el despacho.");
+  });
+}
+
+function limpiarFormulario() {
+  document.getElementById("formDespacho").reset();
+}
+
 
 function despacharTicket(tiket, factura) {
     let tiempo = timers[tiket] || 0;
@@ -208,55 +255,29 @@ $('#formFactura').on('submit', function(e) {
     e.preventDefault();
     let tiket = $('#facturaTiket').val();
     let facturas = $('#facturaNumero').val().trim();
-    let seFue = $('#seFueCheckbox').is(':checked');
 
-    if (seFue) {
-        // Si marcó "Se fue", enviamos solo esa señal
-        $.post('../Logica/marcar_se_fue.php', { tiket }, function(response) {
-            if (!response.toLowerCase().includes('error')) {
-                alert("Ticket marcado como 'Se fue' correctamente.");
-                $('#facturaNumero').val('');
-                $('#seFueCheckbox').prop('checked', false);
-                let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-                modal.hide();
-                cargarTickets();
-            } else {
-                alert("Error: " + response);
-            }
-        });
-    } else {
-        // Si NO está marcado "Se fue", validamos facturas y despachamos normalmente
-        if (facturas === '') {
-            alert("Por favor ingrese al menos un número de factura.");
+    if (facturas === '') {
+        alert("Por favor ingrese al menos un número de factura.");
+        return;
+    }
+
+    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
+
+    for (let f of listaFacturas) {
+        if (f.length !== 11) {
+            alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
             return;
         }
+    }
 
-        let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
+    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+    modal.hide();
 
-        for (let f of listaFacturas) {
-            if (f.length !== 11) {
-                alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
-                return;
-            }
-        }
-
-        let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-        modal.hide();
-
-        for (let f of listaFacturas) {
-            despacharTicket(tiket, f);
-        }
+    for (let f of listaFacturas) {
+        despacharTicket(tiket, f);
     }
 });
 
-$(document).on('click', '.btn-despachar', function() {
-    let tiket = $(this).data('tiket');
-    $('#facturaTiket').val(tiket);
-    $('#facturaNumero').val('');
-    $('#seFueCheckbox').prop('checked', false); // limpiar checkbox
-    let modal = new bootstrap.Modal(document.getElementById('facturaModal'));
-    modal.show();
-});
 
 
 $(document).on('click', '.btn-retencion', function () {
