@@ -405,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- Panel flotante arriba -->
 <div class="floating-header" role="banner" aria-label="Panel de administración superior">
   <div class="logo" aria-hidden="true">
-    <img src="../IMG/logo-new.png" alt="Logo empresa" />
+    <img src="IMG\LOGO MC - NEGRO.png" alt="Logo empresa" />
   </div>
   <div class="username" aria-live="polite" aria-atomic="true">
     <?= htmlspecialchars($_SESSION['usuario']) ?>
