@@ -21,15 +21,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function actualizarDatos() {
-            fetch('../Logica/datos.php')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('tablaDatos').innerHTML = data;
-                })
-                .catch(error => console.error('Error al actualizar los datos:', error));
-        }
+    fetch('../Logica/datos.php')
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('tablaDatos').innerHTML = data;
+        })
+        .catch(error => console.error('Error al actualizar los datos:', error));
+}
 
-        setInterval(actualizarDatos, 1000); 
+setInterval(actualizarDatos, 1000);
+
     </script>
 
 </body>

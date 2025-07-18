@@ -1,12 +1,10 @@
 <?php
-
 header('Content-Type: text/html; charset=UTF-8');
 session_start();
-
 date_default_timezone_set('America/Santo_Domingo');
 
-
 require_once __DIR__ . '/../conexionBD/conexion.php';
+
 $connectionInfo = array(
     "Database" => $database,
     "UID" => $username,
@@ -27,7 +25,7 @@ $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.venta
         FROM log 
         LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
 
-$stmt = sqlsrv_query($conn, $sql);
+$stmt = sqlsrv_query($conn, $sql, [], ["CharacterSet" => "UTF-8"]); // << IMPORTANTE
 
 if ($stmt === false) {
     echo '<div class="alert alert-danger text-center" role="alert">
@@ -36,7 +34,6 @@ if ($stmt === false) {
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
