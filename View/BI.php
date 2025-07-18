@@ -9,7 +9,7 @@ date_default_timezone_set('America/Santo_Domingo');
 // Verificar si el usuario está autenticado
 
 
-if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 7) {
+if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 6) {
     header("Location: ../index.php");
     exit();
 }
