@@ -1,5 +1,7 @@
 <?php
 session_start();
+header('Content-Type: text/html; charset=UTF-8');
+
 date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
 
 
