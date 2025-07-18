@@ -73,11 +73,19 @@ header("Expires: 0");
           <h5 class="modal-title">Ingresar número(s) de factura</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body">
-          <input type="hidden" id="facturaTiket">
-          <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" required>
-          <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
-        </div>
+       <div class="modal-body">
+  <input type="hidden" id="facturaTiket">
+  <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" >
+  <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
+  
+  <div class="form-check mt-3">
+    <input class="form-check-input" type="checkbox" value="1" id="seFueCheckbox">
+    <label class="form-check-label" for="seFueCheckbox">
+      Marcar como <strong>Se fue</strong>
+    </label>
+  </div>
+</div>
+
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary">Guardar y Despachar</button>
         </div>
@@ -200,29 +208,55 @@ $('#formFactura').on('submit', function(e) {
     e.preventDefault();
     let tiket = $('#facturaTiket').val();
     let facturas = $('#facturaNumero').val().trim();
+    let seFue = $('#seFueCheckbox').is(':checked');
 
-    if (facturas === '') {
-        alert("Por favor ingrese al menos un número de factura.");
-        return;
-    }
-
-    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
-
-    for (let f of listaFacturas) {
-        if (f.length !== 11) {
-            alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
+    if (seFue) {
+        // Si marcó "Se fue", enviamos solo esa señal
+        $.post('../Logica/marcar_se_fue.php', { tiket }, function(response) {
+            if (!response.toLowerCase().includes('error')) {
+                alert("Ticket marcado como 'Se fue' correctamente.");
+                $('#facturaNumero').val('');
+                $('#seFueCheckbox').prop('checked', false);
+                let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+                modal.hide();
+                cargarTickets();
+            } else {
+                alert("Error: " + response);
+            }
+        });
+    } else {
+        // Si NO está marcado "Se fue", validamos facturas y despachamos normalmente
+        if (facturas === '') {
+            alert("Por favor ingrese al menos un número de factura.");
             return;
         }
-    }
 
-    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-    modal.hide();
+        let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
 
-    for (let f of listaFacturas) {
-        despacharTicket(tiket, f);
+        for (let f of listaFacturas) {
+            if (f.length !== 11) {
+                alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
+                return;
+            }
+        }
+
+        let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+        modal.hide();
+
+        for (let f of listaFacturas) {
+            despacharTicket(tiket, f);
+        }
     }
 });
 
+$(document).on('click', '.btn-despachar', function() {
+    let tiket = $(this).data('tiket');
+    $('#facturaTiket').val(tiket);
+    $('#facturaNumero').val('');
+    $('#seFueCheckbox').prop('checked', false); // limpiar checkbox
+    let modal = new bootstrap.Modal(document.getElementById('facturaModal'));
+    modal.show();
+});
 
 
 $(document).on('click', '.btn-retencion', function () {
