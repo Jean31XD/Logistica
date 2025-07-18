@@ -437,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-header">Recepción</div>
         <div class="card-body d-flex flex-column justify-content-between">
           <p class="mb-3 text-muted">Control de recepción de documentos.</p>
-          <a href="View/facturas-recepcion.php" class="btn btn-rojo w-100" role="link">Ingresar</a>
+          <a href="../View/facturas-recepcion.php" class="btn btn-rojo w-100" role="link">Ingresar</a>
         </div>
       </article>
       <article class="card" tabindex="0" aria-label="Acceso a Reporte de Facturas">
