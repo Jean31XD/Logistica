@@ -104,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="container" id="container">
     <div class="form-container sign-in">
         <form method="POST" action="">
-            <img src="IMG/logo-new.png" class="img-fluid mb-4" alt="LOGO">
+            <img src="IMG\LOGO MC - NEGRO.png" class="img-fluid mb-4" alt="LOGO">
 
             <?php if (!empty($errorLogin)): ?>
                 <div class="alert alert-danger mt-3" role="alert">
