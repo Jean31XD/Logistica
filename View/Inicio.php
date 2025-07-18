@@ -65,6 +65,7 @@ header("Expires: 0");
     <tbody></tbody>
 </table>
 
+
 <div class="modal fade" id="facturaModal" tabindex="-1" aria-labelledby="facturaModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -76,15 +77,19 @@ header("Expires: 0");
         <div class="modal-body">
           <input type="hidden" id="facturaTiket">
           <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335">
-
           <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
 
-         <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
-  <label for="codigoSeFue" class="form-label">Ingrese código para despachar como "Se fue":</label>
-  <input type="password" id="codigoSeFue" class="form-control" placeholder="Código">
-</div>
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="seFueCheckbox" value="1">
+            <label class="form-check-label" for="seFueCheckbox">
+              Marcar como <strong>Se fue</strong>
+            </label>
+          </div>
 
-          
+          <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
+            <label for="codigoSeFue" class="form-label">Ingrese código para despachar como "Se fue":</label>
+            <input type="password" id="codigoSeFue" class="form-control" placeholder="Código">
+          </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success">Enviar</button>
@@ -256,6 +261,8 @@ $(document).on('click', '.btn-despachar', function() {
     $('#facturaNumero').val('');
     $('#seFueCheckbox').prop('checked', false);
     $('#facturaNumero').prop('disabled', false);
+    $('#codigoSeFueContainer').hide();
+    $('#codigoSeFue').val('');
     let modal = new bootstrap.Modal(document.getElementById('facturaModal'));
     modal.show();
 });
