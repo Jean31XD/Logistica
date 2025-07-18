@@ -12,27 +12,10 @@ $connectionInfo = array(
     "TrustServerCertificate" => true
 );
 
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-
-if ($conn === false) {
-    echo '<div class="alert alert-danger text-center" role="alert">
-             <strong>Error de conexión:</strong> No se pudo conectar a la base de datos.
-         </div>';
-    exit;
-}
-
-$sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
-        FROM log 
-        LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
 
 $stmt = sqlsrv_query($conn, $sql, [], ["CharacterSet" => "UTF-8"]); // << IMPORTANTE
 
-if ($stmt === false) {
-    echo '<div class="alert alert-danger text-center" role="alert">
-         <strong>Error en la consulta:</strong> No se pudieron obtener los datos.
-          </div>';
-    exit;
-}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
