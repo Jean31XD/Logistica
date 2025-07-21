@@ -1,5 +1,27 @@
 <?php
-include 'conexion.php';
+// --- Conexión SQL Server ---
+function conectarBD() {
+    $serverName = "tcp:sdb-apptransportistas-maco.database.windows.net,1433";
+    $database = "db-apptransportistas-maco";
+    $username = "ServiceAppTrans";
+    $password = "nZ(#n41LJm)iLmJP";
+
+    $connectionOptions = array(
+        "Database" => $database,
+        "UID" => $username,
+        "PWD" => $password,
+        "TrustServerCertificate" => true,
+        "CharacterSet" => "UTF-8"
+    );
+
+    $conn = sqlsrv_connect($serverName, $connectionOptions);
+
+    if ($conn === false) {
+        die("Error de conexión: " . print_r(sqlsrv_errors(), true));
+    }
+    return $conn;
+}
+
 $conn = conectarBD();
 
 // --- Agregar Transportista ---

@@ -24,11 +24,8 @@ if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 $actualUrl = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 $referer = $_SERVER['HTTP_REFERER'] ?? '';
 
-if ($referer && $referer !== $actualUrl) {
-    $volverA = $referer;
-} else {
-    $volverA = 'principal.php'; // o la página que quieras
-}
+$volverA = $_SESSION['pagina_anterior'] ?? 'index.php';
+
 
 // Parámetros GET
 $filtroTransportista = $_GET['transportista'] ?? '';
@@ -220,9 +217,9 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         <h2>Reporte de Facturas</h2>
 <div class="mb-3">
 
-<button type="button" class="btn btn-outline-secondary" onclick="history.back();">
-    ← Volver a la pantalla anterior
-</button>
+<a href="<?= htmlspecialchars($volverA) ?>" class="btn btn-outline-secondary">
+    ← Volver con los filtros
+</a>
 
 </div>
 
