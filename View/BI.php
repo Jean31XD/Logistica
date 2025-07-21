@@ -20,11 +20,9 @@ if (
 include '../conexionBD/conexion.php';
 if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
+// Obtener la URL actual y el referer   
 
-$actualUrl = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-$referer = $_SERVER['HTTP_REFERER'] ?? '';
-
-$volverA = $_SESSION['pagina_anterior'] ?? 'index.php';
+$volverA = $_SESSION['pagina_anterior'] ?? '../index.php';
 
 
 // Parámetros GET
