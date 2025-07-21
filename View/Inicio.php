@@ -171,7 +171,7 @@ $(document).ready(function () {
 
     if (seFue) {
       let codigoIngresado = $('#codigoSeFue').val().trim();
-      if (codigoIngresado !== '658358') {
+      if (codigoIngresado !== 'LogisicA*2025*') {
         alert('Código incorrecto para despachar como "Se fue".');
         return;
       }
