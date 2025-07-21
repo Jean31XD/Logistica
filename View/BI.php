@@ -20,6 +20,9 @@ if (
 include '../conexionBD/conexion.php';
 if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
+
+$volverA = $_SERVER['HTTP_REFERER'] ?? 'principal.php'; // Página por defecto si no hay referer
+
 // Parámetros GET
 $filtroTransportista = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? date('Y-m-d');
@@ -209,9 +212,10 @@ $stmt = sqlsrv_query($conn, $sql, $params);
     <div class="formulario">
         <h2>Reporte de Facturas</h2>
 <div class="mb-3">
-    <button type="button" class="btn btn-outline-secondary" onclick="window.history.back();">
-        ← Volver a la página anterior
-    </button>
+
+<a href="<?= htmlspecialchars($volverA) ?>" class="btn btn-outline-secondary">
+    ← Volver a la pantalla anterior
+
 </div>
 
         <div class="resumen">
