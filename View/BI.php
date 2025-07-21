@@ -7,14 +7,26 @@ session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
 // Verificar si el usuario está autenticado
-if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario'])) {
-    header('Location: ../index.php');
+
+if (
+    !isset($_SESSION['usuario'], $_SESSION['pantalla']) ||
+    !in_array($_SESSION['pantalla'], [0, 3, 5, 6])
+) {
+    header("Location: ../index.php");
     exit();
 }
 
 // Conexión a la base de datos
 include '../conexionBD/conexion.php';
 if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
+
+// Obtener la URL actual y el referer   
+
+if (!isset($_SESSION['pagina_anterior'])) {
+    $_SESSION['pagina_anterior'] = $_SERVER['HTTP_REFERER'] ?? 'index.php';
+}
+
+
 
 // Parámetros GET
 $filtroTransportista = $_GET['transportista'] ?? '';
@@ -204,6 +216,15 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <div class="main-container">
     <div class="formulario">
         <h2>Reporte de Facturas</h2>
+<div class="mb-3">
+
+
+            <a href="<?= htmlspecialchars($_SESSION['pagina_anterior']) ?>" class="btn btn-secondary">← Volver</a>
+        
+
+
+
+</div>
 
         <div class="resumen">
             <div class="card-resumen">
@@ -304,7 +325,9 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <aside class="sidebar" style="width: 320px;">
     <div class="card" style="background-color: #ffffffdd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 25px;">
         <form id="filtroForm" method="get" autocomplete="off">
-            <h4 class="mb-4 text-center" style="color: #e31f25;">Filtros</h4>
+<div class="text-center mb-4">
+    <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 180px; height: auto;">
+</div>
 
             
 

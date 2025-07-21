@@ -1,6 +1,9 @@
 <?php
+
+header('Content-Type: text/html; charset=UTF-8');
 session_start();
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+
+date_default_timezone_set('America/Santo_Domingo');
 
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
@@ -23,8 +26,8 @@ if ($conn === false) {
 $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
         FROM log 
         LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
-
 $stmt = sqlsrv_query($conn, $sql);
+
 
 if ($stmt === false) {
     echo '<div class="alert alert-danger text-center" role="alert">

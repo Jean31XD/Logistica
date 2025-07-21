@@ -64,8 +64,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             case 5:
                             header("Location: View/Paneladmin.php"); break;
                             case 6:
-                            header("Location: View/Facturas_faltantes.php"); break;
-                    }
+                            header("Location: View/BI.php"); break;
+                                                }
                     exit();
                 } else {
                     $_SESSION['intentos_login']++;
@@ -104,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="container" id="container">
     <div class="form-container sign-in">
         <form method="POST" action="">
-            <img src="IMG/logo-new.png" class="img-fluid mb-4" alt="LOGO">
+            <img src="IMG\LOGO MC - NEGRO.png" class="img-fluid mb-4" alt="LOGO">
 
             <?php if (!empty($errorLogin)): ?>
                 <div class="alert alert-danger mt-3" role="alert">

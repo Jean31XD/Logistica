@@ -14,7 +14,7 @@ if (!isset($_SESSION['usuario'])) {
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
 if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 5) {
-    header("Location: ../View/index.php");
+    header("Location: /index.php");
     exit();
 }
 

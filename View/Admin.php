@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'modificar':
             $usuarioMod = trim($_POST['usuario_modificar'] ?? '');
             $nuevaClave = trim($_POST['password_nuevo'] ?? '');
-            $pantallaNueva = filter_var($_POST['pantalla_nuevo'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 5]]);
+            $pantallaNueva = filter_var($_POST['pantalla_nuevo'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 6]]);
 
             if (!$usuarioMod) {
                 $mensajeModificar = "⚠️ Especifique el usuario a modificar.";
@@ -405,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- Panel flotante arriba -->
 <div class="floating-header" role="banner" aria-label="Panel de administración superior">
   <div class="logo" aria-hidden="true">
-    <img src="../IMG/logo-new.png" alt="Logo empresa" />
+    <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo empresa" />
   </div>
   <div class="username" aria-live="polite" aria-atomic="true">
     <?= htmlspecialchars($_SESSION['usuario']) ?>
@@ -491,6 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <option value="0">Administrador</option>
               <option value="4">Reportes</option>
               <option value="5">Admin-limitado</option>
+              <option value="6">Reportes faltantes</option>
             </select>
           </div>
           <button type="submit" class="btn btn-rojo w-100">Crear</button>
@@ -544,6 +545,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <option value="3">Recepción</option>
               <option value="0">Administrador</option>
               <option value="5">Admin-limitado</option>
+              <option value="4">Reportes</option>
+              <option value="6">Reporte de faltantes</option> 
             </select>
           </div>
           <button type="submit" class="btn btn-rojo w-100">Modificar</button>
