@@ -1,7 +1,7 @@
 <?php
 // --- Conexión SQL Server ---
 function conectarBD() {
-    $serverName = "tcp:sdb-apptransportistas-maco.database.windows.net,1433";
+    $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
     $database = "db-apptransportistas-maco";
     $username = "ServiceAppTrans";
     $password = "nZ(#n41LJm)iLmJP";
