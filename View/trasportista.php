@@ -1,20 +1,20 @@
 <?php
 // --- Conexión SQL Server ---
 function conectarBD() {
-    $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
-    $database = "db-apptransportistas-maco";
-    $username = "ServiceAppTrans";
-    $password = "nZ(#n41LJm)iLmJP";
+  $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
+$database = "db-apptransportistas-maco";
+$username = "ServiceAppTrans";
+$password = "⁠nZ(#n41LJm)iLmJP";
 
-    $connectionOptions = array(
-        "Database" => $database,
-        "UID" => $username,
-        "PWD" => $password,
-        "TrustServerCertificate" => true,
-        "CharacterSet" => "UTF-8"
+$connectionInfo = array(
+    "Database" => $database,
+    "UID" => $username,
+    "PWD" => $password,
+    "TrustServerCertificate" => true,
+    "CharacterSet" => "UTF-8"
     );
 
-    $conn = sqlsrv_connect($serverName, $connectionOptions);
+$conn = sqlsrv_connect($serverName, $connectionInfo);
 
     if ($conn === false) {
         die("Error de conexión: " . print_r(sqlsrv_errors(), true));
