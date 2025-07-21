@@ -215,7 +215,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 
 <a href="<?= htmlspecialchars($volverA) ?>" class="btn btn-outline-secondary">
     ← Volver a la pantalla anterior
-
+</a>
 </div>
 
         <div class="resumen">
