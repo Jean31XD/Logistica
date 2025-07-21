@@ -21,7 +21,14 @@ include '../conexionBD/conexion.php';
 if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
 
-$volverA = $_SERVER['HTTP_REFERER'] ?? 'principal.php'; // Página por defecto si no hay referer
+$actualUrl = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+$referer = $_SERVER['HTTP_REFERER'] ?? '';
+
+if ($referer && $referer !== $actualUrl) {
+    $volverA = $referer;
+} else {
+    $volverA = 'principal.php'; // o la página que quieras
+}
 
 // Parámetros GET
 $filtroTransportista = $_GET['transportista'] ?? '';
@@ -213,9 +220,10 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         <h2>Reporte de Facturas</h2>
 <div class="mb-3">
 
-<a href="<?= htmlspecialchars($volverA) ?>" class="btn btn-outline-secondary">
+<button type="button" class="btn btn-outline-secondary" onclick="history.back();">
     ← Volver a la pantalla anterior
-</a>
+</button>
+
 </div>
 
         <div class="resumen">
