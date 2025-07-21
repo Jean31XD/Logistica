@@ -22,7 +22,7 @@ if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
 // Obtener la URL actual y el referer   
 
-$volverA = $_SESSION['pagina_anterior'] ?? '../index.php';
+$_SESSION['pagina_anterior'] = $_SERVER['PHP_SELF'] . '?' . $_SERVER['QUERY_STRING'];
 
 
 // Parámetros GET
@@ -215,9 +215,10 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         <h2>Reporte de Facturas</h2>
 <div class="mb-3">
 
-<a href="<?= htmlspecialchars($volverA) ?>" class="btn btn-outline-secondary">
+<a href="<?= htmlspecialchars($_SERVER['PHP_SELF'] . '?' . $_SERVER['QUERY_STRING']) ?>" class="btn btn-outline-secondary">
     ← Volver con los filtros
 </a>
+
 
 </div>
 
