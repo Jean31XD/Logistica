@@ -101,7 +101,7 @@ if ($stmt === false) {
 
                     // Definir la clase según el estatus
                     $claseFila = "";
-                    if ($estatus == "Retencion") {
+                    if ($estatus == "Retención") {
                         $claseFila = "table-danger";
                     } elseif ($estatus == "Facturación") {
                         $claseFila = "table-success";
