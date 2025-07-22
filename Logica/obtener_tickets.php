@@ -37,7 +37,7 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
     $tiket = htmlspecialchars($row['Tiket']);
     $asignado = trim($row['Asignar']);
 
-    $despacharDeshabilitado = (empty($asignado) || $estatus === 'Retención') 
+    $despacharDeshabilitado = (empty($asignado) || $estatus === 'Retencion') 
         ? "disabled title='Debe estar asignado y no en Retención'" 
         : "";
 
@@ -45,7 +45,7 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
         ? "disabled title='Debe estar asignado para aplicar retención'" 
         : "";
 
-    if ($estatus === 'Retención') {
+    if ($estatus === 'Retencion') {
         $claseFila = "table-danger";
         $selectDisabled = "disabled";
     } elseif ($estatus === 'Facturación') {

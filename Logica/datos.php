@@ -1,11 +1,9 @@
 <?php
 session_start();
+date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
 
-$serverName = "sdb-apptransportistas-maco.database.windows.net";
-$database = "db-apptransportistas-maco";
-$username = "ServiceAppTrans";
-$password = "⁠nZ(#n41LJm)iLmJP";
 
+require_once __DIR__ . '/../conexionBD/conexion.php';
 $connectionInfo = array(
     "Database" => $database,
     "UID" => $username,
@@ -17,13 +15,12 @@ $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
     echo '<div class="alert alert-danger text-center" role="alert">
-            ❌ <strong>Error de conexión:</strong> No se pudo conectar a la base de datos.
+             <strong>Error de conexión:</strong> No se pudo conectar a la base de datos.
          </div>';
     exit;
 }
 
-// Consulta SQL
-$sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla 
+$sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
         FROM log 
         LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
 
@@ -31,7 +28,7 @@ $stmt = sqlsrv_query($conn, $sql);
 
 if ($stmt === false) {
     echo '<div class="alert alert-danger text-center" role="alert">
-            ❌ <strong>Error en la consulta:</strong> No se pudieron obtener los datos.
+         <strong>Error en la consulta:</strong> No se pudieron obtener los datos.
           </div>';
     exit;
 }
@@ -42,37 +39,47 @@ if ($stmt === false) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <title>Lista de Tickets</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f8f9fa;
-        }
-        .container-fluid {
-            width: 100%;
-            max-width: 90vw;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            font-size: 18px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: center;
-        }
-        .table tbody tr {
-            height: 50px;
-        }
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+    
+}
+
+
+
+table {
+    width: 100%;
+    font-size: 20px;
+    table-layout: fixed;     
+}
+
+th, td {
+    padding: 20px;
+    text-align: center;
+    word-wrap: break-word;
+}
+
+.table tbody tr {
+    height: 100px;
+    width: 100%;
+}
+
+.retencion {
+    background-color: #dc3545 !important;
+    color: white;
+}
+
+.facturacion {
+    background-color: #198754 !important;
+    color: white;
+}
+
+
     </style>
 </head>
 <body>
@@ -93,34 +100,28 @@ if ($stmt === false) {
             <tbody id="tablaTickets">
                 <?php
                 $tieneDatos = false;
-                $contador = 0; // Para asignar un ID único a cada fila
-
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $tieneDatos = true;
+                    
                     $estatus = htmlspecialchars($row['Estatus']);
-
-                    // Definir la clase según el estatus
                     $claseFila = "";
-                    if ($estatus == "Retención") {
+                    if ($estatus === "Retencion") {
                         $claseFila = "table-danger";
-                    } elseif ($estatus == "Facturación") {
+                    } elseif ($estatus === "Facturación") {
                         $claseFila = "table-success";
                     }
 
-                    // Generar un ID único para cada fila
                     $ticketID = htmlspecialchars($row['Tiket']);
-                    $nombreID = "tiempo_" . $contador;
-
-                    echo '<tr class="' . $claseFila . '" id="row_' . $contador . '">';
+                    $nombreID = "tiempo_" . $ticketID;
+                    
+                    echo '<tr class="' . $claseFila . '" id="row_' . $ticketID . '" data-ticket="' . $ticketID . '">';
                     echo '<td>' . $ticketID . '</td>';
                     echo '<td>' . htmlspecialchars($row['NombreTR']) . '</td>';
                     echo '<td>' . htmlspecialchars($row['Empresa']) . '</td>';
                     echo '<td>' . $estatus . '</td>';
                     echo '<td>' . (isset($row['ventanilla']) ? htmlspecialchars($row['ventanilla']) : '<span class="text-danger">No asignado</span>') . '</td>';
-                    echo '<td id="' . $nombreID . '">00:00:00</td>';
+                    echo '<td id="' . $nombreID . '"></td>'; 
                     echo '</tr>';
-
-                    $contador++; // Incrementar el contador para el siguiente ID
                 }
 
                 if (!$tieneDatos) {
@@ -135,47 +136,38 @@ if ($stmt === false) {
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function startTimers() {
-        // Obtener todas las filas de la tabla
-        let rows = document.querySelectorAll('#tablaTickets tr');
+document.addEventListener("DOMContentLoaded", function() {
+    const tiemposInicio = {};
 
-        rows.forEach((row, index) => {
-            let timeCell = row.querySelector('td:last-child'); // Obtener la celda de tiempo
-            let timerId = "timer_" + index; // ID único para el temporizador en localStorage
+    function actualizarTiempos() {
+        let filas = document.querySelectorAll("tbody tr");
 
-            // Obtener el tiempo almacenado en localStorage (si existe)
-            let storedTime = localStorage.getItem(timerId);
-            let startTime = storedTime ? parseInt(storedTime) : Math.floor(Date.now() / 1000);
+        filas.forEach(function(fila) {
+            let ticketID = fila.children[0].textContent;
+            let tiempoID = fila.children[5];
 
-            // Si no hay tiempo almacenado, guardar el tiempo actual
-            if (!storedTime) {
-                localStorage.setItem(timerId, startTime);
+            if (!tiemposInicio[ticketID]) {
+                tiemposInicio[ticketID] = Date.now();
             }
 
-            function updateRowTimer() {
-                let elapsedSeconds = Math.floor(Date.now() / 1000) - startTime; // Calcular tiempo transcurrido
-                let hours = Math.floor(elapsedSeconds / 3600);
-                let minutes = Math.floor((elapsedSeconds % 3600) / 60);
-                let seconds = elapsedSeconds % 60;
+            let diferencia = Math.floor((Date.now() - tiemposInicio[ticketID]) / 1000);
 
-                let formattedTime = 
-                    ('0' + hours).slice(-2) + ":" + 
-                    ('0' + minutes).slice(-2) + ":" + 
-                    ('0' + seconds).slice(-2);
+            let horas = Math.floor(diferencia / 3600);
+            let minutos = Math.floor((diferencia % 3600) / 60);
+            let segundos = diferencia % 60;
 
-                timeCell.textContent = formattedTime; // Actualizar la celda
-            }
-
-            // Iniciar el temporizador para cada fila
-            setInterval(updateRowTimer, 1000);
+            let tiempoFormateado = `${horas.toString().padStart(2, "0")}:${minutos.toString().padStart(2, "0")}:${segundos.toString().padStart(2, "0")}`;
+            tiempoID.textContent = tiempoFormateado;
         });
     }
 
-    // Ejecutar la función después de cargar la página
-    window.onload = startTimers;
+    setInterval(actualizarTiempos, 0); 
+    actualizarTiempos(); 
+});
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
