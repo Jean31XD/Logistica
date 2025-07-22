@@ -7,7 +7,7 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 
-require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '../conexionBD/conexion.php';
 
 
 $connectionInfo = array(
