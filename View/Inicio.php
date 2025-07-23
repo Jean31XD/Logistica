@@ -242,18 +242,19 @@ function manejarRetencion(tiket, boton) {
     retencionBloqueado[tiket] = true;
     $(boton).prop('disabled', true);
     let contador = retencionClicks[tiket] || 0;
-
     if (contador === 0) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function() {
+        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function(response) {
             retencionClicks[tiket] = 1;
-            $('#row_' + tiket).addClass('table-danger').find('.estatus').text('Retención');
+            $('#row_' + tiket).addClass('table-danger');
+            $('#row_' + tiket + ' .estatus').text('Retención');
             $(boton).prop('disabled', false);
             retencionBloqueado[tiket] = false;
         });
     } else if (contador === 1) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function() {
+        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function(response) {
             retencionClicks[tiket] = 2;
-            $('#row_' + tiket).removeClass('table-danger').find('.estatus').text('En Proceso');
+            $('#row_' + tiket).removeClass('table-danger');
+            $('#row_' + tiket + ' .estatus').text('En Proceso');
             $(boton).prop('disabled', true);
         });
     } else {
