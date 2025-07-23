@@ -8,7 +8,7 @@ session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
 // Cierre por inactividad (5 minutos = 300 segundos)
-$inactividadLimite = 300;
+$inactividadLimite = 200;
 
 if (isset($_SESSION['ultimo_acceso'])) {
     $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];

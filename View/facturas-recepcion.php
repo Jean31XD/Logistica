@@ -7,7 +7,7 @@ session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
 // Expirar sesión tras 5 minutos de inactividad
-$inactividadLimite = 300;
+$inactividadLimite = 200;
 if (isset($_SESSION['ultimo_acceso'])) {
     $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
     if ($tiempoInactivo > $inactividadLimite) {
