@@ -1,4 +1,4 @@
-<?php   
+<?php    
 ini_set('session.cookie_httponly', 1);   
 ini_set('session.cookie_secure', 0);    
 ini_set('session.use_strict_mode', 1);  
@@ -6,8 +6,8 @@ ini_set('session.use_strict_mode', 1);
 session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
-// Expirar sesión tras 5 minutos de inactividad
-$inactividadLimite = 300;
+// Expirar sesión tras 200 segundos (5 minutos) de inactividad
+$inactividadLimite = 200;
 if (isset($_SESSION['ultimo_acceso'])) {
     $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
     if ($tiempoInactivo > $inactividadLimite) {
@@ -219,6 +219,7 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
 
 <script>
 let paginaActual = 1;
+let temporizador;
 
 $(document).ready(function () {
     $('#listaTransportistas').select2({
@@ -296,19 +297,18 @@ function validarFactura() {
 }
 
 function iniciarInactividad() {
-    let timeout = 5 * 60 * 1000;
-    function resetTimer() {
+    const tiempoLimite = 5 * 60 * 1000; // 5 minutos
+    function resetearTemporizador() {
         clearTimeout(temporizador);
         temporizador = setTimeout(() => {
+            alert("Su sesión ha expirado por inactividad. Será redirigido al login.");
             window.location.href = "../Logica/logout.php";
-        }, timeout);
+        }, tiempoLimite);
     }
-
-    ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt =>
-        document.addEventListener(evt, resetTimer)
+    ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evento =>
+        document.addEventListener(evento, resetearTemporizador)
     );
-
-    resetTimer();
+    resetearTemporizador();
 }
 </script>
 </body>
