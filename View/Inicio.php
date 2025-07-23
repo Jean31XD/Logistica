@@ -26,6 +26,7 @@ header("Pragma: no-cache");
 header("Expires: 0");
 ?>
 
+
 <!doctype html>
 <html lang="es">
 <head>
@@ -65,7 +66,7 @@ header("Expires: 0");
     <tbody></tbody>
 </table>
 
-
+<!-- Modal -->
 <div class="modal fade" id="facturaModal" tabindex="-1" aria-labelledby="facturaModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -81,13 +82,11 @@ header("Expires: 0");
 
           <div class="form-check mt-3">
             <input class="form-check-input" type="checkbox" id="seFueCheckbox" value="1">
-            <label class="form-check-label" for="seFueCheckbox">
-              Marcar como <strong>Se fue</strong>
-            </label>
+            <label class="form-check-label" for="seFueCheckbox">Marcar como <strong>Se fue</strong></label>
           </div>
 
           <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
-            <label for="codigoSeFue" class="form-label">Ingrese código para despachar como "Se fue":</label>
+            <label for="codigoSeFue" class="form-label">Código para despachar como "Se fue":</label>
             <input type="password" id="codigoSeFue" class="form-control" placeholder="Código">
           </div>
         </div>
@@ -103,15 +102,11 @@ header("Expires: 0");
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
-
-let timers = {};
-let retencionClicks = {};
-let retencionBloqueado = {};
+let timers = {}, retencionClicks = {}, retencionBloqueado = {};
 
 function cargarTickets() {
     $.get('../Logica/obtener_tickets.php', function(response) {
         $('#tablaTickets tbody').html(response);
-
         $('#tablaTickets tbody tr').each(function() {
             let fila = $(this);
             let estatus = fila.find('.estatus').text().trim();
@@ -119,14 +114,13 @@ function cargarTickets() {
             let tiket = fila.find('.btn-despachar').data('tiket');
 
             if (asignado !== usuarioSesion) {
-                fila.find('.btn-despachar').prop('disabled', true).attr('title', 'Solo el usuario asignado puede despachar');
-                fila.find('.btn-retencion').prop('disabled', true).attr('title', 'Solo el usuario asignado puede retener');
-                fila.find('.estatus-select').prop('disabled', true).attr('title', 'Solo el usuario asignado puede cambiar el estatus');
+                fila.find('.btn-despachar, .btn-retencion, .estatus-select').prop('disabled', true)
+                    .attr('title', 'Solo el usuario asignado puede ejecutar esta acción');
             }
 
             if (estatus === "Retención") {
-                fila.find('.estatus-select').prop('disabled', true);
-                fila.find('.btn-despachar').prop('disabled', true).attr('title', 'No se puede despachar en retención');
+                fila.find('.btn-despachar, .estatus-select').prop('disabled', true)
+                    .attr('title', 'No se puede modificar en estado de retención');
             }
 
             if (tiket && !(tiket in timers)) {
@@ -136,45 +130,6 @@ function cargarTickets() {
         });
     });
 }
-
-   $('#formFactura').on('submit'), function (e) {
-    e.preventDefault();
-    let tiket = $('#facturaTiket').val();
-    let seFue = $('#seFueCheckbox').is(':checked');
-    let facturas = $('#facturaNumero').val().trim();
-
-    if (seFue) {
-      let codigoIngresado = $('#codigoSeFue').val().trim();
-      if (codigoIngresado !== 'LogisicA*2025*') {
-        alert('Código incorrecto para despachar como "Se fue".');
-        return;
-      }
-      if (!confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
-        return;
-      }
-      despacharTicket(tiket, "Se fue");
-      let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-      modal.hide();
-      return;
-    } else if (facturas === '') {
-      alert("Por favor ingrese al menos un número de factura.");
-      return;
-    }
-
-    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
-
-    for (let f of listaFacturas) {
-      if (f.length !== 11) {
-        alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
-        return;
-      }
-    }
-
-    despacharTicket(tiket, listaFacturas);
-    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-    modal.hide();
-    return;
-    }       
 
 function despacharTicket(tiket, factura) {
     let tiempo = timers[tiket] || 0;
@@ -187,6 +142,88 @@ function despacharTicket(tiket, factura) {
         }
     });
 }
+
+$(document).ready(function () {
+    cargarTickets();
+    setInterval(cargarTickets, 10000);
+
+    $('#seFueCheckbox').on('change', function () {
+        if (this.checked) {
+            $('#facturaNumero').val('').prop('disabled', true);
+            $('#codigoSeFueContainer').show();
+        } else {
+            $('#facturaNumero').prop('disabled', false);
+            $('#codigoSeFueContainer').hide();
+            $('#codigoSeFue').val('');
+        }
+    });
+
+    $('#formFactura').on('submit', function (e) {
+        e.preventDefault();
+        let tiket = $('#facturaTiket').val();
+        let seFue = $('#seFueCheckbox').is(':checked');
+        let facturas = $('#facturaNumero').val().trim();
+
+        if (seFue) {
+            let codigoIngresado = $('#codigoSeFue').val().trim();
+            if (codigoIngresado !== 'LogisicA*2025*') {
+                alert('Código incorrecto para despachar como "Se fue".');
+                return;
+            }
+            if (!confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) return;
+            despacharTicket(tiket, "Se fue");
+            bootstrap.Modal.getInstance(document.getElementById('facturaModal')).hide();
+            return;
+        }
+
+        if (!facturas) {
+            alert("Por favor ingrese al menos un número de factura.");
+            return;
+        }
+
+        let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
+        for (let f of listaFacturas) {
+            if (f.length !== 11) {
+                alert("Cada número de factura debe tener 11 caracteres. Error en: " + f);
+                return;
+            }
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('facturaModal')).hide();
+        listaFacturas.forEach(f => despacharTicket(tiket, f));
+    });
+
+    $(document).on('click', '.btn-despachar', function() {
+        let tiket = $(this).data('tiket');
+        $('#facturaTiket').val(tiket);
+        $('#facturaNumero').val('').prop('disabled', false);
+        $('#seFueCheckbox').prop('checked', false);
+        $('#codigoSeFueContainer').hide();
+        $('#codigoSeFue').val('');
+        new bootstrap.Modal(document.getElementById('facturaModal')).show();
+    });
+
+    $(document).on('change', '.estatus-select', function() {
+        cambiarEstatus($(this).data('tiket'), $(this).val());
+    });
+
+    $('#facturaNumero').on('keydown', function(e) {
+        if (e.key === 'Enter') e.preventDefault();
+    });
+
+    document.getElementById('facturaNumero').addEventListener('input', function (e) {
+        let valor = e.target.value.replace(/[^A-Za-z0-9]/g, '');
+        let bloques = [];
+        for (let i = 0; i < valor.length; i += 11) bloques.push(valor.substring(i, i + 11));
+        e.target.value = bloques.join(';');
+    });
+
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
+            window.location.reload(true);
+        }
+    });
+});
 
 function cambiarEstatus(tiket, nuevoEstatus) {
     $.post('../Logica/actualizar_estatus.php', { tiket, estatus: nuevoEstatus }, function(response) {
@@ -207,104 +244,22 @@ function manejarRetencion(tiket, boton) {
     let contador = retencionClicks[tiket] || 0;
 
     if (contador === 0) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function(response) {
+        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function() {
             retencionClicks[tiket] = 1;
-            $('#row_' + tiket).addClass('table-danger');
-            $('#row_' + tiket + ' .estatus').text('Retención');
+            $('#row_' + tiket).addClass('table-danger').find('.estatus').text('Retención');
             $(boton).prop('disabled', false);
             retencionBloqueado[tiket] = false;
         });
     } else if (contador === 1) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function(response) {
+        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function() {
             retencionClicks[tiket] = 2;
-            $('#row_' + tiket).removeClass('table-danger');
-            $('#row_' + tiket + ' .estatus').text('En Proceso');
+            $('#row_' + tiket).removeClass('table-danger').find('.estatus').text('En Proceso');
             $(boton).prop('disabled', true);
         });
     } else {
         alert("Este botón ya no se puede presionar más.");
     }
 }
-
-$(document).ready(function() {
-    cargarTickets();
-    setInterval(cargarTickets, 10000);
-});
-
-$(document).on('change', '.estatus-select', function() {
-    cambiarEstatus($(this).data('tiket'), $(this).val());
-});
-
-$(document).on('click', '.btn-despachar', function() {
-    let tiket = $(this).data('tiket');
-    $('#facturaTiket').val(tiket);
-    $('#facturaNumero').val('');
-    let modal = new bootstrap.Modal(document.getElementById('facturaModal'));
-    modal.show();
-});
-
-$('#facturaNumero').on('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-    }
-});
-
-$('#formFactura').on('submit', function(e) {
-    e.preventDefault();
-    let tiket = $('#facturaTiket').val();
-    let facturas = $('#facturaNumero').val().trim();
-
-    if (facturas === '') {
-        alert("Por favor ingrese al menos un número de factura.");
-        return;
-    }
-
-    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
-
-    for (let f of listaFacturas) {
-        if (f.length !== 11) {
-            alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
-            return;
-        }
-    }
-
-    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-    modal.hide();
-
-    for (let f of listaFacturas) {
-        despacharTicket(tiket, f);
-    }
-});
-
-
-
-$(document).on('click', '.btn-retencion', function () {
-    let tiket = $(this).data('tiket');
-    manejarRetencion(tiket, this);
-});
-
-window.addEventListener('pageshow', function(event) {
-    if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
-        window.location.reload(true);
-    }
-});
 </script>
-
-<script>
-document.getElementById('facturaNumero').addEventListener('input', function (e) {
-    let valor = e.target.value.replace(/[^A-Za-z0-9]/g, ''); 
-    let bloques = [];
-
-    for (let i = 0; i < valor.length; i += 11) {
-        bloques.push(valor.substring(i, i + 11));
-    }
-
-    e.target.value = bloques.join(';');
-
-    
-});
-
-</script>
-
 </body>
 </html>
