@@ -65,21 +65,35 @@ header("Expires: 0");
     <tbody></tbody>
 </table>
 
+
 <div class="modal fade" id="facturaModal" tabindex="-1" aria-labelledby="facturaModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <form id="formFactura">
         <div class="modal-header">
-          <h5 class="modal-title">Ingresar número(s) de factura</h5>
+          <h5 class="modal-title">Despachar Ticket</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="facturaTiket">
-          <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" required>
+          <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335">
           <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
+
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="seFueCheckbox" value="1">
+            <label class="form-check-label" for="seFueCheckbox">
+              Marcar como <strong>Se fue</strong>
+            </label>
+          </div>
+
+          <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
+            <label for="codigoSeFue" class="form-label">Ingrese código para despachar como "Se fue":</label>
+            <input type="password" id="codigoSeFue" class="form-control" placeholder="Código">
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Guardar y Despachar</button>
+          <button type="submit" class="btn btn-success">Enviar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         </div>
       </form>
     </div>
@@ -122,6 +136,45 @@ function cargarTickets() {
         });
     });
 }
+
+   $('#formFactura').on('submit'), function (e) {
+    e.preventDefault();
+    let tiket = $('#facturaTiket').val();
+    let seFue = $('#seFueCheckbox').is(':checked');
+    let facturas = $('#facturaNumero').val().trim();
+
+    if (seFue) {
+      let codigoIngresado = $('#codigoSeFue').val().trim();
+      if (codigoIngresado !== 'LogisicA*2025*') {
+        alert('Código incorrecto para despachar como "Se fue".');
+        return;
+      }
+      if (!confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
+        return;
+      }
+      despacharTicket(tiket, "Se fue");
+      let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+      modal.hide();
+      return;
+    } else if (facturas === '') {
+      alert("Por favor ingrese al menos un número de factura.");
+      return;
+    }
+
+    let listaFacturas = facturas.split(';').map(f => f.trim()).filter(f => f !== '');
+
+    for (let f of listaFacturas) {
+      if (f.length !== 11) {
+        alert("Cada número de factura debe tener exactamente 11 caracteres. Error en: " + f);
+        return;
+      }
+    }
+
+    despacharTicket(tiket, listaFacturas);
+    let modal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+    modal.hide();
+    return;
+    }       
 
 function despacharTicket(tiket, factura) {
     let tiempo = timers[tiket] || 0;
