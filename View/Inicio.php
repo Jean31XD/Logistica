@@ -143,6 +143,7 @@ function despacharTicket(tiket, factura) {
     });
 }
 
+
 $(document).ready(function () {
     cargarTickets();
     setInterval(cargarTickets, 10000);
@@ -261,6 +262,33 @@ function manejarRetencion(tiket, boton) {
         alert("Este botón ya no se puede presionar más.");
     }
 }
+
+$(document).on('click', '.btn-retencion', function () {
+    let tiket = $(this).data('tiket');
+    manejarRetencion(tiket, this);
+});
+
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
+        window.location.reload(true);
+    }
+});
+
+document.getElementById('facturaNumero').addEventListener('input', function (e) {
+    let valor = e.target.value.replace(/[^A-Za-z0-9]/g, ''); 
+    let bloques = [];
+
+    for (let i = 0; i < valor.length; i += 11) {
+        bloques.push(valor.substring(i, i + 11));
+    }
+
+    e.target.value = bloques.join(';');
+
+    
+});
+
+</script>
+
 </script>
 </body>
 </html>
