@@ -1,6 +1,12 @@
 <?php 
-session_start(); 
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+session_start();
+date_default_timezone_set('America/Santo_Domingo');
+if (!isset($_SESSION['usuario'])) {
+    http_response_code(401); // No autorizado
+    echo json_encode(['error' => 'Sesión expirada. Inicie sesión nuevamente.']);
+    exit;
+}
+
 
 include '../conexionBD/conexion.php';
 

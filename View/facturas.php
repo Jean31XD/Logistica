@@ -1,4 +1,4 @@
-<?php
+<?php 
 // Seguridad de sesión
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cookie_httponly', 1);
@@ -7,7 +7,7 @@ ini_set('session.cookie_samesite', 'Strict');
 session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
-// Cierre por inactividad (5 minutos = 300 segundos)
+// Cierre por inactividad (200 segundos)
 $inactividadLimite = 200;
 
 if (isset($_SESSION['ultimo_acceso'])) {
@@ -52,11 +52,7 @@ $result = sqlsrv_query($conn, $query);
 $transportistas = [];
 while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
     $transportistas[] = $row['Transportista'];
-
-
 }
-
-
 
 // Cargar usuarios si la pantalla es 0, 2 o 5
 $usuarios = [];
@@ -76,7 +72,7 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
     <meta charset="UTF-8" />
     <title>Recepción de Facturas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         html, body {
@@ -222,24 +218,22 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
     <select id="filtroEstatus" class="form-select">
         <option value="">-- Todos --</option>
         <option value="Completada">Completada</option>
-     
         <option value="RE">RE</option>
     </select>
 
-       <label for="buscarFactura" class="form-label">Buscar Factura:</label>
-        <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
-
+    <label for="buscarFactura" class="form-label">Buscar Factura:</label>
+    <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
 
     <?php if (in_array($_SESSION['pantalla'], [0, 2, 5])): ?>
-    <label for="filtroUsuario" class="form-label">Usuario:</label>
-    <select id="filtroUsuario" class="form-select">
-        <option value="">-- Todos --</option>
-        <?php foreach ($usuarios as $u): ?>
-            <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>">
-                <?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+        <label for="filtroUsuario" class="form-label">Usuario:</label>
+        <select id="filtroUsuario" class="form-select">
+            <option value="">-- Todos --</option>
+            <?php foreach ($usuarios as $u): ?>
+                <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
     <?php endif; ?>
 
     <label for="inputFactura" class="form-label">Nº Factura:</label>
@@ -251,12 +245,13 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
     </div>
     <div><a href="../Logica/logout.php" class="btn btn-danger">Cerrar Sesión</a></div>
 </div>
-<script>
-    $('#filtroUsuario').on('change', () => cargarFacturas(1));
-</script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $('#filtroUsuario').on('change', () => cargarFacturas(1));
+</script>
 
 <script>
 let paginaActual = 1;
@@ -272,7 +267,6 @@ $(document).ready(function () {
         .on('change', () => cargarFacturas(1));
     $('#buscarFactura').on('input', () => cargarFacturas(1));
 
-
     $('#inputFactura').on('input', function () {
         const valor = this.value.trim();
         if (valor.length === 11) {
@@ -283,16 +277,21 @@ $(document).ready(function () {
     cargarFacturas();
 });
 
-let tiempoLimite = 5 * 60 * 1000;
+// Temporizador inactividad (cliente)
+const tiempoLimite = 5 * 60 * 1000; // 5 minutos en ms
 let temporizador;
+
 function resetearTemporizador() {
     clearTimeout(temporizador);
+    console.log("Temporizador reiniciado por actividad");
     temporizador = setTimeout(() => {
+        alert("Su sesión ha expirado por inactividad. Será redirigido al login.");
         window.location.href = "../Logica/logout.php";
     }, tiempoLimite);
 }
-['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(e => {
-    document.addEventListener(e, resetearTemporizador, false);
+
+['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetearTemporizador, false);
 });
 resetearTemporizador();
 
@@ -305,9 +304,8 @@ function cargarFacturas(pagina = 1) {
     formData.append('fechaRecibido', document.getElementById('fechaRecibido').value);
     formData.append('fechaRecepcion', document.getElementById('fechaRecepcion').value);
     formData.append('estatus', document.getElementById('filtroEstatus').value);
-    formData.append('usuario', document.getElementById('filtroUsuario').value);
+    formData.append('usuario', document.getElementById('filtroUsuario') ? document.getElementById('filtroUsuario').value : '');
     formData.append('buscarFactura', document.getElementById('buscarFactura').value.trim());
-
     formData.append('pagina', pagina);
 
     fetch('../Logica/get_facturas.php', {
@@ -336,8 +334,16 @@ function validarFactura() {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 401) {
+            alert("Sesión expirada. Por favor, inicie sesión nuevamente.");
+            window.location.href = "../View/index.php";
+            return;
+        }
+        return res.json();
+    })
     .then(respuesta => {
+        if (!respuesta) return;
         if (respuesta.encontrada) {
             const fila = document.getElementById('fila_' + factura);
             if (fila) {
