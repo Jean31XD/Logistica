@@ -90,7 +90,7 @@ if (isset($_GET['cedula'])) {
 
     html, body {
       height: 100%;
-      background: #000;
+      background: #f5f5f5;
       overflow-x: hidden;
     }
 
@@ -110,7 +110,7 @@ if (isset($_GET['cedula'])) {
       display: block;
       width: calc(6.25vw - 2px);
       height: calc(6.25vw - 2px);
-      background: #181818;
+      background: #eaeaea;
       transition: 1.5s;
     }
 
@@ -122,11 +122,11 @@ if (isset($_GET['cedula'])) {
     .container {
       position: relative;
       z-index: 1;
-      background: #181818dd;
+      background: #ffffffdd;
       border-radius: 12px;
       padding: 40px;
-      color: #fff;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+      color: #000;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
     }
 
     input, button {
@@ -179,12 +179,12 @@ if (isset($_GET['cedula'])) {
   <div class="accordion" id="accordionTransportistas">
     <!-- Agregar -->
     <div class="accordion-item" data-aos="fade-up">
-      <h2 class="accordion-header">
-        <button class="accordion-button bg-success text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAgregar">
+      <h2 class="accordion-header" id="headingAgregar">
+        <button class="accordion-button bg-success text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAgregar" aria-expanded="false" aria-controls="collapseAgregar">
           ➕ Agregar Transportista
         </button>
       </h2>
-      <div id="collapseAgregar" class="accordion-collapse collapse show">
+      <div id="collapseAgregar" class="accordion-collapse collapse" aria-labelledby="headingAgregar" data-bs-parent="#accordionTransportistas">
         <div class="accordion-body">
           <form method="POST">
             <input type="hidden" name="accion" value="insertar">
@@ -205,12 +205,12 @@ if (isset($_GET['cedula'])) {
 
     <!-- Consultar -->
     <div class="accordion-item" data-aos="fade-up" data-aos-delay="100">
-      <h2 class="accordion-header">
-        <button class="accordion-button bg-primary text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsultar">
+      <h2 class="accordion-header" id="headingConsultar">
+        <button class="accordion-button bg-primary text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsultar" aria-expanded="false" aria-controls="collapseConsultar">
           🔎 Consultar Transportista
         </button>
       </h2>
-      <div id="collapseConsultar" class="accordion-collapse collapse">
+      <div id="collapseConsultar" class="accordion-collapse collapse" aria-labelledby="headingConsultar" data-bs-parent="#accordionTransportistas">
         <div class="accordion-body">
           <form method="GET" class="row g-3">
             <div class="col-md-8"><input type="text" name="cedula" class="form-control" placeholder="Cédula a consultar" required></div>
@@ -229,12 +229,12 @@ if (isset($_GET['cedula'])) {
 
     <!-- Actualizar -->
     <div class="accordion-item" data-aos="fade-up" data-aos-delay="200">
-      <h2 class="accordion-header">
-        <button class="accordion-button bg-warning text-dark fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActualizar">
+      <h2 class="accordion-header" id="headingActualizar">
+        <button class="accordion-button bg-warning text-dark fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActualizar" aria-expanded="false" aria-controls="collapseActualizar">
           ✏️ Actualizar Transportista
         </button>
       </h2>
-      <div id="collapseActualizar" class="accordion-collapse collapse">
+      <div id="collapseActualizar" class="accordion-collapse collapse" aria-labelledby="headingActualizar" data-bs-parent="#accordionTransportistas">
         <div class="accordion-body">
           <form method="POST">
             <input type="hidden" name="accion" value="actualizar">
@@ -255,12 +255,12 @@ if (isset($_GET['cedula'])) {
 
     <!-- Eliminar -->
     <div class="accordion-item" data-aos="fade-up" data-aos-delay="300">
-      <h2 class="accordion-header">
-        <button class="accordion-button bg-danger text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEliminar">
+      <h2 class="accordion-header" id="headingEliminar">
+        <button class="accordion-button bg-danger text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEliminar" aria-expanded="false" aria-controls="collapseEliminar">
           🗑️ Eliminar Transportista
         </button>
       </h2>
-      <div id="collapseEliminar" class="accordion-collapse collapse">
+      <div id="collapseEliminar" class="accordion-collapse collapse" aria-labelledby="headingEliminar" data-bs-parent="#accordionTransportistas">
         <div class="accordion-body">
           <form method="POST" class="row g-3">
             <input type="hidden" name="accion" value="eliminar">
@@ -270,7 +270,6 @@ if (isset($_GET['cedula'])) {
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -280,7 +279,6 @@ if (isset($_GET['cedula'])) {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   AOS.init();
-
   <?php if (!empty($mensaje)): ?>
     Swal.fire({
       title: "<?= $mensaje ?>",
