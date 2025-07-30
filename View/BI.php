@@ -1,5 +1,5 @@
 <?php
-// --- INICIO DE LÓGICA PHP (CON CORRECCIÓN MENOR) ---
+// --- INICIO DE LÓGICA PHP ---
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Strict');
@@ -8,7 +8,7 @@ date_default_timezone_set('America/Santo_Domingo');
 
 if (
     !isset($_SESSION['usuario'], $_SESSION['pantalla']) ||
-    !in_array($_SESSION['pantalla'], [0, 3, 4, 5, 6]) // Ampliado para incluir Reportes (4)
+    !in_array($_SESSION['pantalla'], [0, 3, 4, 5, 6])
 ) {
     header("Location: ../index.php");
     exit();
@@ -180,7 +180,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         }
         .table td, .table th {
             vertical-align: middle;
-            padding: 0.6rem 0.5rem;
+            padding: 1rem 0.8rem; /* --- MEJORA: Mayor espaciado en celdas --- */
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
         .table tbody tr:last-child td {
@@ -193,23 +193,37 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         .paginacion .page-item.active .page-link { background-color: #fff; color: #0d6efd; border-color: #fff;}
         .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2);}
 
-        /* Estilos Sidebar y Menús Desplegables */
+        /* --- MEJORAS: Estilos Sidebar y Menús Desplegables --- */
         .form-label { font-weight: 600; opacity: 0.9; }
-        .form-control, .form-select, .select2-container--bootstrap-5 .select2-selection {
+        .form-control, .form-select {
             background-color: rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff !important;
         }
+        .select2-container--bootstrap-5 .select2-selection {
+            background-color: rgba(255, 255, 255, 0.9); /* Fondo claro para legibilidad */
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #000 !important; /* Texto negro */
+            height: auto;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: #000 !important; /* Texto seleccionado en negro */
+            white-space: normal; /* Permite que el texto se divida en líneas */
+            word-break: break-all; /* Rompe palabras largas si es necesario */
+        }
         select option { background-color: #343a40; }
         
         .select2-dropdown {
-            background-color: #2c3034;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background-color: #f8f9fa; /* Fondo claro */
+            border: 1px solid #6c757d;
             border-radius: 0.5rem;
-            z-index: 1056; /* Asegura que el menú esté por encima de otros elementos */
+            z-index: 1056;
         }
-        .select2-results__option { color: #fff; }
-        .select2-results__option--highlighted { background-color: #0d6efd; }
+        .select2-results__option {
+            color: #000; /* Texto de opciones en negro */
+            white-space: normal; /* Permite que el texto de las opciones se divida */
+        }
+        .select2-results__option--highlighted { background-color: #0d6efd; color: #fff; }
         .btn-link { color: #fff; }
     </style>
 </head>
@@ -217,7 +231,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <div class="main-container">
     <aside class="sidebar glass-panel animate__animated animate__fadeInLeft">
         <div class="text-center mb-4">
-            <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 150px; height: auto;">
+            <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 150px; height: auto;">
             <h4 class="mt-3 mb-0">Filtros de Búsqueda</h4>
         </div>
         <form id="filtroForm" method="get" autocomplete="off">
@@ -262,13 +276,13 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <tbody>
                     <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
                     <tr>
-                        <td><?= $row['Fecha'] instanceof DateTime ? $row['Fecha']->format('Y-m-d') : '' ?></td>
+                        <td><?= $row['Fecha'] instanceof DateTime ? $row['Fecha']->format('Y-m-d H:i:s') : '' ?></td>
                         <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
-                        <td><?= $row['Recepcion_ALM'] instanceof DateTime ? $row['Recepcion_ALM']->format('Y-m-d') : '' ?></td>
+                        <td><?= $row['Recepcion_ALM'] instanceof DateTime ? $row['Recepcion_ALM']->format('Y-m-d H:i:s') : '' ?></td>
                         <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
-                        <td><?= $row['Recepcion_CC'] instanceof DateTime ? $row['Recepcion_CC']->format('Y-m-d') : '' ?></td>
+                        <td><?= $row['Recepcion_CC'] instanceof DateTime ? $row['Recepcion_CC']->format('Y-m-d H:i:s') : '' ?></td>
                         <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
                     </tr>
