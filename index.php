@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 ?>
 
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -84,8 +84,56 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="View/styles.css"/>
+    
     <title>Iniciar sesión</title>
+    
+    <!-- 🎯 Fondo cuadrícula animada -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-wrap: wrap;
+            z-index: 1;
+        }
+
+        .grid-background span {
+            position: relative;
+            display: block;
+            width: calc(6.25vw - 2px);
+            height: calc(6.25vw - 2px);
+            background: #181818;
+            z-index: 2;
+            transition: 1.5s;
+        }
+
+        .grid-background span:hover {
+            background: #f00;
+            transition: 0s;
+        }
+
+        #container {
+            position: relative;
+            z-index: 3;
+        }
+
+        .form-container {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            background: rgba(34, 34, 34, 0.9); /* semi-transparente para que se vea el fondo */
+            padding: 30px;
+        }
+    </style>
 </head>
 <body>
 
