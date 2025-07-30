@@ -1,7 +1,6 @@
-<?php   
+<?php    
 ini_set('session.cookie_lifetime', 0); 
 ini_set('session.gc_maxlifetime', 1800); 
-
 session_start();
 
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -10,9 +9,7 @@ header("Expires: 0");
 
 require_once __DIR__ . '/conexionBD/conexion.php';
 
-
 $errorLogin = "";
-
 $tiempo_espera = 1 * 60; 
 
 if (!isset($_SESSION['intentos_login'])) {
@@ -43,29 +40,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (sqlsrv_execute($stmt)) {
             if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 if (password_verify($password, $row['password'])) {
-                    // Autenticación exitosa
                     session_regenerate_id(true);
                     $_SESSION['usuario'] = $row['usuario'];
                     $_SESSION['pantalla'] = $row['pantalla'];
                     $_SESSION['intentos_login'] = 0;
 
-                    // Redirige según la pantalla
                     switch ($row['pantalla']) {
-                        case 0:
-                            header("Location: View/Admin.php"); break;
-                        case 1:
-                            header("Location: View/Inicio.php"); break;
-                        case 2:
-                            header("Location: View/facturas.php"); break;
-                        case 3:
-                            header("Location: View/CXC.php"); break;
-                            case 4:
-                            header("Location: View/Reporte.php"); break;
-                            case 5:
-                            header("Location: View/Paneladmin.php"); break;
-                            case 6:
-                            header("Location: View/BI.php"); break;
-                                                }
+                        case 0: header("Location: View/Admin.php"); break;
+                        case 1: header("Location: View/Inicio.php"); break;
+                        case 2: header("Location: View/facturas.php"); break;
+                        case 3: header("Location: View/CXC.php"); break;
+                        case 4: header("Location: View/Reporte.php"); break;
+                        case 5: header("Location: View/Paneladmin.php"); break;
+                        case 6: header("Location: View/BI.php"); break;
+                    }
                     exit();
                 } else {
                     $_SESSION['intentos_login']++;
@@ -100,24 +88,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Iniciar sesión</title>
 </head>
 <body>
-    <section class="grid-background">
+
+<!-- 🎯 Fondo animado -->
+<section class="grid-background">
     <?php for ($i = 0; $i < 400; $i++): ?>
         <span></span>
     <?php endfor; ?>
 </section>
 
-
+<!-- 🎯 Login -->
 <div class="container" id="container">
     <div class="form-container sign-in">
         <form method="POST" action="">
-            <img src="IMG\LOGO MC - NEGRO.png" class="img-fluid mb-4" alt="LOGO">
-
+            <img src="IMG/LOGO MC - NEGRO.png" class="img-fluid mb-4" alt="LOGO">
             <?php if (!empty($errorLogin)): ?>
                 <div class="alert alert-danger mt-3" role="alert">
                     <?= htmlspecialchars($errorLogin) ?>
                 </div>
             <?php endif; ?>
-
             <input type="text" name="usuario" placeholder="Nombre" required />
             <input type="password" name="password" placeholder="Contraseña" required />
             <button type="submit" class="btnLog btn btn-danger">Iniciar sesión</button>
@@ -128,7 +116,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $numeros = array_rand(array_flip(range(1, 7)), 7);
     $imagenes = array_map(fn($n) => "IMG/{$n}.jpg", $numeros);
     ?>
-
     <div class="toggle-container">
         <div class="toggle">
             <div class="toggle-panel toggle-right border bg-white p-1 rounded" style="height: 100%;">
@@ -147,15 +134,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 
 <script>
- 
     window.addEventListener("pageshow", function(event) {
-    if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-        window.location.reload(true);
-    }
-});
-
+        if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+            window.location.reload(true);
+        }
+    });
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
