@@ -21,7 +21,6 @@ if (!isset($_SESSION['pagina_anterior'])) {
     $_SESSION['pagina_anterior'] = $_SERVER['HTTP_REFERER'] ?? 'index.php';
 }
 
-// --- MEJORA: Función auxiliar para formatear fechas de manera segura ---
 function formatDate($dateValue, $format) {
     if (empty($dateValue)) {
         return '';
@@ -30,7 +29,6 @@ function formatDate($dateValue, $format) {
         $dateObj = ($dateValue instanceof DateTime) ? $dateValue : new DateTime($dateValue);
         return $dateObj->format($format);
     } catch (Exception $e) {
-        // Devuelve vacío si la fecha no es válida
         return '';
     }
 }
@@ -56,7 +54,6 @@ try {
 }
 
 $transportistas = [];
-// --- MEJORA: Excluir transportistas 'Contado' del filtro ---
 $tstmt = sqlsrv_query($conn, "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL AND Transportista NOT LIKE '%Contado%' ORDER BY Transportista");
 while ($t = sqlsrv_fetch_array($tstmt, SQLSRV_FETCH_ASSOC)) $transportistas[] = $t['Transportista'];
 
@@ -135,7 +132,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             background-size: 400% 400%;
             animation: gradientBG 20s ease infinite;
             color: #fff;
-            padding: 1.5rem;
+            padding: 1rem;
         }
 
         @keyframes gradientBG {
@@ -151,7 +148,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 1.5rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
         .main-container { display: flex; gap: 1.5rem; align-items: flex-start; }
@@ -160,7 +157,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 
         .resumen-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
@@ -195,7 +192,6 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         }
         .table td, .table th {
             vertical-align: middle;
-            /* --- MEJORA: Mayor espaciado en celdas para mejor legibilidad --- */
             padding: 1.2rem 1rem; 
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
@@ -203,12 +199,10 @@ $stmt = sqlsrv_query($conn, $sql, $params);
              border-bottom: none;
         }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-
         .paginacion a { color: #fff; text-decoration: none; }
         .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); }
         .paginacion .page-item.active .page-link { background-color: #fff; color: #0d6efd; border-color: #fff;}
         .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2);}
-
         .form-label { font-weight: 600; opacity: 0.9; }
         .form-control, .form-select {
             background-color: rgba(0, 0, 0, 0.2);
@@ -240,6 +234,59 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         }
         .select2-results__option--highlighted { background-color: #0d6efd; color: #fff; }
         .btn-link { color: #fff; }
+
+        /* --- MEJORA: ESTILOS RESPONSIVOS --- */
+        @media (max-width: 992px) {
+            body {
+                padding: 0.5rem;
+            }
+            .main-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .sidebar, .main-content {
+                width: 100%;
+                position: static;
+            }
+            .table-container {
+                overflow-x: hidden; /* Ocultamos el scroll horizontal en la vista de tarjetas */
+            }
+            .table thead {
+                display: none; /* Ocultamos la cabecera original en móviles */
+            }
+            .table, .table tbody, .table tr, .table td {
+                display: block;
+                width: 100%;
+            }
+            .table tr {
+                margin-bottom: 1rem;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 0.75rem;
+                background: rgba(0, 0, 0, 0.1);
+                padding: 0.5rem 0;
+            }
+            .table td {
+                text-align: right;
+                padding: 0.75rem 1rem;
+                padding-left: 50%;
+                position: relative;
+                border: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            }
+            .table tr:last-child td:last-child, .table td:last-child {
+                border-bottom: none;
+            }
+            .table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 1rem;
+                width: calc(50% - 2rem);
+                text-align: left;
+                font-weight: 600;
+                opacity: 0.8;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
@@ -291,15 +338,15 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <tbody>
                     <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
                     <tr>
-                        <td><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
-                        <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
-                        <td><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
-                        <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
-                        <td><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i:s') ?></td>
-                        <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
-                        <td><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i:s') ?></td>
-                        <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
-                        <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
+                        <td data-label="Fecha"><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
+                        <td data-label="Factura"><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
+                        <td data-label="Estado"><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
+                        <td data-label="Transportista"><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
+                        <td data-label="Recepción ALM"><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i') ?></td>
+                        <td data-label="Usuario ALM"><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
+                        <td data-label="Recepción CC"><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i') ?></td>
+                        <td data-label="Usuario CC"><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
+                        <td data-label="Localización"><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
                     </tr>
                     <?php endwhile; else: ?>
                     <tr><td colspan="9" class="text-center py-4">No se encontraron resultados para los filtros seleccionados.</td></tr>
@@ -336,9 +383,20 @@ $(document).ready(function() {
     initializeSelect2('#usuario', 'Buscar usuario...');
     initializeSelect2('#zona', 'Buscar localización...');
 
-    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"], #filtroForm input[type="text"]').on('change', function() {
+    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"]').on('change', function() {
         $('input[name="page"]').val(1); 
         $('#filtroForm').submit();
+    });
+
+    // Se cambió el evento para el campo de texto de 'change' a 'keyup' para una búsqueda más dinámica, 
+    // pero se retrasa para no enviar una petición en cada pulsación.
+    let searchTimeout;
+    $('#filtroForm input[type="text"]').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            $('input[name="page"]').val(1); 
+            $('#filtroForm').submit();
+        }, 500); // 500ms de retraso
     });
 });
 </script>
