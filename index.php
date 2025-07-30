@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 ?>
 
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -84,36 +84,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="View/styles.css"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap">
     <title>Iniciar sesión</title>
-    
-    <!-- 🎯 Fondo cuadrícula animada -->
+
     <style>
-        body {
+        /* Reset básico */
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body, html {
+            height: 100%;
             background: #000;
             overflow: hidden;
         }
 
+        /* Fondo cuadriculado animado */
         .grid-background {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
             display: flex;
             flex-wrap: wrap;
-            z-index: 1;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
         }
 
         .grid-background span {
-            position: relative;
             display: block;
             width: calc(6.25vw - 2px);
             height: calc(6.25vw - 2px);
             background: #181818;
-            z-index: 2;
             transition: 1.5s;
         }
 
@@ -122,16 +128,49 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             transition: 0s;
         }
 
-        #container {
+        /* Contenedor principal */
+        .container {
+            background-color: #181818;
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+            z-index: 1;
+            padding: 40px;
+            min-width: 320px;
+            max-width: 450px;
             position: relative;
-            z-index: 3;
+            margin: 50px auto;
         }
 
-        .form-container {
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
-            border-radius: 10px;
-            background: rgba(34, 34, 34, 0.9); /* semi-transparente para que se vea el fondo */
-            padding: 30px;
+        /* Formulario */
+        input {
+            background-color: #333;
+            border: none;
+            margin: 8px 0;
+            padding: 10px 15px;
+            font-size: 13px;
+            border-radius: 8px;
+            width: 100%;
+            color: #fff;
+            outline: none;
+        }
+
+        button.btnLog {
+            background-color: #f00;
+            color: #fff;
+            font-size: 14px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .toggle-container {
+            z-index: 1;
         }
     </style>
 </head>
@@ -164,7 +203,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $numeros = array_rand(array_flip(range(1, 7)), 7);
     $imagenes = array_map(fn($n) => "IMG/{$n}.jpg", $numeros);
     ?>
-    <div class="toggle-container">
+    <div class="toggle-container mt-4">
         <div class="toggle">
             <div class="toggle-panel toggle-right border bg-white p-1 rounded" style="height: 100%;">
                 <div id="carouselExampleSlides" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
