@@ -144,7 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
             min-height: 100vh;
             color: #fff;
             /* Fondo animado de gradiente */
-            background: linear-gradient(-45deg, #ffffffff, #cb1717ef, #000000ff, #7a7d7dff);
+            background: linear-gradient(-45deg, #ff0000ff, #cb1717ef, #bb1b1bff, #751010ff);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
         }
