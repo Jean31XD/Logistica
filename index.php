@@ -100,6 +100,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Iniciar sesión</title>
 </head>
 <body>
+    <section class="grid-background">
+    <?php for ($i = 0; $i < 400; $i++): ?>
+        <span></span>
+    <?php endfor; ?>
+</section>
+
 
 <div class="container" id="container">
     <div class="form-container sign-in">

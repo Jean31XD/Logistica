@@ -192,3 +192,34 @@ html, body {
 }
 
 
+/* Fondo animado tipo cuadrícula */
+.grid-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none; /* para que no bloquee el clic */
+}
+
+.grid-background span {
+    display: block;
+    width: calc(6.25vw - 2px);
+    height: calc(6.25vw - 2px);
+    background: #181818;
+    transition: 1.5s;
+}
+
+.grid-background span:hover {
+    background: #f00;
+    transition: 0s;
+}
+
+/* Asegura que el contenedor esté por encima */
+.container {
+    position: relative;
+    z-index: 1;
+}
