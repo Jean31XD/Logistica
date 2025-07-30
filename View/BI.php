@@ -21,6 +21,20 @@ if (!isset($_SESSION['pagina_anterior'])) {
     $_SESSION['pagina_anterior'] = $_SERVER['HTTP_REFERER'] ?? 'index.php';
 }
 
+// --- MEJORA: Función auxiliar para formatear fechas de manera segura ---
+function formatDate($dateValue, $format) {
+    if (empty($dateValue)) {
+        return '';
+    }
+    try {
+        $dateObj = ($dateValue instanceof DateTime) ? $dateValue : new DateTime($dateValue);
+        return $dateObj->format($format);
+    } catch (Exception $e) {
+        // Devuelve vacío si la fecha no es válida
+        return '';
+    }
+}
+
 $filtroTransportista = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? date('Y-m-d');
 $hasta = $_GET['hasta'] ?? date('Y-m-d');
@@ -42,6 +56,7 @@ try {
 }
 
 $transportistas = [];
+// --- MEJORA: Excluir transportistas 'Contado' del filtro ---
 $tstmt = sqlsrv_query($conn, "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL AND Transportista NOT LIKE '%Contado%' ORDER BY Transportista");
 while ($t = sqlsrv_fetch_array($tstmt, SQLSRV_FETCH_ASSOC)) $transportistas[] = $t['Transportista'];
 
@@ -67,7 +82,7 @@ if ($prefijo === 'FT') $where .= " AND Factura LIKE 'FT%'";
 if (!empty($zona)) { $where .= " AND zona = ?"; $params[] = $zona; }
 
 $resumen_sql = "
-SELECT 
+SELECT
     SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
     SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
     SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
@@ -180,7 +195,8 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         }
         .table td, .table th {
             vertical-align: middle;
-            padding: 1rem 0.8rem; /* --- MEJORA: Mayor espaciado en celdas --- */
+            /* --- MEJORA: Mayor espaciado en celdas para mejor legibilidad --- */
+            padding: 1.2rem 1rem; 
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
         .table tbody tr:last-child td {
@@ -193,7 +209,6 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         .paginacion .page-item.active .page-link { background-color: #fff; color: #0d6efd; border-color: #fff;}
         .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2);}
 
-        /* --- MEJORAS: Estilos Sidebar y Menús Desplegables --- */
         .form-label { font-weight: 600; opacity: 0.9; }
         .form-control, .form-select {
             background-color: rgba(0, 0, 0, 0.2);
@@ -201,27 +216,27 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             color: #fff !important;
         }
         .select2-container--bootstrap-5 .select2-selection {
-            background-color: rgba(255, 255, 255, 0.9); /* Fondo claro para legibilidad */
+            background-color: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(0, 0, 0, 0.3);
-            color: #000 !important; /* Texto negro */
+            color: #000 !important;
             height: auto;
         }
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-            color: #000 !important; /* Texto seleccionado en negro */
-            white-space: normal; /* Permite que el texto se divida en líneas */
-            word-break: break-all; /* Rompe palabras largas si es necesario */
+            color: #000 !important;
+            white-space: normal;
+            word-break: break-all;
         }
         select option { background-color: #343a40; }
         
         .select2-dropdown {
-            background-color: #f8f9fa; /* Fondo claro */
+            background-color: #f8f9fa;
             border: 1px solid #6c757d;
             border-radius: 0.5rem;
             z-index: 1056;
         }
         .select2-results__option {
-            color: #000; /* Texto de opciones en negro */
-            white-space: normal; /* Permite que el texto de las opciones se divida */
+            color: #000;
+            white-space: normal;
         }
         .select2-results__option--highlighted { background-color: #0d6efd; color: #fff; }
         .btn-link { color: #fff; }
@@ -276,13 +291,13 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <tbody>
                     <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
                     <tr>
-                        <td><?= $row['Fecha'] instanceof DateTime ? $row['Fecha']->format('Y-m-d H:i:s') : '' ?></td>
+                        <td><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
                         <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
-                        <td><?= $row['Recepcion_ALM'] instanceof DateTime ? $row['Recepcion_ALM']->format('Y-m-d H:i:s') : '' ?></td>
+                        <td><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i:s') ?></td>
                         <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
-                        <td><?= $row['Recepcion_CC'] instanceof DateTime ? $row['Recepcion_CC']->format('Y-m-d H:i:s') : '' ?></td>
+                        <td><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i:s') ?></td>
                         <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
                     </tr>
