@@ -1,152 +1,138 @@
 <?php
-// --- CONFIGURACIÓN DE SESIÓN Y CABECERAS ---
-ini_set('session.cookie_lifetime', 0); // La cookie de sesión dura hasta que se cierra el navegador
-ini_set('session.gc_maxlifetime', 1800); // La sesión en el servidor dura 30 minutos
-
+// --- INICIO DE LÓGICA PHP (SIN CAMBIOS) ---
+ini_set('session.use_strict_mode', 1);
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Strict');
 session_start();
+date_default_timezone_set('America/Santo_Domingo');
 
-// --- CABECERAS PARA EVITAR CACHÉ ---
-header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
-header("Pragma: no-cache"); // HTTP 1.0.
-header("Expires: 0"); // Proxies.
+if (
+    !isset($_SESSION['usuario'], $_SESSION['pantalla']) ||
+    !in_array($_SESSION['pantalla'], [0, 3, 4, 5, 6])
+) {
+    header("Location: ../index.php");
+    exit();
+}
 
-// --- FUNCIÓN DE CONEXIÓN A LA BASE DE DATOS ---
-function conectarBD()
-{
-    // Es recomendable mover estas credenciales a variables de entorno o un archivo de configuración no accesible públicamente.
-    $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
-    $database   = "db-apptransportistas-maco";
-    $username   = "ServiceAppTrans";
-    $password   = "⁠nZ(#n41LJm)iLmJP"; 
+include '../conexionBD/conexion.php';
+if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
-    $connectionInfo = array(
-        "Database" => $database,
-        "UID" => $username,
-        "PWD" => $password,
-        "TrustServerCertificate" => true, // Necesario para Azure SQL
-        "CharacterSet" => "UTF-8"
-    );
+if (!isset($_SESSION['pagina_anterior'])) {
+    $_SESSION['pagina_anterior'] = $_SERVER['HTTP_REFERER'] ?? 'index.php';
+}
 
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) {
-        // En un entorno de producción, registra el error en un log en lugar de mostrarlo.
-        error_log(print_r(sqlsrv_errors(), true));
-        // Muestra un mensaje genérico al usuario.
-        die("<div class='alert alert-danger'>❌ Error de conexión con el servidor. Por favor, contacte al administrador.</div>");
+function formatDate($dateValue, $format) {
+    if (empty($dateValue)) {
+        return '';
     }
-    return $conn;
-}
-
-$conn = conectarBD();
-$errorLogin = "";
-$tiempo_espera = 1 * 60; // 1 minuto de espera
-
-// --- LÓGICA DE BLOQUEO POR INTENTOS FALLIDOS ---
-if (!isset($_SESSION['intentos_login'])) {
-    $_SESSION['intentos_login'] = 0;
-}
-
-if ($_SESSION['intentos_login'] >= 5) {
-    $ultimo_intento = $_SESSION['ultimo_intento'] ?? 0;
-    $tiempo_transcurrido = time() - $ultimo_intento;
-
-    if ($tiempo_transcurrido < $tiempo_espera) {
-        $seg_rest = $tiempo_espera - $tiempo_transcurrido;
-        $errorLogin = "Demasiados intentos fallidos. Espera $seg_rest segundos para volver a intentar.";
-    } else {
-        // Si ya pasó el tiempo, resetea los intentos
-        $_SESSION['intentos_login'] = 0;
-        unset($_SESSION['ultimo_intento']);
+    try {
+        $dateObj = ($dateValue instanceof DateTime) ? $dateValue : new DateTime($dateValue);
+        return $dateObj->format($format);
+    } catch (Exception $e) {
+        return '';
     }
 }
 
+$filtroTransportista = $_GET['transportista'] ?? '';
+$desde = $_GET['desde'] ?? date('Y-m-d');
+$hasta = $_GET['hasta'] ?? date('Y-m-d');
+$estado = $_GET['estado'] ?? '';
+$usuario = $_GET['usuario'] ?? '';
+$entregadasCC = isset($_GET['entregadasCC']);
+$buscarFactura = $_GET['factura'] ?? '';
+$prefijo = $_GET['prefijo'] ?? '';
+$zona = $_GET['zona'] ?? '';
+$page = max(1, intval($_GET['page'] ?? 1));
+$limit = 50;
+$offset = ($page - 1) * $limit;
 
-// --- PROCESAMIENTO DEL FORMULARIO DE LOGIN ---
-if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
-    $usuario = trim($_POST['usuario'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    $sql = "SELECT usuario, password, pantalla FROM usuarios WHERE usuario = ?";
-    $params = array($usuario);
-    $stmt = sqlsrv_query($conn, $sql, $params);
-
-    if ($stmt === false) {
-        $errorLogin = "Error en la consulta a la base de datos.";
-    } else {
-        if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            // Verifica la contraseña hasheada
-            if (password_verify($password, $row['password'])) {
-                // --- AUTENTICACIÓN EXITOSA ---
-                session_regenerate_id(true); // Previene la fijación de sesión
-                $_SESSION['usuario'] = $row['usuario'];
-                $_SESSION['pantalla'] = $row['pantalla'];
-
-                // Limpia los contadores de intentos
-                unset($_SESSION['intentos_login']);
-                unset($_SESSION['ultimo_intento']);
-
-                // Redirige según el perfil del usuario
-                switch ($row['pantalla']) {
-                    case 0: header("Location: View/Admin.php"); break;
-                    case 1: header("Location: View/Inicio.php"); break;
-                    case 2: header("Location: View/facturas.php"); break;
-                    case 3: header("Location: View/CXC.php"); break;
-                    case 4: header("Location: View/Reporte.php"); break;
-                    case 5: header("Location: View/Paneladmin.php"); break;
-                    case 6: header("Location: View/BI.php"); break;
-                    default: header("Location: View/Inicio.php"); break; // Redirección por defecto
-                }
-                exit(); // Termina el script después de la redirección
-            } else {
-                // Contraseña incorrecta
-                $_SESSION['intentos_login']++;
-                $_SESSION['ultimo_intento'] = time();
-                $errorLogin = "Usuario o contraseña incorrectos.";
-            }
-        } else {
-            // Usuario no encontrado
-            $_SESSION['intentos_login']++;
-            $_SESSION['ultimo_intento'] = time();
-            $errorLogin = "Usuario o contraseña incorrectos.";
-        }
-        sqlsrv_free_stmt($stmt);
-    }
-    sqlsrv_close($conn);
+try {
+    $fechaDesde = new DateTime($desde);
+    $fechaHasta = new DateTime($hasta);
+} catch (Exception $e) {
+    die("Fechas inválidas");
 }
 
+$transportistas = [];
+$tstmt = sqlsrv_query($conn, "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL AND Transportista NOT LIKE '%Contado%' ORDER BY Transportista");
+while ($t = sqlsrv_fetch_array($tstmt, SQLSRV_FETCH_ASSOC)) $transportistas[] = $t['Transportista'];
+
+$usuarios = [];
+$ustmt = sqlsrv_query($conn, "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL ORDER BY Usuario");
+while ($u = sqlsrv_fetch_array($ustmt, SQLSRV_FETCH_ASSOC)) $usuarios[] = $u['Usuario'];
+
+$zonas = [];
+$zstmt = sqlsrv_query($conn, "SELECT DISTINCT zona FROM custinvoicejour WHERE zona IS NOT NULL ORDER BY zona");
+while ($z = sqlsrv_fetch_array($zstmt, SQLSRV_FETCH_ASSOC)) $zonas[] = $z['zona'];
+
+$where = "WHERE Fecha BETWEEN ? AND ? AND Transportista NOT LIKE '%Contado%'";
+$params = [$fechaDesde->format('Y-m-d'), $fechaHasta->format('Y-m-d')];
+
+if ($estado === 'vacio') $where .= " AND (Validar IS NULL OR LTRIM(RTRIM(Validar)) = '')";
+elseif (!empty($estado)) { $where .= " AND Validar = ?"; $params[] = $estado; }
+if (!empty($usuario)) { $where .= " AND Usuario = ?"; $params[] = $usuario; }
+if ($entregadasCC) $where .= " AND Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> ''";
+if (!empty($filtroTransportista)) { $where .= " AND Transportista = ?"; $params[] = $filtroTransportista; }
+if (!empty($buscarFactura)) { $where .= " AND Factura LIKE ?"; $params[] = '%' . $buscarFactura . '%'; }
+if ($prefijo === 'NC') $where .= " AND Factura LIKE 'NC%'";
+if ($prefijo === 'FT') $where .= " AND Factura LIKE 'FT%'";
+if (!empty($zona)) { $where .= " AND zona = ?"; $params[] = $zona; }
+
+$resumen_sql = "
+SELECT
+    SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
+    SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
+    SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
+    SUM(CASE WHEN Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC,
+    SUM(CASE WHEN Factura LIKE 'NC%' THEN 1 ELSE 0 END) AS NC,
+    SUM(CASE WHEN Factura LIKE 'FT%' THEN 1 ELSE 0 END) AS FT,
+    SUM(CASE WHEN Factura LIKE 'NC%' AND Validar = 'Completada' THEN 1 ELSE 0 END) AS NC_Completadas
+FROM custinvoicejour
+$where
+";
+$resumen_stmt = sqlsrv_query($conn, $resumen_sql, $params);
+$resumen = sqlsrv_fetch_array($resumen_stmt, SQLSRV_FETCH_ASSOC);
+$totalFacturas = ($resumen['Completadas'] ?? 0) + ($resumen['RE'] ?? 0) + ($resumen['SinEstado'] ?? 0);
+$noCompletadas = ($resumen['RE'] ?? 0) + ($resumen['SinEstado'] ?? 0);
+
+$count_sql = "SELECT COUNT(*) AS total FROM custinvoicejour $where";
+$count_stmt = sqlsrv_query($conn, $count_sql, $params);
+$total_rows = sqlsrv_fetch_array($count_stmt)['total'] ?? 0;
+$total_pages = $total_rows > 0 ? ceil($total_rows / $limit) : 1;
+
+$sql = "
+SELECT
+    Factura, Fecha, Validar AS Estado, Transportista, Fecha_scanner AS Recepcion_ALM,
+    Usuario AS Usuario_ALM, recepcion AS Recepcion_CC, Usuario_de_recepcion AS Usuario_CC, zona AS Localizacion
+FROM custinvoicejour
+$where
+ORDER BY Fecha DESC
+OFFSET $offset ROWS FETCH NEXT $limit ROWS ONLY
+";
+$stmt = sqlsrv_query($conn, $sql, $params);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Iniciar Sesión ✨</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reporte de Facturas ✨</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --danger-color: #dc3545;
-        }
-
         body {
             font-family: 'Poppins', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #fff;
-            /* Fondo animado de gradiente */
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background: linear-gradient(-45deg, #ff0000ff, #cb1717ef, #bb1b1bff, #751010ff);
             background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            animation: gradientBG 20s ease infinite;
+            color: #fff;
+            padding: 1rem;
         }
 
         @keyframes gradientBG {
@@ -155,127 +141,222 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
             100% { background-position: 0% 50%; }
         }
 
-        /* Estilo Glassmorphism para el contenedor de login */
-        .login-container {
-            width: 100%;
-            max-width: 450px;
-            padding: 3rem 2.5rem;
-            background: rgba(255, 255, 255, 0.1);
+        .glass-panel {
+            background: rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease;
-        }
-
-        .login-container:hover {
-            transform: translateY(-5px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
         }
         
-        .login-title {
+        .main-container { display: flex; gap: 1.5rem; align-items: flex-start; }
+        .main-content { flex: 1; }
+        .sidebar { width: 350px; position: sticky; top: 1.5rem; }
+
+        .resumen-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-resumen {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 1rem;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            border-top: 4px solid #fff; /* Borde superior siempre blanco */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-resumen:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .card-resumen .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #fff; /* Icono siempre blanco */
+            transition: transform 0.3s ease;
+        }
+        .card-resumen:hover .icon { transform: scale(1.1); }
+        .card-resumen h5 { font-size: 0.9rem; font-weight: 400; margin-bottom: 0.25rem; opacity: 0.8; }
+        .card-resumen p { font-size: 1.8rem; font-weight: 700; margin: 0; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+
+        .table-container { overflow-x: auto; }
+        .table { 
+            color: #fff; 
+            border-collapse: separate; 
+            border-spacing: 0;
+            width: 100%;
+        }
+        
+        .table thead th {
+            background: rgba(0, 0, 0, 0.4);
             font-weight: 700;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #fff; /* Texto del encabezado siempre blanco */
         }
-
-        .form-control {
-            background-color: rgba(255, 255, 255, 0.2) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        .table td, .table th {
+            vertical-align: middle;
+            padding: 1rem; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .table tbody tr { transition: background-color 0.2s ease-in-out; }
+        .table tbody tr:last-child td { border-bottom: none; }
+        .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
+        
+        .paginacion a { color: #fff; text-decoration: none; }
+        .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); color: #fff; }
+        .paginacion .page-item.active .page-link { 
+            background-color: #fff; /* Fondo blanco para página activa */
+            color: #000; /* Texto negro para máximo contraste */
+            border-color: #fff;
+            font-weight: 700;
+        }
+        .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2);}
+        
+        .form-label { font-weight: 600; opacity: 0.9; }
+        .form-control, .form-select {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff !important;
-            border-radius: 0.5rem;
-            padding-left: 2.5rem; /* Espacio para el ícono */
         }
-
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .form-control:focus {
-            background-color: rgba(255, 255, 255, 0.3) !important;
+        select option { background-color: #212529; }
+        .select2-container--bootstrap-5 .select2-selection {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff !important;
-            border-color: var(--primary-color) !important;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.3);
         }
-
-        /* Contenedor para el ícono dentro del input */
-        .input-group-text {
-            background-color: transparent !important;
-            border: none !important;
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 10;
-            color: rgba(255, 255, 255, 0.8);
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+             color: #fff !important;
         }
-
-        .btn-login {
-            font-weight: 600;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        .select2-dropdown {
+            background-color: #212529;
+            border-color: rgba(255,255,255,0.4);
         }
+        .select2-results__option { color: #fff; }
+        .select2-results__option--highlighted { background-color: rgba(255,255,255,0.2); color: #fff; }
+        .btn-link { color: #fff; text-decoration: none; font-weight: 600; }
+        .btn-link:hover { color: #fff; opacity: 0.8; }
+        .btn-outline-light:hover { background-color: #fff; color: #000; }
 
-        .btn-login:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        @media (max-width: 992px) {
+            body { padding: 0.5rem; }
+            .main-container { flex-direction: column; gap: 1rem; }
+            .sidebar, .main-content { width: 100%; position: static; }
+            .table-container, .paginacion { display: none; }
         }
-
-        .alert-custom {
-            background: rgba(220, 53, 69, 0.25); /* Rojo semi-transparente */
-            border: 1px solid rgba(220, 53, 69, 0.5);
-            color: #fff;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-        }
-
     </style>
 </head>
 <body>
-    
-<div class="login-container animate__animated animate__fadeInUp">
-    <form method="POST" action="">
+<div class="main-container">
+    <aside class="sidebar glass-panel animate__animated animate__fadeInLeft">
         <div class="text-center mb-4">
-             <img src="IMG/LOGO MC - NEGRO.png" class="img-fluid mb-3" alt="LOGO" style="max-width: 150px;">
-             <h1 class="h3 mb-3 login-title">Bienvenido</h1>
+            <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 300px; height: auto;">
+            <h4 class="mt-3 mb-0">Filtros de Búsqueda</h4>
         </div>
-
-        <?php if (!empty($errorLogin)): ?>
-            <div class="alert alert-custom text-center" role="alert">
-                <i class="fa-solid fa-circle-exclamation me-2"></i><?= htmlspecialchars($errorLogin) ?>
+        <form id="filtroForm" method="get" autocomplete="off">
+            <div class="row g-3">
+                <div class="col-6"><label for="desde" class="form-label">Desde:</label><input type="date" id="desde" name="desde" value="<?= htmlspecialchars($desde) ?>" class="form-control"></div>
+                <div class="col-6"><label for="hasta" class="form-label">Hasta:</label><input type="date" id="hasta" name="hasta" value="<?= htmlspecialchars($hasta) ?>" class="form-control"></div>
+                <div class="col-12"><label for="estado" class="form-label">Estado:</label><select id="estado" name="estado" class="form-select"><option value="">Todos</option><option value="Completada" <?= $estado === 'Completada' ? 'selected' : '' ?>>Completada</option><option value="RE" <?= $estado === 'RE' ? 'selected' : '' ?>>RE</option><option value="vacio" <?= $estado === 'vacio' ? 'selected' : '' ?>>Sin Estado</option></select></div>
+                <div class="col-12"><label for="transportista" class="form-label">Transportista:</label><select id="listaTransportistas" name="transportista" class="form-select"><option value="">Todos</option><?php foreach ($transportistas as $t): ?><option value="<?= htmlspecialchars($t) ?>" <?= $filtroTransportista === $t ? 'selected' : '' ?>><?= htmlspecialchars($t) ?></option><?php endforeach; ?></select></div>
+                <div class="col-12"><label for="usuario" class="form-label">Usuario ALM:</label><select id="usuario" name="usuario" class="form-select"><option value="">Todos</option><?php foreach ($usuarios as $u): ?><option value="<?= htmlspecialchars($u) ?>" <?= $usuario === $u ? 'selected' : '' ?>><?= htmlspecialchars($u) ?></option><?php endforeach; ?></select></div>
+                <div class="col-12"><label for="zona" class="form-label">Localización:</label><select id="zona" name="zona" class="form-select"><option value="">Todas</option><?php foreach ($zonas as $z): ?><option value="<?= htmlspecialchars($z) ?>" <?= $zona === $z ? 'selected' : '' ?>><?= htmlspecialchars($z) ?></option><?php endforeach; ?></select></div>
+                <div class="col-12"><label for="factura" class="form-label">Factura:</label><input type="text" id="factura" name="factura" value="<?= htmlspecialchars($buscarFactura) ?>" class="form-control" placeholder="Buscar por número"></div>
+                <div class="col-12"><label for="prefijo" class="form-label">Prefijo:</label><select id="prefijo" name="prefijo" class="form-select"><option value="">Todos</option><option value="NC" <?= $prefijo === 'NC' ? 'selected' : '' ?>>Solo NC</option><option value="FT" <?= $prefijo === 'FT' ? 'selected' : '' ?>>Solo FT</option></select></div>
+                <div class="col-12"><div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" id="entregadasCC" name="entregadasCC" value="1" <?= $entregadasCC ? 'checked' : '' ?>><label class="form-check-label" for="entregadasCC">Entregadas a CxC</label></div></div>
             </div>
-        <?php endif; ?>
+            <div class="d-grid gap-2 mt-4">
+                 <a href="BI.php" class="btn btn-outline-light w-100">Limpiar Filtros</a>
+            </div>
+             <div class="mt-4 text-center">
+                 <a href="<?= htmlspecialchars($_SESSION['pagina_anterior']) ?>" class="btn btn-link"><i class="fa-solid fa-arrow-left me-1"></i> Volver</a> | 
+                 <a href="../Logica/logout.php" class="btn btn-link">Cerrar Sesión <i class="fa-solid fa-right-from-bracket"></i></a>
+             </div>
+             <input type="hidden" name="page" value="1">
+        </form>
+    </aside>
 
-        <div class="position-relative mb-3">
-            <i class="fa fa-user input-group-text"></i>
-            <input type="text" name="usuario" class="form-control" placeholder="Usuario" required autocomplete="username" />
+    <main class="main-content glass-panel animate__animated animate__fadeInRight">
+        <h2 class="mb-4">Reporte de Facturas</h2>
+        
+        <div class="resumen-grid">
+            <div class="card-resumen animate__animated animate__zoomIn"><div class="icon"><i class="fa-solid fa-file-invoice"></i></div><h5>Total Facturas</h5><p><?= number_format($totalFacturas) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.1s;"><div class="icon"><i class="fa-solid fa-check-circle"></i></div><h5>Completadas</h5><p><?= number_format($resumen['Completadas'] ?? 0) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.2s;"><div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div><h5>No Completadas</h5><p><?= number_format($noCompletadas) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.3s;"><div class="icon"><i class="fa-solid fa-building-columns"></i></div><h5>Entregadas a CxC</h5><p><?= number_format($resumen['EntregadasCC'] ?? 0) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.4s;"><div class="icon"><i class="fa-solid fa-file-lines"></i></div><h5>Notas de Crédito</h5><p><?= number_format($resumen['NC'] ?? 0) ?></p></div>
+        </div>
+
+        <div class="table-container">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr><th>Fecha</th><th>Factura</th><th>Estado</th><th>Transportista</th><th>Recepción ALM</th><th>Usuario ALM</th><th>Recepción CC</th><th>Usuario CC</th><th>Localización</th></tr>
+                </thead>
+                <tbody>
+                    <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
+                    <tr>
+                        <td><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
+                        <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
+                        <td><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i') ?></td>
+                        <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
+                        <td><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i') ?></td>
+                        <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
+                    </tr>
+                    <?php endwhile; else: ?>
+                    <tr><td colspan="9" class="text-center py-4">No se encontraron resultados para los filtros seleccionados.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
         
-        <div class="position-relative mb-4">
-            <i class="fa fa-lock input-group-text"></i>
-            <input type="password" name="password" class="form-control" placeholder="Contraseña" required autocomplete="current-password" />
-        </div>
-        
-        <button type="submit" class="btn btn-login w-100">
-            <i class="fa-solid fa-right-to-bracket me-2"></i>Iniciar sesión
-        </button>
-    </form>
+        <?php if ($total_rows > $limit): ?>
+        <nav class="paginacion mt-4 d-flex justify-content-center">
+            <ul class="pagination">
+                <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>"><a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">&laquo;</a></li>
+                <li class="page-item active"><span class="page-link">Pág. <?= $page ?> de <?= $total_pages ?></span></li>
+                <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>"><a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">&raquo;</a></li>
+            </ul>
+        </nav>
+        <?php endif; ?>
+    </main>
 </div>
 
-<script>
-    // Script para forzar la recarga de la página y evitar problemas de caché al usar el botón "atrás" del navegador.
-    window.addEventListener("pageshow", function(event) {
-        var historyTraversal = event.persisted || 
-                               (typeof window.performance != "undefined" && 
-                                window.performance.navigation.type === 2);
-        if (historyTraversal) {
-            window.location.reload(true);
-        }
-    });
-</script>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// --- JAVASCRIPT SIN CAMBIOS ---
+$(document).ready(function() {
+    function initializeSelect2(selector, placeholderText) {
+        $(selector).select2({
+            placeholder: placeholderText,
+            allowClear: true,
+            theme: 'bootstrap-5'
+        });
+    }
+    initializeSelect2('#listaTransportistas', 'Buscar transportista...');
+    initializeSelect2('#usuario', 'Buscar usuario...');
+    initializeSelect2('#zona', 'Buscar localización...');
+
+    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"]').on('change', function() {
+        $('input[name="page"]').val(1); 
+        $('#filtroForm').submit();
+    });
+
+    let searchTimeout;
+    $('#filtroForm input[type="text"]').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            $('input[name="page"]').val(1); 
+            $('#filtroForm').submit();
+        }, 500);
+    });
+});
+</script>
 </body>
 </html>
