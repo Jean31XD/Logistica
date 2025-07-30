@@ -1,6 +1,7 @@
-<?php    
+<?php   
 ini_set('session.cookie_lifetime', 0); 
 ini_set('session.gc_maxlifetime', 1800); 
+
 session_start();
 
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -9,7 +10,9 @@ header("Expires: 0");
 
 require_once __DIR__ . '/conexionBD/conexion.php';
 
+
 $errorLogin = "";
+
 $tiempo_espera = 1 * 60; 
 
 if (!isset($_SESSION['intentos_login'])) {
@@ -40,20 +43,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (sqlsrv_execute($stmt)) {
             if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 if (password_verify($password, $row['password'])) {
+                    // Autenticación exitosa
                     session_regenerate_id(true);
                     $_SESSION['usuario'] = $row['usuario'];
                     $_SESSION['pantalla'] = $row['pantalla'];
                     $_SESSION['intentos_login'] = 0;
 
+                    // Redirige según la pantalla
                     switch ($row['pantalla']) {
-                        case 0: header("Location: View/Admin.php"); break;
-                        case 1: header("Location: View/Inicio.php"); break;
-                        case 2: header("Location: View/facturas.php"); break;
-                        case 3: header("Location: View/CXC.php"); break;
-                        case 4: header("Location: View/Reporte.php"); break;
-                        case 5: header("Location: View/Paneladmin.php"); break;
-                        case 6: header("Location: View/BI.php"); break;
-                    }
+                        case 0:
+                            header("Location: View/Admin.php"); break;
+                        case 1:
+                            header("Location: View/Inicio.php"); break;
+                        case 2:
+                            header("Location: View/facturas.php"); break;
+                        case 3:
+                            header("Location: View/CXC.php"); break;
+                            case 4:
+                            header("Location: View/Reporte.php"); break;
+                            case 5:
+                            header("Location: View/Paneladmin.php"); break;
+                            case 6:
+                            header("Location: View/BI.php"); break;
+                                                }
                     exit();
                 } else {
                     $_SESSION['intentos_login']++;
@@ -76,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 ?>
 
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -86,74 +98,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="View/styles.css"/>
     <title>Iniciar sesión</title>
-    
-    <!-- 🎯 Fondo cuadrícula animada -->
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            overflow: hidden;
-        }
-
-        .grid-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-wrap: wrap;
-            z-index: 1;
-        }
-
-        .grid-background span {
-            position: relative;
-            display: block;
-            width: calc(6.25vw - 2px);
-            height: calc(6.25vw - 2px);
-            background: #181818;
-            z-index: 2;
-            transition: 1.5s;
-        }
-
-        .grid-background span:hover {
-            background: #f00;
-            transition: 0s;
-        }
-
-        #container {
-            position: relative;
-            z-index: 3;
-        }
-
-        .form-container {
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
-            border-radius: 10px;
-            background: rgba(34, 34, 34, 0.9); /* semi-transparente para que se vea el fondo */
-            padding: 30px;
-        }
-    </style>
 </head>
 <body>
+    
 
-<!-- 🎯 Fondo animado -->
-<section class="grid-background">
-    <?php for ($i = 0; $i < 400; $i++): ?>
-        <span></span>
-    <?php endfor; ?>
-</section>
-
-<!-- 🎯 Login -->
 <div class="container" id="container">
     <div class="form-container sign-in">
         <form method="POST" action="">
-            <img src="IMG/LOGO MC - NEGRO.png" class="img-fluid mb-4" alt="LOGO">
+            <img src="IMG\LOGO MC - NEGRO.png" class="img-fluid mb-4" alt="LOGO">
+
             <?php if (!empty($errorLogin)): ?>
                 <div class="alert alert-danger mt-3" role="alert">
                     <?= htmlspecialchars($errorLogin) ?>
                 </div>
             <?php endif; ?>
+
             <input type="text" name="usuario" placeholder="Nombre" required />
             <input type="password" name="password" placeholder="Contraseña" required />
             <button type="submit" class="btnLog btn btn-danger">Iniciar sesión</button>
@@ -164,6 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $numeros = array_rand(array_flip(range(1, 7)), 7);
     $imagenes = array_map(fn($n) => "IMG/{$n}.jpg", $numeros);
     ?>
+
     <div class="toggle-container">
         <div class="toggle">
             <div class="toggle-panel toggle-right border bg-white p-1 rounded" style="height: 100%;">
@@ -182,12 +142,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 
 <script>
+ 
     window.addEventListener("pageshow", function(event) {
-        if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
-            window.location.reload(true);
-        }
-    });
+    if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+        window.location.reload(true);
+    }
+});
+
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
