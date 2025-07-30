@@ -65,229 +65,195 @@ if (isset($_GET['cedula'])) {
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Gestión de Transportistas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Gestión de Transportistas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #f5f7fa, #c3cfe2);
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- FontAwesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- Animate.css -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-  <!-- AOS -->
-  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-  <!-- SweetAlert2 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+            color: #007bff;
+            animation: fadeInDown 1s;
+        }
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Montserrat', sans-serif;
-    }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            transition: 0.3s ease-in-out;
+            animation: fadeInUp 1s;
+        }
 
-    html, body {
-      height: 100%;
-      background: #f5f5f5;
-      overflow-x: hidden;
-    }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
 
-    .grid-background {
-      position: fixed;
-      top: 0;
-      left: 0;
-      display: flex;
-      flex-wrap: wrap;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
+        .alert {
+            animation: fadeIn 0.5s;
+        }
 
-    .grid-background span {
-      display: block;
-      width: calc(6.25vw - 2px);
-      height: calc(6.25vw - 2px);
-      background: #eaeaea;
-      transition: 1.5s;
-    }
+        input.form-control {
+            transition: 0.3s;
+        }
 
-    .grid-background span:hover {
-      background: #f00;
-      transition: 0s;
-    }
+        input.form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 10px #007bff33;
+        }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      background: #ffffffdd;
-      border-radius: 12px;
-      padding: 40px;
-      color: #000;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    }
+        button {
+            transition: transform 0.2s ease;
+        }
 
-    input, button {
-      font-size: 14px;
-    }
-  </style>
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 <body>
 
-<!-- Fondo animado -->
-<section class="grid-background">
-  <?php for ($i = 0; $i < 400; $i++) echo "<span></span>"; ?>
-</section>
-
 <div class="container mt-5">
-  <h1 class="text-center mb-4 animate__animated animate__fadeInDown">Gestión de Transportistas</h1>
+    <h1><i class="fa-solid fa-truck-moving me-2"></i>Gestión de Transportistas</h1>
 
-  <?php
-  $mensaje = "";
-  $tipo = ""; // success, warning, error
-  $datosConsultados = null;
-
-  if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET") {
-      $accion = $_POST['accion'] ?? '';
-      $cedula = $_POST['cedula'] ?? $_GET['cedula'] ?? '';
-
-      if ($accion === 'insertar') {
-          $mensaje = "Transportista agregado correctamente.";
-          $tipo = "success";
-      } elseif ($accion === 'actualizar') {
-          $mensaje = "Transportista actualizado correctamente.";
-          $tipo = "warning";
-      } elseif ($accion === 'eliminar') {
-          $mensaje = "Transportista eliminado correctamente.";
-          $tipo = "error";
-      } elseif (!empty($cedula)) {
-          $datosConsultados = [
-              'nombre' => 'Juan Pérez',
-              'cedula' => $cedula,
-              'empresa' => 'Transporte XYZ',
-              'rnc' => '123456789',
-              'matricula' => 'AB1234'
-          ];
-          $mensaje = "Consulta realizada correctamente.";
-          $tipo = "info";
-      }
-  }
-  ?>
-
-  <div class="accordion" id="accordionTransportistas">
-    <!-- Agregar -->
-    <div class="accordion-item" data-aos="fade-up">
-      <h2 class="accordion-header" id="headingAgregar">
-        <button class="accordion-button bg-success text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAgregar" aria-expanded="false" aria-controls="collapseAgregar">
-          ➕ Agregar Transportista
-        </button>
-      </h2>
-      <div id="collapseAgregar" class="accordion-collapse collapse" aria-labelledby="headingAgregar" data-bs-parent="#accordionTransportistas">
-        <div class="accordion-body">
-          <form method="POST">
-            <input type="hidden" name="accion" value="insertar">
-            <div class="row g-3">
-              <div class="col-md-6"><input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required></div>
-              <div class="col-md-6"><input type="text" name="cedula" class="form-control" placeholder="Cédula" required></div>
-              <div class="col-md-4"><input type="text" name="empresa" class="form-control" placeholder="Empresa" required></div>
-              <div class="col-md-4"><input type="text" name="rnc" class="form-control" placeholder="RNC" required></div>
-              <div class="col-md-4"><input type="text" name="matricula" class="form-control" placeholder="Matrícula" required></div>
-            </div>
-            <div class="mt-3 text-end">
-              <button type="submit" class="btn btn-success"><i class="fa fa-plus-circle me-1"></i>Agregar</button>
-            </div>
-          </form>
+    <?php if (!empty($mensaje)): ?>
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($mensaje) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-      </div>
+    <?php endif; ?>
+
+    <!-- Agregar -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white fw-bold">➕ Agregar Transportista</div>
+        <div class="card-body">
+            <form method="POST">
+                <input type="hidden" name="accion" value="insertar">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="cedula" class="form-control" placeholder="Cédula" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="empresa" class="form-control" placeholder="Empresa" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="rnc" class="form-control" placeholder="RNC" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="matricula" class="form-control" placeholder="Matrícula" required>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button type="submit" class="btn btn-success"><i class="fa fa-plus-circle me-1"></i>Agregar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Consultar -->
-    <div class="accordion-item" data-aos="fade-up" data-aos-delay="100">
-      <h2 class="accordion-header" id="headingConsultar">
-        <button class="accordion-button bg-primary text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsultar" aria-expanded="false" aria-controls="collapseConsultar">
-          🔎 Consultar Transportista
-        </button>
-      </h2>
-      <div id="collapseConsultar" class="accordion-collapse collapse" aria-labelledby="headingConsultar" data-bs-parent="#accordionTransportistas">
-        <div class="accordion-body">
-          <form method="GET" class="row g-3">
-            <div class="col-md-8"><input type="text" name="cedula" class="form-control" placeholder="Cédula a consultar" required></div>
-            <div class="col-md-4"><button type="submit" class="btn btn-outline-light bg-primary"><i class="fa fa-search me-1"></i>Consultar</button></div>
-          </form>
-          <?php if ($datosConsultados): ?>
-            <hr>
-            <div class="alert alert-secondary animate__animated animate__fadeIn">
-              <strong>Resultado:</strong><br>
-              <pre><?= print_r($datosConsultados, true) ?></pre>
-            </div>
-          <?php endif; ?>
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white fw-bold">🔎 Consultar Transportista</div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" name="cedula" class="form-control" placeholder="Cédula a consultar" required>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-light bg-primary"><i class="fa fa-search me-1"></i>Consultar</button>
+                </div>
+            </form>
+
+            <?php if ($datosConsultados): ?>
+                <hr>
+                <h5 class="text-secondary">Resultado:</h5>
+                <pre><?= print_r($datosConsultados, true) ?></pre>
+            <?php endif; ?>
         </div>
-      </div>
     </div>
 
     <!-- Actualizar -->
-    <div class="accordion-item" data-aos="fade-up" data-aos-delay="200">
-      <h2 class="accordion-header" id="headingActualizar">
-        <button class="accordion-button bg-warning text-dark fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActualizar" aria-expanded="false" aria-controls="collapseActualizar">
-          ✏️ Actualizar Transportista
-        </button>
-      </h2>
-      <div id="collapseActualizar" class="accordion-collapse collapse" aria-labelledby="headingActualizar" data-bs-parent="#accordionTransportistas">
-        <div class="accordion-body">
-          <form method="POST">
-            <input type="hidden" name="accion" value="actualizar">
-            <div class="row g-3">
-              <div class="col-md-6"><input type="text" name="nombre" class="form-control" placeholder="Nuevo Nombre" required></div>
-              <div class="col-md-6"><input type="text" name="cedula" class="form-control" placeholder="Cédula (clave)" required></div>
-              <div class="col-md-4"><input type="text" name="empresa" class="form-control" placeholder="Nueva Empresa" required></div>
-              <div class="col-md-4"><input type="text" name="rnc" class="form-control" placeholder="Nuevo RNC" required></div>
-              <div class="col-md-4"><input type="text" name="matricula" class="form-control" placeholder="Nueva Matrícula" required></div>
-            </div>
-            <div class="mt-3 text-end">
-              <button type="submit" class="btn btn-warning"><i class="fa fa-pen me-1"></i>Actualizar</button>
-            </div>
-          </form>
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark fw-bold">✏️ Actualizar Transportista</div>
+        <div class="card-body">
+            <form method="POST">
+                <input type="hidden" name="accion" value="actualizar">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" name="nombre" class="form-control" placeholder="Nuevo Nombre" required>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="cedula" class="form-control" placeholder="Cédula (clave)" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="empresa" class="form-control" placeholder="Nueva Empresa" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="rnc" class="form-control" placeholder="Nuevo RNC" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="matricula" class="form-control" placeholder="Nueva Matrícula" required>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button type="submit" class="btn btn-warning"><i class="fa fa-pen me-1"></i>Actualizar</button>
+                </div>
+            </form>
         </div>
-      </div>
     </div>
 
     <!-- Eliminar -->
-    <div class="accordion-item" data-aos="fade-up" data-aos-delay="300">
-      <h2 class="accordion-header" id="headingEliminar">
-        <button class="accordion-button bg-danger text-white fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEliminar" aria-expanded="false" aria-controls="collapseEliminar">
-          🗑️ Eliminar Transportista
-        </button>
-      </h2>
-      <div id="collapseEliminar" class="accordion-collapse collapse" aria-labelledby="headingEliminar" data-bs-parent="#accordionTransportistas">
-        <div class="accordion-body">
-          <form method="POST" class="row g-3">
-            <input type="hidden" name="accion" value="eliminar">
-            <div class="col-md-8"><input type="text" name="cedula" class="form-control" placeholder="Cédula a eliminar" required></div>
-            <div class="col-md-4"><button type="submit" class="btn btn-danger"><i class="fa fa-trash me-1"></i>Eliminar</button></div>
-          </form>
+    <div class="card mb-5">
+        <div class="card-header bg-danger text-white fw-bold">🗑️ Eliminar Transportista</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="accion" value="eliminar">
+                <div class="col-md-8">
+                    <input type="text" name="cedula" class="form-control" placeholder="Cédula a eliminar" required>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-danger"><i class="fa fa-trash me-1"></i>Eliminar</button>
+                </div>
+            </form>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-  AOS.init();
-  <?php if (!empty($mensaje)): ?>
-    Swal.fire({
-      title: "<?= $mensaje ?>",
-      icon: "<?= $tipo ?>",
-      confirmButtonText: "OK",
-      confirmButtonColor: "#3085d6"
-    });
-  <?php endif; ?>
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
