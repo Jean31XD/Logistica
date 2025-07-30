@@ -164,10 +164,26 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         .card-resumen p { font-size: 1.75rem; font-weight: 700; margin: 0; }
         
         .table-container { overflow-x: auto; }
-        .table { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
-        .table thead th { background: rgba(0, 0, 0, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+        .table { color: #fff; border-collapse: separate; border-spacing: 0; }
+        
+        /* --- Estilos de Tabla Mejorados --- */
+        .table thead th {
+            background: rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .table td, .table th {
+            vertical-align: middle;
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .table tbody tr:last-child td {
+             border-bottom: none; /* Evita doble borde al final */
+        }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-        .table td, .table th { vertical-align: middle; }
+        /* --- Fin de Estilos de Tabla Mejorados --- */
 
         .paginacion a { color: #fff; text-decoration: none; }
         .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); }
@@ -208,14 +224,13 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <div class="col-12"><div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" id="entregadasCC" name="entregadasCC" value="1" <?= $entregadasCC ? 'checked' : '' ?>><label class="form-check-label" for="entregadasCC">Entregadas a CxC</label></div></div>
             </div>
             <div class="d-grid gap-2 mt-4">
-                 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter me-2"></i>Aplicar Filtros</button>
-                 <a href="Reporte.php" class="btn btn-outline-light btn-sm">Limpiar Filtros</a>
+                 <a href="Reporte.php" class="btn btn-outline-light w-100">Limpiar Filtros</a>
             </div>
              <div class="mt-4 text-center">
-                <a href="<?= htmlspecialchars($_SESSION['pagina_anterior']) ?>" class="btn btn-link"><i class="fa-solid fa-arrow-left me-1"></i> Volver</a> | 
-                <a href="../Logica/logout.php" class="btn btn-link">Cerrar Sesión <i class="fa-solid fa-right-from-bracket"></i></a>
-            </div>
-            <input type="hidden" name="page" value="1">
+                 <a href="<?= htmlspecialchars($_SESSION['pagina_anterior']) ?>" class="btn btn-link"><i class="fa-solid fa-arrow-left me-1"></i> Volver</a> | 
+                 <a href="../Logica/logout.php" class="btn btn-link">Cerrar Sesión <i class="fa-solid fa-right-from-bracket"></i></a>
+             </div>
+             <input type="hidden" name="page" value="1">
         </form>
     </aside>
 
@@ -283,10 +298,13 @@ $(document).ready(function() {
     initializeSelect2('#usuario', 'Buscar usuario...');
     initializeSelect2('#zona', 'Buscar localización...');
 
-    // No se necesita el submit en el change si hay un botón de aplicar
-    // $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"]').on('change', function() {
-    //     $('#filtroForm').submit();
-    // });
+    // --- Funcionalidad de auto-filtrado ---
+    // Activa el filtro al cambiar cualquier control del formulario
+    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"], #filtroForm input[type="text"]').on('change', function() {
+        // Al aplicar un nuevo filtro, siempre vuelve a la página 1 para evitar resultados vacíos
+        $('input[name="page"]').val(1); 
+        $('#filtroForm').submit();
+    });
 });
 </script>
 </body>
