@@ -1,23 +1,4 @@
-¡Claro\! Aquí tienes una versión mejorada de tu código. He incorporado una librería de animaciones, un diseño más moderno y creativo estilo "glassmorphism" que abarca toda la pantalla, y he reorganizado los elementos para un mejor aprovechamiento del espacio.
 
-### Resumen de los cambios:
-
-1.  **Librería de Animación:** Se agregó **Animate.css** para animaciones más fluidas y variadas.
-2.  **Diseño y Estilo (CSS):**
-      * **Fondo Animado:** El fondo ahora es un gradiente animado que se mueve sutilmente, cubriendo toda la pantalla (`100vh`).
-      * **Efecto "Glassmorphism":** Las tarjetas tienen un fondo semitransparente y desenfocado que les da un aspecto de "vidrio esmerilado", una tendencia de diseño moderna.
-      * **Tipografía:** Se incluyó la fuente "Poppins" de Google Fonts para un aspecto más limpio y profesional.
-      * **Layout:** Se utiliza un sistema de rejilla (`row` y `col-lg-6`) para que en pantallas grandes los formularios se muestren en dos columnas, aprovechando mejor el espacio. En pantallas pequeñas, se apilan verticalmente.
-3.  **Estructura (HTML):**
-      * Se cambió el `container` por `container-fluid` para que el contenido ocupe todo el ancho.
-      * Se aplicaron clases de `Animate.css` a los elementos para que aparezcan con efectos de entrada.
-      * Se ajustó el formulario de consulta para que el resultado se muestre de forma más limpia y estilizada en lugar de un `print_r` sin formato.
-
------
-
-### Código Actualizado
-
-```php
 <?php
 // --- INICIO DEL CÓDIGO PHP (SIN CAMBIOS EN LA LÓGICA) ---
 function conectarBD()
