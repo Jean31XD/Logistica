@@ -238,7 +238,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
 <div class="login-container animate__animated animate__fadeInUp">
     <form method="POST" action="">
         <div class="text-center mb-4">
-             <img src="IMG/LOGO MC - NEGRO.png" class="img-fluid mb-3" alt="LOGO" style="max-width: 150px;">
+             <img src="IMG/LOGO MC - NEGRO.png" class="img-fluid mb-3" alt="LOGO" style="max-width: 300px;">
              <h1 class="h3 mb-3 login-title">Bienvenido</h1>
         </div>
 
