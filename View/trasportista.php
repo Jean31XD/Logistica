@@ -88,6 +88,7 @@ if (isset($_GET['cedula'])) {
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
             transition: 0.3s ease-in-out;
             animation: fadeInUp 1s;
+            margin: 10px; /* Espaciado entre tarjetas */
         }
 
         .card:hover {
