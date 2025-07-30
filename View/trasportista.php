@@ -68,7 +68,7 @@ if (isset($_GET['cedula'])) {
   <meta charset="UTF-8">
   <title>Gestión de Transportistas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- FontAwesome -->
@@ -77,7 +77,9 @@ if (isset($_GET['cedula'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
   <!-- AOS -->
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-  
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
   <style>
     * {
       margin: 0;
@@ -142,22 +144,24 @@ if (isset($_GET['cedula'])) {
 <div class="container mt-5">
   <h1 class="text-center mb-4 animate__animated animate__fadeInDown">Gestión de Transportistas</h1>
 
-  <!-- Procesamiento PHP -->
   <?php
-  // Aquí conectarías a tu base de datos si es necesario
-
+  $mensaje = "";
+  $tipo = ""; // success, warning, error
   $datosConsultados = null;
 
-  if ($_SERVER["REQUEST_METHOD"] == "POST" || $_SERVER["REQUEST_METHOD"] == "GET") {
+  if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET") {
       $accion = $_POST['accion'] ?? '';
       $cedula = $_POST['cedula'] ?? $_GET['cedula'] ?? '';
 
       if ($accion === 'insertar') {
-          echo '<div class="alert alert-success">✅ Transportista agregado correctamente.</div>';
+          $mensaje = "Transportista agregado correctamente.";
+          $tipo = "success";
       } elseif ($accion === 'actualizar') {
-          echo '<div class="alert alert-warning">✏️ Transportista actualizado correctamente.</div>';
+          $mensaje = "Transportista actualizado correctamente.";
+          $tipo = "warning";
       } elseif ($accion === 'eliminar') {
-          echo '<div class="alert alert-danger">🗑️ Transportista eliminado correctamente.</div>';
+          $mensaje = "Transportista eliminado correctamente.";
+          $tipo = "error";
       } elseif (!empty($cedula)) {
           $datosConsultados = [
               'nombre' => 'Juan Pérez',
@@ -166,12 +170,13 @@ if (isset($_GET['cedula'])) {
               'rnc' => '123456789',
               'matricula' => 'AB1234'
           ];
+          $mensaje = "Consulta realizada correctamente.";
+          $tipo = "info";
       }
   }
   ?>
 
   <div class="accordion" id="accordionTransportistas">
-
     <!-- Agregar -->
     <div class="accordion-item" data-aos="fade-up">
       <h2 class="accordion-header">
@@ -272,8 +277,18 @@ if (isset($_GET['cedula'])) {
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   AOS.init();
+
+  <?php if (!empty($mensaje)): ?>
+    Swal.fire({
+      title: "<?= $mensaje ?>",
+      icon: "<?= $tipo ?>",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#3085d6"
+    });
+  <?php endif; ?>
 </script>
 
 </body>
