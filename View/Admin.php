@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #cf8888ff, #d09696ff, #d09696ff, #d09696ff);
+            background: linear-gradient(-45deg, #cf8888ff, #e14646ff, #6d5656ff, #d33939ff);
             background-size: 400% 400%;
             animation: gradientBG 20s ease infinite;
             min-height: 100vh;
