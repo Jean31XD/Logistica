@@ -235,7 +235,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         .select2-results__option--highlighted { background-color: #0d6efd; color: #fff; }
         .btn-link { color: #fff; }
 
-        /* --- MEJORA: ESTILOS RESPONSIVOS --- */
+        /* --- ESTILOS RESPONSIVOS --- */
         @media (max-width: 992px) {
             body {
                 padding: 0.5rem;
@@ -248,43 +248,9 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 width: 100%;
                 position: static;
             }
-            .table-container {
-                overflow-x: hidden; /* Ocultamos el scroll horizontal en la vista de tarjetas */
-            }
-            .table thead {
-                display: none; /* Ocultamos la cabecera original en móviles */
-            }
-            .table, .table tbody, .table tr, .table td {
-                display: block;
-                width: 100%;
-            }
-            .table tr {
-                margin-bottom: 1rem;
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                border-radius: 0.75rem;
-                background: rgba(0, 0, 0, 0.1);
-                padding: 0.5rem 0;
-            }
-            .table td {
-                text-align: right;
-                padding: 0.75rem 1rem;
-                padding-left: 50%;
-                position: relative;
-                border: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            }
-            .table tr:last-child td:last-child, .table td:last-child {
-                border-bottom: none;
-            }
-            .table td::before {
-                content: attr(data-label);
-                position: absolute;
-                left: 1rem;
-                width: calc(50% - 2rem);
-                text-align: left;
-                font-weight: 600;
-                opacity: 0.8;
-                white-space: nowrap;
+            /* --- MEJORA: Ocultar tabla y paginación en móviles --- */
+            .table-container, .paginacion {
+                display: none;
             }
         }
     </style>
@@ -338,15 +304,15 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <tbody>
                     <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
                     <tr>
-                        <td data-label="Fecha"><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
-                        <td data-label="Factura"><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
-                        <td data-label="Estado"><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
-                        <td data-label="Transportista"><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
-                        <td data-label="Recepción ALM"><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i') ?></td>
-                        <td data-label="Usuario ALM"><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
-                        <td data-label="Recepción CC"><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i') ?></td>
-                        <td data-label="Usuario CC"><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
-                        <td data-label="Localización"><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
+                        <td><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
+                        <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
+                        <td><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i') ?></td>
+                        <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
+                        <td><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i') ?></td>
+                        <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
                     </tr>
                     <?php endwhile; else: ?>
                     <tr><td colspan="9" class="text-center py-4">No se encontraron resultados para los filtros seleccionados.</td></tr>
@@ -388,15 +354,13 @@ $(document).ready(function() {
         $('#filtroForm').submit();
     });
 
-    // Se cambió el evento para el campo de texto de 'change' a 'keyup' para una búsqueda más dinámica, 
-    // pero se retrasa para no enviar una petición en cada pulsación.
     let searchTimeout;
     $('#filtroForm input[type="text"]').on('keyup', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             $('input[name="page"]').val(1); 
             $('#filtroForm').submit();
-        }, 500); // 500ms de retraso
+        }, 500);
     });
 });
 </script>
