@@ -208,7 +208,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <div class="main-container">
     <aside class="sidebar glass-panel animate__animated animate__fadeInLeft">
         <div class="text-center mb-4">
-            <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 150px; height: auto;">
+            <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 150px; height: auto;">
             <h4 class="mt-3 mb-0">Filtros de Búsqueda</h4>
         </div>
         <form id="filtroForm" method="get" autocomplete="off">
