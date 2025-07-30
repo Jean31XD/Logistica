@@ -120,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Iniciar Sesión</title>
+    <title>Iniciar Sesión </title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -187,7 +187,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
         }
 
         .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(0, 0, 0, 0.7);
         }
 
         .form-control:focus {
@@ -206,7 +206,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
             top: 50%;
             transform: translateY(-50%);
             z-index: 10;
-            color: rgba(0, 0, 0, 0.8);
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .btn-login {
