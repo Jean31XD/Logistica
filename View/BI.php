@@ -164,15 +164,19 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         .card-resumen p { font-size: 1.75rem; font-weight: 700; margin: 0; }
         
         .table-container { overflow-x: auto; }
-        .table { color: #fff; border-collapse: separate; border-spacing: 0; }
+        .table { 
+            color: #fff; 
+            border-collapse: separate; 
+            border-spacing: 0;
+            width: 100%;
+            table-layout: auto;
+        }
         
-        /* --- Estilos de Tabla Mejorados --- */
         .table thead th {
             background: rgba(0, 0, 0, 0.4);
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            white-space: nowrap;
         }
         .table td, .table th {
             vertical-align: middle;
@@ -180,17 +184,16 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
         .table tbody tr:last-child td {
-             border-bottom: none; /* Evita doble borde al final */
+             border-bottom: none;
         }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-        /* --- Fin de Estilos de Tabla Mejorados --- */
 
         .paginacion a { color: #fff; text-decoration: none; }
         .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); }
         .paginacion .page-item.active .page-link { background-color: #fff; color: #0d6efd; border-color: #fff;}
         .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2);}
 
-        /* Estilos Sidebar */
+        /* Estilos Sidebar y Menús Desplegables */
         .form-label { font-weight: 600; opacity: 0.9; }
         .form-control, .form-select, .select2-container--bootstrap-5 .select2-selection {
             background-color: rgba(0, 0, 0, 0.2);
@@ -198,7 +201,13 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             color: #fff !important;
         }
         select option { background-color: #343a40; }
-        .select2-dropdown { background-color: #212529; border-color: rgba(255,255,255,0.3);}
+        
+        .select2-dropdown {
+            background-color: #2c3034;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 0.5rem;
+            z-index: 1056; /* Asegura que el menú esté por encima de otros elementos */
+        }
         .select2-results__option { color: #fff; }
         .select2-results__option--highlighted { background-color: #0d6efd; }
         .btn-link { color: #fff; }
@@ -208,7 +217,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <div class="main-container">
     <aside class="sidebar glass-panel animate__animated animate__fadeInLeft">
         <div class="text-center mb-4">
-            <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 150px; height: auto;">
+            <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 150px; height: auto;">
             <h4 class="mt-3 mb-0">Filtros de Búsqueda</h4>
         </div>
         <form id="filtroForm" method="get" autocomplete="off">
@@ -224,7 +233,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <div class="col-12"><div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" id="entregadasCC" name="entregadasCC" value="1" <?= $entregadasCC ? 'checked' : '' ?>><label class="form-check-label" for="entregadasCC">Entregadas a CxC</label></div></div>
             </div>
             <div class="d-grid gap-2 mt-4">
-                 <a href="Reporte.php" class="btn btn-outline-light w-100">Limpiar Filtros</a>
+                 <a href="BI.php" class="btn btn-outline-light w-100">Limpiar Filtros</a>
             </div>
              <div class="mt-4 text-center">
                  <a href="<?= htmlspecialchars($_SESSION['pagina_anterior']) ?>" class="btn btn-link"><i class="fa-solid fa-arrow-left me-1"></i> Volver</a> | 
@@ -298,10 +307,7 @@ $(document).ready(function() {
     initializeSelect2('#usuario', 'Buscar usuario...');
     initializeSelect2('#zona', 'Buscar localización...');
 
-    // --- Funcionalidad de auto-filtrado ---
-    // Activa el filtro al cambiar cualquier control del formulario
     $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"], #filtroForm input[type="text"]').on('change', function() {
-        // Al aplicar un nuevo filtro, siempre vuelve a la página 1 para evitar resultados vacíos
         $('input[name="page"]').val(1); 
         $('#filtroForm').submit();
     });
