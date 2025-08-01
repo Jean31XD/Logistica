@@ -297,7 +297,7 @@ function validarFactura() {
 }
 
 function iniciarInactividad() {
-    const tiempoLimite = 5 * 60 * 1000; // 5 minutos
+    const tiempoLimite = 2 * 60 * 1000; // 2 minutos
     function resetearTemporizador() {
         clearTimeout(temporizador);
         temporizador = setTimeout(() => {
