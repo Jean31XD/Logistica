@@ -396,11 +396,35 @@ $(document).ready(function () {
     });
 
     // 6. Retener ticket
-    $(document).on('click', '.btn-retencion', function () {
-        if ($(this).is(':disabled')) return;
-        manejarRetencion($(this).data('tiket'), this);
-    });
+ function manejarRetencion(tiket, boton) {
+    if (retencionBloqueado[tiket]) return;
+    retencionBloqueado[tiket] = true;
+    $(boton).prop('disabled', true);
+    let contador = retencionClicks[tiket] || 0;
+    if (contador === 0) {
+        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function(response) {
+            retencionClicks[tiket] = 1;
+            $('#row_' + tiket).addClass('table-danger');
+            $('#row_' + tiket + ' .estatus').text('Retención');
+            $(boton).prop('disabled', false);
+            retencionBloqueado[tiket] = false;
+        });
+    } else if (contador === 1) {
+        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function(response) {
+            retencionClicks[tiket] = 2;
+            $('#row_' + tiket).removeClass('table-danger');
+            $('#row_' + tiket + ' .estatus').text('En Proceso');
+            $(boton).prop('disabled', true);
+        });
+    } else {
+        alert("Este botón ya no se puede presionar más.");
+    }
+}
 
+$(document).on('click', '.btn-retencion', function () {
+    let tiket = $(this).data('tiket');
+    manejarRetencion(tiket, this);
+});
     // 7. Lógica del checkbox "Se fue" en el modal de despacho
     $('#seFueCheckbox').on('change', function () {
         const isChecked = this.checked;
