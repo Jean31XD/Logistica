@@ -127,7 +127,7 @@ let lastCheck = 0; // Timestamp de la última revisión
 
 // --- Lógica de actualización inteligente ---
 function actualizarTablaInteligentemente() {
-    $.getJSON('../Logica/obtener_tickets_delta.php', { since: lastCheck }, function(data) {
+    $.getJSON('../Logica/obtener_tickets.php', { since: lastCheck }, function(data) {
         if (data.tickets && data.tickets.length > 0) {
             data.tickets.forEach(ticket => {
                 const existingRow = $(`#row_${ticket.tiket}`);
