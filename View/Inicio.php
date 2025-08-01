@@ -42,11 +42,6 @@ header("Expires: 0");
             padding: 1.5rem;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
         
         /* Panel superior blanco */
         .header-panel {
@@ -307,21 +302,7 @@ $(document).ready(function () {
             return;
         }
 
-            function manejarRetencion(tiket, boton) {
-        if (retencionBloqueado[tiket]) return;
-        retencionBloqueado[tiket] = true;
-        $(boton).prop('disabled', true);
-
-        let contador = retencionClicks[tiket] || 0;
-        let accion = (contador === 0) ? 'insertar' : 'actualizar';
-
-        $.post('../Logica/accion_retencion.php', { tiket, accion }, function(response) {
-            retencionClicks[tiket] = (accion === 'insertar') ? 1 : 2;
-            retencionBloqueado[tiket] = false;
-            // Pedimos los cambios de forma eficiente
-            actualizarTablaInteligentemente();
-        });
-    }
+        
 
         // Enviamos los datos al servidor para la verificación
         $.ajax({
