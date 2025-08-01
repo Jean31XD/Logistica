@@ -1,5 +1,5 @@
 <?php
-// --- INICIO DE LÓGICA PHP (SIN CAMBIOS) ---
+// --- INICIO DE LÓGICA PHP ---
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Strict');
@@ -19,18 +19,6 @@ if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
 if (!isset($_SESSION['pagina_anterior'])) {
     $_SESSION['pagina_anterior'] = $_SERVER['HTTP_REFERER'] ?? 'index.php';
-}
-
-function formatDate($dateValue, $format) {
-    if (empty($dateValue)) {
-        return '';
-    }
-    try {
-        $dateObj = ($dateValue instanceof DateTime) ? $dateValue : new DateTime($dateValue);
-        return $dateObj->format($format);
-    } catch (Exception $e) {
-        return '';
-    }
 }
 
 $filtroTransportista = $_GET['transportista'] ?? '';
@@ -79,7 +67,7 @@ if ($prefijo === 'FT') $where .= " AND Factura LIKE 'FT%'";
 if (!empty($zona)) { $where .= " AND zona = ?"; $params[] = $zona; }
 
 $resumen_sql = "
-SELECT
+SELECT 
     SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
     SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
     SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
@@ -128,11 +116,11 @@ $stmt = sqlsrv_query($conn, $sql, $params);
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #ff0000ff, #cb1717ef, #bb1b1bff, #751010ff);
+            background: linear-gradient(-45deg, #0d6efd, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientBG 20s ease infinite;
             color: #fff;
-            padding: 1rem;
+            padding: 1.5rem;
         }
 
         @keyframes gradientBG {
@@ -142,117 +130,108 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         }
 
         .glass-panel {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 1.5rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            padding: 1.5rem;
+            padding: 2rem;
         }
-        
+
         .main-container { display: flex; gap: 1.5rem; align-items: flex-start; }
         .main-content { flex: 1; }
         .sidebar { width: 350px; position: sticky; top: 1.5rem; }
 
         .resumen-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
 
         .card-resumen {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 1rem;
-            padding: 1.2rem 1rem;
+            padding: 1rem;
             text-align: center;
-            border-top: 4px solid #fff; /* Borde superior siempre blanco */
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .card-resumen:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        .card-resumen .icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            color: #fff; /* Icono siempre blanco */
+            border-top: 4px solid;
             transition: transform 0.3s ease;
         }
-        .card-resumen:hover .icon { transform: scale(1.1); }
-        .card-resumen h5 { font-size: 0.9rem; font-weight: 400; margin-bottom: 0.25rem; opacity: 0.8; }
-        .card-resumen p { font-size: 1.8rem; font-weight: 700; margin: 0; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
-
+        .card-resumen:hover { transform: translateY(-5px); }
+        .card-resumen .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .card-resumen h5 { font-size: 0.9rem; font-weight: 300; margin-bottom: 0.25rem; opacity: 0.8; }
+        .card-resumen p { font-size: 1.75rem; font-weight: 700; margin: 0; }
+        
         .table-container { overflow-x: auto; }
         .table { 
             color: #fff; 
             border-collapse: separate; 
             border-spacing: 0;
             width: 100%;
+            table-layout: auto;
         }
         
         .table thead th {
             background: rgba(0, 0, 0, 0.4);
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #fff; /* Texto del encabezado siempre blanco */
+            letter-spacing: 0.5px;
         }
         .table td, .table th {
             vertical-align: middle;
-            padding: 1rem; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 0.8rem; /* --- MEJORA: Mayor espaciado en celdas --- */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .table tbody tr { transition: background-color 0.2s ease-in-out; }
-        .table tbody tr:last-child td { border-bottom: none; }
+        .table tbody tr:last-child td {
+             border-bottom: none;
+        }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-        
+
         .paginacion a { color: #fff; text-decoration: none; }
-        .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); color: #fff; }
-        .paginacion .page-item.active .page-link { 
-            background-color: #fff; /* Fondo blanco para página activa */
-            color: #000; /* Texto negro para máximo contraste */
-            border-color: #fff;
-            font-weight: 700;
-        }
-        .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.2);}
-        
+        .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); }
+        .paginacion .page-item.active .page-link { background-color: #fff; color: #0d6efd; border-color: #fff;}
+        .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2);}
+
+        /* --- MEJORAS: Estilos Sidebar y Menús Desplegables --- */
         .form-label { font-weight: 600; opacity: 0.9; }
         .form-control, .form-select {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff !important;
         }
-        select option { background-color: #212529; }
         .select2-container--bootstrap-5 .select2-selection {
-            background-color: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.9); /* Fondo claro para legibilidad */
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #000 !important; /* Texto negro */
+            height: auto;
         }
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-             color: #fff !important;
+            color: #000 !important; /* Texto seleccionado en negro */
+            white-space: normal; /* Permite que el texto se divida en líneas */
+            word-break: break-all; /* Rompe palabras largas si es necesario */
         }
+        select option { background-color: #343a40; }
+        
         .select2-dropdown {
-            background-color: #212529;
-            border-color: rgba(255,255,255,0.4);
+            background-color: #f8f9fa; /* Fondo claro */
+            border: 1px solid #6c757d;
+            border-radius: 0.5rem;
+            z-index: 1056;
         }
-        .select2-results__option { color: #fff; }
-        .select2-results__option--highlighted { background-color: rgba(255,255,255,0.2); color: #fff; }
-        .btn-link { color: #fff; text-decoration: none; font-weight: 600; }
-        .btn-link:hover { color: #fff; opacity: 0.8; }
-        .btn-outline-light:hover { background-color: #fff; color: #000; }
-
-        @media (max-width: 992px) {
-            body { padding: 0.5rem; }
-            .main-container { flex-direction: column; gap: 1rem; }
-            .sidebar, .main-content { width: 100%; position: static; }
-            .table-container, .paginacion { display: none; }
+        .select2-results__option {
+            color: #000; /* Texto de opciones en negro */
+            white-space: normal; /* Permite que el texto de las opciones se divida */
         }
+        .select2-results__option--highlighted { background-color: #0d6efd; color: #fff; }
+        .btn-link { color: #fff; }
     </style>
 </head>
 <body>
 <div class="main-container">
     <aside class="sidebar glass-panel animate__animated animate__fadeInLeft">
         <div class="text-center mb-4">
-            <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 300px; height: auto;">
+            <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 150px; height: auto;">
             <h4 class="mt-3 mb-0">Filtros de Búsqueda</h4>
         </div>
         <form id="filtroForm" method="get" autocomplete="off">
@@ -282,11 +261,11 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         <h2 class="mb-4">Reporte de Facturas</h2>
         
         <div class="resumen-grid">
-            <div class="card-resumen animate__animated animate__zoomIn"><div class="icon"><i class="fa-solid fa-file-invoice"></i></div><h5>Total Facturas</h5><p><?= number_format($totalFacturas) ?></p></div>
-            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.1s;"><div class="icon"><i class="fa-solid fa-check-circle"></i></div><h5>Completadas</h5><p><?= number_format($resumen['Completadas'] ?? 0) ?></p></div>
-            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.2s;"><div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div><h5>No Completadas</h5><p><?= number_format($noCompletadas) ?></p></div>
-            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.3s;"><div class="icon"><i class="fa-solid fa-building-columns"></i></div><h5>Entregadas a CxC</h5><p><?= number_format($resumen['EntregadasCC'] ?? 0) ?></p></div>
-            <div class="card-resumen animate__animated animate__zoomIn" style="animation-delay: 0.4s;"><div class="icon"><i class="fa-solid fa-file-lines"></i></div><h5>Notas de Crédito</h5><p><?= number_format($resumen['NC'] ?? 0) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="border-color: #0dcaf0;"><div class="icon"><i class="fa-solid fa-file-invoice"></i></div><h5>Total Facturas</h5><p><?= number_format($totalFacturas) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="border-color: #198754; animation-delay: 0.1s;"><div class="icon"><i class="fa-solid fa-check-circle"></i></div><h5>Completadas</h5><p><?= number_format($resumen['Completadas'] ?? 0) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="border-color: #dc3545; animation-delay: 0.2s;"><div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div><h5>No Completadas</h5><p><?= number_format($noCompletadas) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="border-color: #ffc107; animation-delay: 0.3s;"><div class="icon"><i class="fa-solid fa-building-columns"></i></div><h5>Entregadas a CxC</h5><p><?= number_format($resumen['EntregadasCC'] ?? 0) ?></p></div>
+            <div class="card-resumen animate__animated animate__zoomIn" style="border-color: #6f42c1; animation-delay: 0.4s;"><div class="icon"><i class="fa-solid fa-file-lines"></i></div><h5>Notas de Crédito</h5><p><?= number_format($resumen['NC'] ?? 0) ?></p></div>
         </div>
 
         <div class="table-container">
@@ -297,13 +276,13 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 <tbody>
                     <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
                     <tr>
-                        <td><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
+                        <td><?= $row['Fecha'] instanceof DateTime ? $row['Fecha']->format('Y-m-d H:i:s') : '' ?></td>
                         <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Estado'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
-                        <td><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i') ?></td>
+                        <td><?= $row['Recepcion_ALM'] instanceof DateTime ? $row['Recepcion_ALM']->format('Y-m-d H:i:s') : '' ?></td>
                         <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
-                        <td><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i') ?></td>
+                        <td><?= $row['Recepcion_CC'] instanceof DateTime ? $row['Recepcion_CC']->format('Y-m-d H:i:s') : '' ?></td>
                         <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
                         <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
                     </tr>
@@ -330,7 +309,6 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// --- JAVASCRIPT SIN CAMBIOS ---
 $(document).ready(function() {
     function initializeSelect2(selector, placeholderText) {
         $(selector).select2({
@@ -343,18 +321,9 @@ $(document).ready(function() {
     initializeSelect2('#usuario', 'Buscar usuario...');
     initializeSelect2('#zona', 'Buscar localización...');
 
-    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"]').on('change', function() {
+    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="checkbox"], #filtroForm input[type="text"]').on('change', function() {
         $('input[name="page"]').val(1); 
         $('#filtroForm').submit();
-    });
-
-    let searchTimeout;
-    $('#filtroForm input[type="text"]').on('keyup', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            $('input[name="page"]').val(1); 
-            $('#filtroForm').submit();
-        }, 500);
     });
 });
 </script>
