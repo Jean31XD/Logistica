@@ -42,7 +42,6 @@ header("Expires: 0");
             padding: 1.5rem;
         }
 
-        
         /* Panel superior blanco */
         .header-panel {
             background: #ffffff;
@@ -85,9 +84,14 @@ header("Expires: 0");
             font-weight: 700;
         }
 
+        /* Aumento de padding para mejor espaciado */
+        .table td, .table th {
+            vertical-align: middle;
+            padding: 0.75rem 1rem; /* Aumentado de 0.5rem 0.5rem a 0.75rem 1rem */
+        }
+
         .table tbody tr { transition: background-color 0.3s ease; }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-        .table td, .table th { vertical-align: middle; }
         
         .table-danger, .table-danger:hover {
             background-color: rgba(220, 53, 69, 0.4) !important;
@@ -231,18 +235,14 @@ $(document).ready(function () {
                     response.updates.forEach(ticket => {
                         const existingRow = $(`#row_${ticket.tiket}`);
                         if (existingRow.length > 0) {
-                            existingRow.addClass('animate__pulse');
-                            setTimeout(() => {
-                                // Guardar el valor del select si existe
-                                const selectVal = existingRow.find('.estatus-select').val();
-                                existingRow.replaceWith(ticket.html);
-                                // Restaurar el valor del select si la nueva fila aún lo tiene
-                                const newSelect = $(`#row_${ticket.tiket}`).find('.estatus-select');
-                                if (newSelect.length) newSelect.val(selectVal);
-
-                            }, 500);
+                            // No más animaciones de 'pulse' para evitar el movimiento
+                            const selectVal = existingRow.find('.estatus-select').val(); // Guardar el valor del select si existe
+                            existingRow.replaceWith(ticket.html);
+                            const newSelect = $(`#row_${ticket.tiket}`).find('.estatus-select');
+                            if (newSelect.length) newSelect.val(selectVal); // Restaurar el valor del select
                         } else {
-                            const newRow = $(ticket.html).addClass('animate__fadeInDown');
+                            // No más animaciones de 'fadeInDown' para evitar el movimiento
+                            const newRow = $(ticket.html);
                             $('#tablaTickets tbody').prepend(newRow);
                         }
                     });
@@ -301,8 +301,6 @@ $(document).ready(function () {
             alert('Por favor, ingresa tu contraseña.');
             return;
         }
-
-        
 
         // Enviamos los datos al servidor para la verificación
         $.ajax({
