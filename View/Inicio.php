@@ -1,7 +1,6 @@
 <?php
-// --- PHP (sin cambios) ---
 ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);
+ini_set('session.cookie_secure', 0); // Mantener en 0 para desarrollo local (no HTTPS)
 ini_set('session.use_strict_mode', 1);
 
 session_start();
@@ -11,6 +10,7 @@ if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 1, 5])
     header("Location: ../index.php");
     exit();
 }
+
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
@@ -22,12 +22,17 @@ header("Expires: 0");
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Pantalla de Tickets ✨</title>
     <link rel="icon" href="../IMG/favicon.ico">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
     <style>
-        :root { --theme-red: #d32f2f; }
+        :root {
+            --theme-red: #d32f2f;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
@@ -36,29 +41,84 @@ header("Expires: 0");
             color: #fff;
             padding: 1.5rem;
         }
+
         @keyframes gradientBG {
-            0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
+        
+        /* Panel superior blanco */
         .header-panel {
-            background: #ffffff; color: #333; border-radius: 1.5rem; padding: 1rem 2rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25); display: flex; justify-content: space-between; align-items: center;
+            background: #ffffff;
+            color: #333;
+            border-radius: 1.5rem;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .header-panel .logo img { height: 60px; }
-        .header-panel h1 { font-weight: 700; color: var(--theme-red); text-shadow: none; }
+        .header-panel .logo img {
+            height: 60px;
+        }
+        .header-panel h1 {
+            font-weight: 700;
+            color: var(--theme-red);
+            text-shadow: none;
+        }
+
+        /* Panel de vidrio para el contenedor de la tabla */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 1.5rem; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            padding: 1.5rem 2rem;
         }
+        
         .table-container { margin-top: 2rem; }
         .table { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
-        .table thead th { background: #ffffff; color: var(--theme-red); border-color: #dee2e6; font-weight: 700; }
-        .table tbody tr { transition: background-color 0.3s ease, opacity 0.5s ease; }
+        
+        /* Encabezado de la tabla blanco */
+        .table thead th {
+            background: #ffffff;
+            color: var(--theme-red);
+            border-color: #dee2e6;
+            font-weight: 700;
+        }
+
+        .table tbody tr { transition: background-color 0.3s ease; }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-        .table-danger, .table-danger:hover { background-color: rgba(220, 53, 69, 0.4) !important; border-color: rgba(220, 53, 69, 0.6) !important; }
-        .modal-content { background: rgba(10, 25, 40, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; }
+        .table td, .table th { vertical-align: middle; }
+        
+        .table-danger, .table-danger:hover {
+            background-color: rgba(220, 53, 69, 0.4) !important;
+            border-color: rgba(220, 53, 69, 0.6) !important;
+        }
+
+        .btn { font-weight: 600; }
+        .btn:disabled { transform: none; box-shadow: none; }
+        
+        /* Modal mantiene el estilo oscuro/vidrio */
+        .modal-content {
+            background: rgba(10, 25, 40, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
         .modal-header, .modal-footer { border-color: rgba(255, 255, 255, 0.2); }
-        .form-control, .form-select { background-color: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.4); color: #fff; }
+        .form-control, .form-select {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+        }
         .form-control:focus { background-color: rgba(0, 0, 0, 0.4); color: #fff; }
+        .form-control::placeholder { color: rgba(255, 255, 255, 0.6); }
+
     </style>
 </head>
 <body>
@@ -68,6 +128,7 @@ header("Expires: 0");
         <h1>Bienvenido, <?php echo htmlspecialchars($_SESSION['usuario']); ?>!</h1>
         <div><a href="../Logica/logout.php" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión</a></div>
     </div>
+
     <div class="table-container glass-panel animate__animated animate__fadeInUp">
         <table id="tablaTickets" class="table table-bordered text-center">
             <thead>
@@ -82,7 +143,8 @@ header("Expires: 0");
                     <th>Retención</th>
                 </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+                </tbody>
         </table>
     </div>
 </div>
@@ -90,28 +152,29 @@ header("Expires: 0");
 <div class="modal fade" id="facturaModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="formFactura"><div class="modal-header"><h5 class="modal-title">Despachar Ticket</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="facturaTiket"><input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335"><small class="text-muted">Múltiples facturas separadas por punto y coma (;)</small><div class="form-check form-switch mt-3"><input class="form-check-input" type="checkbox" role="switch" id="seFueCheckbox" value="1"><label class="form-check-label" for="seFueCheckbox">Marcar como <strong>Se fue</strong></label></div><div class="mt-3" id="codigoSeFueContainer" style="display:none;"><label for="codigoSeFue" class="form-label">Código para "Se fue":</label><input type="password" id="codigoSeFue" class="form-control" placeholder="Código de autorización"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-success">Enviar</button></div></form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="asignarModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="formAsignar">
+            <form id="formFactura">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa-solid fa-lock me-2"></i>Confirmar Asignación</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="fa-solid fa-truck-fast me-2"></i>Despachar Ticket</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
-                    <input type="hidden" id="asignarTiketInput">
-                    <label for="usuarioPassword" class="form-label">Contraseña:</label>
-                    <input type="password" id="usuarioPassword" class="form-control" required>
+                    <input type="hidden" id="facturaTiket">
+                    <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335">
+                    <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
+
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="seFueCheckbox" value="1">
+                        <label class="form-check-label" for="seFueCheckbox">Marcar como <strong>Se fue</strong></label>
+                    </div>
+
+                    <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
+                        <label for="codigoSeFue" class="form-label">Código para despachar como "Se fue":</label>
+                        <input type="password" id="codigoSeFue" class="form-control" placeholder="Código de autorización">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-2"></i>Confirmar</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i>Enviar</button>
                 </div>
             </form>
         </div>
@@ -121,81 +184,163 @@ header("Expires: 0");
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// --- INICIO SCRIPT CON MEJORAS ---
+// --- INICIO SCRIPT (Sin cambios en la lógica) ---
 const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
-let lastCheck = 0; // Timestamp de la última revisión
+let timers = {}, retencionClicks = {}, retencionBloqueado = {};
 
-// --- Lógica de actualización inteligente ---
-function actualizarTablaInteligentemente() {
-    $.getJSON('../Logica/obtener_tickets.php', { since: lastCheck }, function(data) {
-        if (data.tickets && data.tickets.length > 0) {
-            data.tickets.forEach(ticket => {
-                const existingRow = $(`#row_${ticket.tiket}`);
-                if (existingRow.length > 0) {
-                    // Si la fila existe, la actualiza
-                    existingRow.replaceWith(ticket.html);
-                } else {
-                    // Si es nueva, la añade al principio con una animación
-                    const newRow = $(ticket.html).css('opacity', 0);
-                    $('#tablaTickets tbody').prepend(newRow);
-                    newRow.animate({ opacity: 1 }, 500);
-                }
-            });
-        }
-        
-        if (data.eliminados && data.eliminados.length > 0) {
-            data.eliminados.forEach(tiket => {
-                $(`#row_${tiket}`).fadeOut(500, function() { $(this).remove(); });
-            });
-        }
-        
-        lastCheck = data.timestamp; // Actualiza el timestamp para la próxima petición
+function cargarTickets() {
+    $.get('../Logica/obtener_tickets.php', function(response) {
+        $('#tablaTickets tbody').html(response);
+        $('#tablaTickets tbody tr').each(function() {
+            let fila = $(this);
+            let estatus = fila.find('.estatus').text().trim();
+            let asignado = fila.find('.asignado-a').text().trim();
+            let tiket = fila.find('.btn-despachar').data('tiket');
+
+            if (asignado && asignado !== usuarioSesion) {
+                fila.find('.btn-despachar, .btn-retencion, .estatus-select').prop('disabled', true)
+                    .attr('title', 'Solo el usuario asignado puede ejecutar esta acción');
+            }
+            if (estatus === "Retención") {
+                fila.find('.btn-despachar, .estatus-select').prop('disabled', true)
+                    .attr('title', 'No se puede modificar en estado de retención');
+            }
+
+            if (tiket && !(tiket in timers)) {
+                timers[tiket] = 0;
+                setInterval(() => timers[tiket]++, 1000);
+            }
+        });
     });
 }
 
-
-function asignarTicket(tiket, password) {
-    $.post('../Logica/asignar_ticket.php', { tiket, password }, function(response) {
-        if (response.success) {
-            bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
-            actualizarTablaInteligentemente(); // Forzar actualización inmediata
+function despacharTicket(tiket, factura) {
+    let tiempo = timers[tiket] || 0;
+    $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
+        if (!response.toLowerCase().includes('error')) {
+            delete timers[tiket];
+            cargarTickets();
         } else {
-            alert(response.message || 'Ocurrió un error.');
+            alert(response);
         }
-    }, 'json');
+    });
 }
 
-// Lógica de despacho y retención (sin cambios mayores)
-function despacharTicket(tiket, factura) { /* ... */ }
-function manejarRetencion(tiket, boton) { /* ... */ }
-
-// --- Document Ready: Event Handlers ---
-$(document).ready(function () {
-    actualizarTablaInteligentemente(); // Carga inicial
-    setInterval(actualizarTablaInteligentemente, 5000); // Revisa cambios cada 5 segundos
-
-    // --- Delegación de eventos para botones ---
-    $(document).on('click', '.btn-asignar', function() {
-        const tiket = $(this).data('tiket');
-        $('#asignarTicketId').text(tiket);
-        $('#asignarTiketInput').val(tiket);
-        $('#usuarioPassword').val('');
-        new bootstrap.Modal(document.getElementById('asignarModal')).show();
+function cambiarEstatus(tiket, nuevoEstatus) {
+    $.post('../Logica/actualizar_estatus.php', { tiket, estatus: nuevoEstatus }, function(response) {
+        console.log("Estatus actualizado: " + response);
     });
-    
-    $('#formAsignar').on('submit', function(e) {
+}
+
+function asignarTicket(tiket) {
+    $.post('../Logica/asignar_ticket.php', { tiket }, function() {
+        cargarTickets();
+    });
+}
+
+function manejarRetencion(tiket, boton) {
+    if (retencionBloqueado[tiket]) return;
+    retencionBloqueado[tiket] = true;
+    $(boton).prop('disabled', true);
+
+    let contador = retencionClicks[tiket] || 0;
+    let accion = (contador === 0) ? 'insertar' : 'actualizar';
+
+    $.post('../Logica/accion_retencion.php', { tiket, accion }, function(response) {
+        if(accion === 'insertar') {
+            retencionClicks[tiket] = 1;
+        } else {
+            retencionClicks[tiket] = 2;
+        }
+        cargarTickets();
+        retencionBloqueado[tiket] = false;
+    });
+}
+
+$(document).ready(function () {
+    cargarTickets();
+    setInterval(cargarTickets, 10000);
+
+    $('#seFueCheckbox').on('change', function () {
+        const isChecked = this.checked;
+        $('#facturaNumero').prop('disabled', isChecked).val(isChecked ? '' : $('#facturaNumero').val());
+        $('#codigoSeFueContainer').toggle(isChecked);
+        if(!isChecked) $('#codigoSeFue').val('');
+    });
+
+    $('#formFactura').on('submit', function (e) {
         e.preventDefault();
-        const tiket = $('#asignarTiketInput').val();
-        const password = $('#usuarioPassword').val();
-        if (!password) {
-            alert('Por favor, ingresa tu contraseña.');
+        const tiket = $('#facturaTiket').val();
+        const seFue = $('#seFueCheckbox').is(':checked');
+        const facturas = $('#facturaNumero').val().trim();
+        const myModal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
+
+        if (seFue) {
+            if ($('#codigoSeFue').val().trim() !== 'LogisicA*2025*') {
+                alert('Código incorrecto para despachar como "Se fue".');
+                return;
+            }
+            if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
+                despacharTicket(tiket, "Se fue");
+                myModal.hide();
+            }
             return;
         }
-        asignarTicket(tiket, password);
+
+        if (!facturas) {
+            alert("Por favor ingrese al menos un número de factura.");
+            return;
+        }
+
+        const listaFacturas = facturas.split(';').map(f => f.trim()).filter(Boolean);
+        for (let f of listaFacturas) {
+            if (f.length !== 11) {
+                alert(`Cada número de factura debe tener 11 caracteres. Error en: "${f}"`);
+                return;
+            }
+        }
+        
+        myModal.hide();
+        listaFacturas.forEach(f => despacharTicket(tiket, f));
     });
 
-    // Otros handlers como despacho, retención, etc.
-    // ... (El resto de la lógica de los modals y botones permanece similar)
+    $(document).on('click', '.btn-despachar', function() {
+        const tiket = $(this).data('tiket');
+        $('#facturaTiket').val(tiket);
+        $('#formFactura')[0].reset();
+        $('#facturaNumero').prop('disabled', false);
+        $('#codigoSeFueContainer').hide();
+        new bootstrap.Modal(document.getElementById('facturaModal')).show();
+    });
+
+    $(document).on('click', '.btn-asignar', function() {
+        asignarTicket($(this).data('tiket'));
+    });
+    
+    $(document).on('change', '.estatus-select', function() {
+        cambiarEstatus($(this).data('tiket'), $(this).val());
+    });
+
+    $(document).on('click', '.btn-retencion', function () {
+        manejarRetencion($(this).data('tiket'), this);
+    });
+
+    $('#facturaNumero').on('input', function (e) {
+        let valor = e.target.value.replace(/[^A-Za-z0-9]/g, '');
+        let bloques = [];
+        for (let i = 0; i < valor.length; i += 11) {
+            bloques.push(valor.substring(i, i + 11));
+        }
+        e.target.value = bloques.join(';').toUpperCase();
+    }).on('keydown', function(e) {
+        if (e.key === 'Enter') e.preventDefault();
+    });
+    
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
+            window.location.reload();
+        }
+    });
 });
 </script>
 </body>
