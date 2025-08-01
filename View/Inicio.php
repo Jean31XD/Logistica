@@ -224,7 +224,7 @@ $(document).ready(function () {
 
         $.ajax({
             // CORRECCIÓN: Apuntando al script correcto de actualizaciones delta
-            url: '../Logica/obtener_tickets_delta.php', 
+            url: '../Logica/obtener_tickets.php', 
             method: 'POST',
             data: { 
                 since: lastCheckTimestamp,
