@@ -11,9 +11,6 @@ if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 1, 5])
     exit();
 }
 
-// El logout se maneja en su propio script, no aquí.
-// if (isset($_GET['logout'])) { ... }
-
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
@@ -23,7 +20,7 @@ header("Expires: 0");
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pantalla de Tickets ✨</title>
+    <title>Pantalla de Tickets </title>
     <link rel="icon" href="../IMG/favicon.ico">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -32,9 +29,13 @@ header("Expires: 0");
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
     <style>
+        :root {
+            --theme-red: #d32f2f;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #ff0000ff, #cb1717ef, #bb1b1bff, #751010ff);
+            background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
             background-size: 400% 400%;
             animation: gradientBG 25s ease infinite;
             color: #fff;
@@ -46,7 +47,28 @@ header("Expires: 0");
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        
+        /* Panel superior blanco */
+        .header-panel {
+            background: #ffffff;
+            color: #333;
+            border-radius: 1.5rem;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-panel .logo img {
+            height: 60px;
+        }
+        .header-panel h1 {
+            font-weight: 700;
+            color: var(--theme-red);
+            text-shadow: none;
+        }
 
+        /* Panel de vidrio para el contenedor de la tabla */
         .glass-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
@@ -56,41 +78,33 @@ header("Expires: 0");
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
             padding: 1.5rem 2rem;
         }
-
-        .header-panel {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header-panel .logo img {
-            height: 60px;
-            background-color: rgba(255, 255, 255, 0.85);
-            border-radius: 50%;
-            padding: 5px;
-        }
-        .header-panel h1 {
-            font-weight: 600;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-        }
         
         .table-container { margin-top: 2rem; }
         .table { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
-        .table thead th { background: rgba(0, 0, 0, 0.3); border-color: rgba(255, 255, 255, 0.3); }
+        
+        /* Encabezado de la tabla blanco */
+        .table thead th {
+            background: #ffffff;
+            color: var(--theme-red);
+            border-color: #dee2e6;
+            font-weight: 700;
+        }
+
         .table tbody tr { transition: background-color 0.3s ease; }
         .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
         .table td, .table th { vertical-align: middle; }
         
         .table-danger, .table-danger:hover {
-            background-color: rgba(220, 53, 69, 0.3) !important;
-            border-color: rgba(220, 53, 69, 0.5) !important;
+            background-color: rgba(220, 53, 69, 0.4) !important;
+            border-color: rgba(220, 53, 69, 0.6) !important;
         }
 
         .btn { font-weight: 600; }
         .btn:disabled { transform: none; box-shadow: none; }
         
-        /* Estilos Modal */
+        /* Modal mantiene el estilo oscuro/vidrio */
         .modal-content {
-            background: rgba(10, 25, 40, 0.8);
+            background: rgba(10, 25, 40, 0.85);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -109,7 +123,7 @@ header("Expires: 0");
 </head>
 <body>
 <div class="container-fluid">
-    <div class="header-panel glass-panel mb-4 animate__animated animate__fadeInDown">
+    <div class="header-panel mb-4 animate__animated animate__fadeInDown">
         <div class="logo"><img src="../IMG/LOGO MC - NEGRO.png" alt="Logo"></div>
         <h1>Bienvenido, <?php echo htmlspecialchars($_SESSION['usuario']); ?>!</h1>
         <div><a href="../Logica/logout.php" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión</a></div>
@@ -117,7 +131,8 @@ header("Expires: 0");
 
     <div class="table-container glass-panel animate__animated animate__fadeInUp">
         <table id="tablaTickets" class="table table-bordered text-center">
-            <thead class="table-dark-transparent"> <tr>
+            <thead>
+                <tr>
                     <th><i class="fa-solid fa-ticket me-2"></i>Ticket</th>
                     <th><i class="fa-solid fa-user me-2"></i>Nombre</th>
                     <th><i class="fa-solid fa-building me-2"></i>Empresa</th>
@@ -169,7 +184,7 @@ header("Expires: 0");
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// --- INICIO SCRIPT ---
+// --- INICIO SCRIPT (Sin cambios en la lógica) ---
 const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
 let timers = {}, retencionClicks = {}, retencionBloqueado = {};
 
@@ -182,7 +197,6 @@ function cargarTickets() {
             let asignado = fila.find('.asignado-a').text().trim();
             let tiket = fila.find('.btn-despachar').data('tiket');
 
-            // Lógica de habilitación/deshabilitación
             if (asignado && asignado !== usuarioSesion) {
                 fila.find('.btn-despachar, .btn-retencion, .estatus-select').prop('disabled', true)
                     .attr('title', 'Solo el usuario asignado puede ejecutar esta acción');
@@ -192,7 +206,6 @@ function cargarTickets() {
                     .attr('title', 'No se puede modificar en estado de retención');
             }
 
-            // Iniciar timer si no existe
             if (tiket && !(tiket in timers)) {
                 timers[tiket] = 0;
                 setInterval(() => timers[tiket]++, 1000);
@@ -239,16 +252,15 @@ function manejarRetencion(tiket, boton) {
         } else {
             retencionClicks[tiket] = 2;
         }
-        cargarTickets(); // Recargar para obtener el estado y estilo del servidor
-        retencionBloqueado[tiket] = false; // Desbloquear después de la respuesta
+        cargarTickets();
+        retencionBloqueado[tiket] = false;
     });
 }
 
 $(document).ready(function () {
     cargarTickets();
-    setInterval(cargarTickets, 10000); // Recarga cada 10 segundos
+    setInterval(cargarTickets, 10000);
 
-    // --- Manejadores de eventos ---
     $('#seFueCheckbox').on('change', function () {
         const isChecked = this.checked;
         $('#facturaNumero').prop('disabled', isChecked).val(isChecked ? '' : $('#facturaNumero').val());
@@ -292,11 +304,10 @@ $(document).ready(function () {
         listaFacturas.forEach(f => despacharTicket(tiket, f));
     });
 
-    // Delegación de eventos para elementos dinámicos
     $(document).on('click', '.btn-despachar', function() {
         const tiket = $(this).data('tiket');
         $('#facturaTiket').val(tiket);
-        $('#formFactura')[0].reset(); // Limpiar formulario
+        $('#formFactura')[0].reset();
         $('#facturaNumero').prop('disabled', false);
         $('#codigoSeFueContainer').hide();
         new bootstrap.Modal(document.getElementById('facturaModal')).show();
@@ -314,7 +325,6 @@ $(document).ready(function () {
         manejarRetencion($(this).data('tiket'), this);
     });
 
-    // --- Helpers y otros ---
     $('#facturaNumero').on('input', function (e) {
         let valor = e.target.value.replace(/[^A-Za-z0-9]/g, '');
         let bloques = [];
