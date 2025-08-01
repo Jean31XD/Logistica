@@ -223,7 +223,7 @@ $(document).ready(function () {
         }).get();
 
         $.ajax({
-            url: '../Logica/obtener_tickets_delta.php',
+            url: '../Logica/obtener_tickets.php',
             method: 'POST',
             data: { 
                 since: lastCheckTimestamp,
