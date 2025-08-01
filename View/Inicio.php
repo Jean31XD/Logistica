@@ -279,7 +279,16 @@ $(document).ready(function () {
         $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
             if (!response.toLowerCase().includes('error')) {
                 delete timers[tiket];
-                actualizarTablaInteligentemente(); 
+                
+                // MODIFICACIÓN CLAVE AQUÍ: Eliminar la fila del ticket despachado
+                $(`#row_${tiket}`).fadeOut(400, function() { 
+                    $(this).remove(); 
+                });
+
+                // Opcional: Si quieres forzar una actualización completa para asegurar
+                // que todo el estado del resto de la tabla es correcto
+                // actualizarTablaInteligentemente(); 
+
             } else {
                 alert(response);
             }
@@ -301,6 +310,10 @@ $(document).ready(function () {
         $.post('../Logica/accion_retencion.php', { tiket, accion }, function(response) {
             retencionClicks[tiket] = (contador + 1);
             retencionBloqueado[tiket] = false;
+            
+            // Re-habilitar el botón de retención después de la operación
+            // y luego la actualización inteligente se encargará del estado final.
+            $(boton).prop('disabled', false); 
             actualizarTablaInteligentemente();
         });
     }
@@ -381,8 +394,8 @@ $(document).ready(function () {
                 return alert('Código incorrecto para despachar como "Se fue".');
             }
             if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
+                myModal.hide(); // Ocultar el modal antes de despachar
                 despacharTicket(tiket, "Se fue");
-                myModal.hide();
             }
             return;
         }
@@ -391,46 +404,24 @@ $(document).ready(function () {
             return alert("Por favor ingrese al menos un número de factura.");
         }
         
-        myModal.hide();
+        myModal.hide(); // Ocultar el modal antes de despachar
         despacharTicket(tiket, facturas);
     });
 
     // 6. Retener ticket
- function manejarRetencion(tiket, boton) {
-    if (retencionBloqueado[tiket]) return;
-    retencionBloqueado[tiket] = true;
-    $(boton).prop('disabled', true);
-    let contador = retencionClicks[tiket] || 0;
-    if (contador === 0) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function(response) {
-            retencionClicks[tiket] = 1;
-            $('#row_' + tiket).addClass('table-danger');
-            $('#row_' + tiket + ' .estatus').text('Retención');
-            $(boton).prop('disabled', false);
-            retencionBloqueado[tiket] = false;
-        });
-    } else if (contador === 1) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function(response) {
-            retencionClicks[tiket] = 2;
-            $('#row_' + tiket).removeClass('table-danger');
-            $('#row_' + tiket + ' .estatus').text('En Proceso');
-            $(boton).prop('disabled', true);
-        });
-    } else {
-        alert("Este botón ya no se puede presionar más.");
-    }
-}
+    $(document).on('click', '.btn-retencion', function () {
+        let tiket = $(this).data('tiket');
+        manejarRetencion(tiket, this);
+    });
 
-$(document).on('click', '.btn-retencion', function () {
-    let tiket = $(this).data('tiket');
-    manejarRetencion(tiket, this);
-});
     // 7. Lógica del checkbox "Se fue" en el modal de despacho
     $('#seFueCheckbox').on('change', function () {
         const isChecked = this.checked;
-        $('#facturaNumero').prop('disabled', isChecked).val(isChecked ? '' : $('#facturaNumero').val());
+        // Si "Se fue" está marcado, inhabilita el campo de factura y lo vacía.
+        // Si no está marcado, habilita el campo de factura y muestra/oculta el contenedor del código.
+        $('#facturaNumero').prop('disabled', isChecked).val(isChecked ? '' : ''); // Vaciar siempre si se marca/desmarca
         $('#codigoSeFueContainer').toggle(isChecked);
-        if(!isChecked) $('#codigoSeFue').val('');
+        if(!isChecked) $('#codigoSeFue').val(''); // Vaciar código si se desmarca "Se fue"
     });
     
     // 8. Corrección para el botón de "atrás" del navegador
