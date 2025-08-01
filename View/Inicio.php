@@ -222,7 +222,7 @@ $(document).ready(function () {
 
         $.ajax({
             // CORRECCIÓN IMPORTANTE: Asegúrate de apuntar al nuevo script PHP
-            url: '../Logica/obtener_tickets_delta.php', 
+            url: '../Logica/obtener_tickets.php', 
             method: 'POST',
             data: { 
                 since: lastCheckTimestamp,
