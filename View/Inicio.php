@@ -34,7 +34,7 @@ header("Expires: 0");
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #0d6efd, #e73c7e, #23a6d5, #23d5ab);
+            background: linear-gradient(-45deg, #ff0000ff, #cb1717ef, #bb1b1bff, #751010ff);
             background-size: 400% 400%;
             animation: gradientBG 25s ease infinite;
             color: #fff;
