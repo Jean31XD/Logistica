@@ -104,13 +104,14 @@ function generateRowHtml($row) {
     $despacharDisabled = (!$isAsignado || $isRetencion || $isAsignadoAOtro) ? "disabled" : "";
     $retencionDisabled = (!$isAsignado || $isAsignadoAOtro) ? "disabled" : "";
     $selectDisabled = ($isRetencion || $isAsignadoAOtro) ? "disabled" : "";
-
-    $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id='$tiket'>";
+    
+$html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id='$tiket'>";
     $html .= "<td>$tiket</td>";
     $html .= "<td>" . htmlspecialchars($row['NombreTR']) .
-             "<br><small class='text-white-50'><strong>Cédula:</strong> " . htmlspecialchars($row['Cedula'] ?? 'N/A') .
+             "<br><small style='color: black;'><strong>Cédula:</strong> " . htmlspecialchars($row['Cedula'] ?? 'N/A') .
              "<br><strong>Matrícula:</strong> " . htmlspecialchars($row['Matricula'] ?? 'N/A') . "</small></td>";
     $html .= "<td>" . htmlspecialchars($row['Empresa']) . "</td>";
+    // ... el resto de tu código HTML para la fila
     $html .= "<td>
         <select class='form-select form-select-sm estatus-select' data-tiket='$tiket' $selectDisabled>
             <option value=' ' " . ($estatus == ' ' ? 'selected' : '') . ">Pendiente</option>
