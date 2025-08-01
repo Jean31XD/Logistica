@@ -122,6 +122,32 @@ header("Expires: 0");
     </style>
 </head>
 <body>
+    <div class="modal fade" id="asignarModal" tabindex="-1" aria-labelledby="asignarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formAsignar">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="asignarModalLabel"><i class="fa-solid fa-lock me-2"></i>Confirmar Asignación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
+                    
+                    <input type="hidden" id="asignarTiketInput">
+                    
+                    <div class="mb-3">
+                        <label for="usuarioPassword" class="form-label">Contraseña:</label>
+                        <input type="password" id="usuarioPassword" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-2"></i>Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <div class="container-fluid">
     <div class="header-panel mb-4 animate__animated animate__fadeInDown">
         <div class="logo"><img src="../IMG/LOGO MC - NEGRO.png" alt="Logo"></div>
@@ -184,163 +210,137 @@ header("Expires: 0");
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// --- INICIO SCRIPT (Sin cambios en la lógica) ---
-const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
-let timers = {}, retencionClicks = {}, retencionBloqueado = {};
+$(document).ready(function () {
+    const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
+    let lastCheckTimestamp = 0; // Almacena el tiempo de la última revisión
 
-function cargarTickets() {
-    $.get('../Logica/obtener_tickets.php', function(response) {
-        $('#tablaTickets tbody').html(response);
-        $('#tablaTickets tbody tr').each(function() {
-            let fila = $(this);
-            let estatus = fila.find('.estatus').text().trim();
-            let asignado = fila.find('.asignado-a').text().trim();
-            let tiket = fila.find('.btn-despachar').data('tiket');
+    /**
+     * Función principal para actualizar la tabla de forma inteligente.
+     */
+    function actualizarTablaInteligentemente() {
+        const currentTicketIds = $('#tablaTickets tbody tr').map(function() {
+            return $(this).data('tiket-id');
+        }).get();
 
-            if (asignado && asignado !== usuarioSesion) {
-                fila.find('.btn-despachar, .btn-retencion, .estatus-select').prop('disabled', true)
-                    .attr('title', 'Solo el usuario asignado puede ejecutar esta acción');
+        $.ajax({
+            url: '../Logica/obtener_tickets_delta.php',
+            method: 'POST',
+            data: { 
+                since: lastCheckTimestamp,
+                current_ids: currentTicketIds
+            },
+            dataType: 'json',
+            success: function(response) {
+                // Actualizar o agregar filas
+                if (response.updates && response.updates.length > 0) {
+                    response.updates.forEach(ticket => {
+                        const existingRow = $(`#row_${ticket.tiket}`);
+                        if (existingRow.length > 0) {
+                            existingRow.addClass('animate__pulse');
+                            setTimeout(() => {
+                                // Guardar el valor del select si existe
+                                const selectVal = existingRow.find('.estatus-select').val();
+                                existingRow.replaceWith(ticket.html);
+                                // Restaurar el valor del select si la nueva fila aún lo tiene
+                                const newSelect = $(`#row_${ticket.tiket}`).find('.estatus-select');
+                                if (newSelect.length) newSelect.val(selectVal);
+
+                            }, 500);
+                        } else {
+                            const newRow = $(ticket.html).addClass('animate__fadeInDown');
+                            $('#tablaTickets tbody').prepend(newRow);
+                        }
+                    });
+                }
+
+                // Eliminar filas que ya no están activas
+                if (response.deletions && response.deletions.length > 0) {
+                    response.deletions.forEach(tiketId => {
+                        $(`#row_${tiketId}`).fadeOut(500, function() { $(this).remove(); });
+                    });
+                }
+                
+                // Actualizamos el timestamp para la próxima petición
+                lastCheckTimestamp = response.timestamp;
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error al actualizar la tabla:", textStatus, errorThrown);
             }
-            if (estatus === "Retención") {
-                fila.find('.btn-despachar, .estatus-select').prop('disabled', true)
-                    .attr('title', 'No se puede modificar en estado de retención');
-            }
+        });
+    }
 
-            if (tiket && !(tiket in timers)) {
-                timers[tiket] = 0;
-                setInterval(() => timers[tiket]++, 1000);
+    // --- Inicio y el intervalo de actualización ---
+    actualizarTablaInteligentemente(); // Carga inicial
+    setInterval(actualizarTablaInteligentemente, 3000); // Revisa cambios cada 3 segundos
+
+    
+    // --- MANEJADORES DE EVENTOS ---
+
+    // 1. Al hacer clic en "Asignar", ABRE EL MODAL
+    $(document).on('click', '.btn-asignar', function() {
+        if ($(this).is(':disabled')) return;
+
+        const tiket = $(this).data('tiket');
+        // Preparamos el modal
+        $('#asignarTicketId').text(tiket);
+        $('#asignarTiketInput').val(tiket);
+        $('#usuarioPassword').val(''); // Limpiar campo de contraseña
+
+        const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
+        asignarModal.show();
+
+        // Enfocar el campo de contraseña al abrir el modal
+        $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', function () {
+            $('#usuarioPassword').focus();
+        });
+    });
+
+    // 2. Al ENVIAR el formulario del modal de asignación
+    $('#formAsignar').on('submit', function(e) {
+        e.preventDefault(); // Evitamos que la página se recargue
+
+        const tiket = $('#asignarTiketInput').val();
+        const password = $('#usuarioPassword').val();
+
+        if (!password) {
+            alert('Por favor, ingresa tu contraseña.');
+            return;
+        }
+
+        // Enviamos los datos al servidor para la verificación
+        $.ajax({
+            url: '../Logica/asignar_ticket.php',
+            method: 'POST',
+            data: { tiket: tiket, password: password },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Si es exitoso, cierra el modal y actualiza la tabla
+                    bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
+                    actualizarTablaInteligentemente(); // Forzar actualización inmediata
+                } else {
+                    // Si falla, muestra el error y permite reintentar
+                    alert('Error: ' + response.message);
+                    $('#usuarioPassword').val('').focus(); // Limpiar y enfocar de nuevo
+                }
+            },
+            error: function() {
+                alert('Ocurrió un error de comunicación. Inténtalo de nuevo.');
             }
         });
     });
-}
-
-function despacharTicket(tiket, factura) {
-    let tiempo = timers[tiket] || 0;
-    $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
-        if (!response.toLowerCase().includes('error')) {
-            delete timers[tiket];
-            cargarTickets();
-        } else {
-            alert(response);
-        }
-    });
-}
-
-function cambiarEstatus(tiket, nuevoEstatus) {
-    $.post('../Logica/actualizar_estatus.php', { tiket, estatus: nuevoEstatus }, function(response) {
-        console.log("Estatus actualizado: " + response);
-    });
-}
-
-function asignarTicket(tiket) {
-    $.post('../Logica/asignar_ticket.php', { tiket }, function() {
-        cargarTickets();
-    });
-}
-
-function manejarRetencion(tiket, boton) {
-    if (retencionBloqueado[tiket]) return;
-    retencionBloqueado[tiket] = true;
-    $(boton).prop('disabled', true);
-
-    let contador = retencionClicks[tiket] || 0;
-    let accion = (contador === 0) ? 'insertar' : 'actualizar';
-
-    $.post('../Logica/accion_retencion.php', { tiket, accion }, function(response) {
-        if(accion === 'insertar') {
-            retencionClicks[tiket] = 1;
-        } else {
-            retencionClicks[tiket] = 2;
-        }
-        cargarTickets();
-        retencionBloqueado[tiket] = false;
-    });
-}
-
-$(document).ready(function () {
-    cargarTickets();
-    setInterval(cargarTickets, 10000);
-
-    $('#seFueCheckbox').on('change', function () {
-        const isChecked = this.checked;
-        $('#facturaNumero').prop('disabled', isChecked).val(isChecked ? '' : $('#facturaNumero').val());
-        $('#codigoSeFueContainer').toggle(isChecked);
-        if(!isChecked) $('#codigoSeFue').val('');
-    });
-
-    $('#formFactura').on('submit', function (e) {
-        e.preventDefault();
-        const tiket = $('#facturaTiket').val();
-        const seFue = $('#seFueCheckbox').is(':checked');
-        const facturas = $('#facturaNumero').val().trim();
-        const myModal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
-
-        if (seFue) {
-            if ($('#codigoSeFue').val().trim() !== 'LogisicA*2025*') {
-                alert('Código incorrecto para despachar como "Se fue".');
-                return;
-            }
-            if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
-                despacharTicket(tiket, "Se fue");
-                myModal.hide();
-            }
-            return;
-        }
-
-        if (!facturas) {
-            alert("Por favor ingrese al menos un número de factura.");
-            return;
-        }
-
-        const listaFacturas = facturas.split(';').map(f => f.trim()).filter(Boolean);
-        for (let f of listaFacturas) {
-            if (f.length !== 11) {
-                alert(`Cada número de factura debe tener 11 caracteres. Error en: "${f}"`);
-                return;
-            }
-        }
-        
-        myModal.hide();
-        listaFacturas.forEach(f => despacharTicket(tiket, f));
-    });
-
-    $(document).on('click', '.btn-despachar', function() {
-        const tiket = $(this).data('tiket');
-        $('#facturaTiket').val(tiket);
-        $('#formFactura')[0].reset();
-        $('#facturaNumero').prop('disabled', false);
-        $('#codigoSeFueContainer').hide();
-        new bootstrap.Modal(document.getElementById('facturaModal')).show();
-    });
-
-    $(document).on('click', '.btn-asignar', function() {
-        asignarTicket($(this).data('tiket'));
-    });
     
+    // 3. Al cambiar el estatus en el <select>
     $(document).on('change', '.estatus-select', function() {
-        cambiarEstatus($(this).data('tiket'), $(this).val());
+        if ($(this).is(':disabled')) return;
+        const tiket = $(this).data('tiket');
+        const nuevoEstatus = $(this).val();
+        
+        $.post('../Logica/actualizar_estatus.php', { tiket, estatus: nuevoEstatus });
+        // No es necesario llamar a la actualización aquí, el trigger de la BD lo hará
+        // y el intervalo regular de 3 segundos lo detectará.
     });
 
-    $(document).on('click', '.btn-retencion', function () {
-        manejarRetencion($(this).data('tiket'), this);
-    });
-
-    $('#facturaNumero').on('input', function (e) {
-        let valor = e.target.value.replace(/[^A-Za-z0-9]/g, '');
-        let bloques = [];
-        for (let i = 0; i < valor.length; i += 11) {
-            bloques.push(valor.substring(i, i + 11));
-        }
-        e.target.value = bloques.join(';').toUpperCase();
-    }).on('keydown', function(e) {
-        if (e.key === 'Enter') e.preventDefault();
-    });
-    
-    window.addEventListener('pageshow', function(event) {
-        if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
-            window.location.reload();
-        }
-    });
 });
 </script>
 </body>
