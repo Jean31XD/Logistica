@@ -1,53 +1,48 @@
 <?php
+// asignar_ticket.php
 session_start();
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
-
-
-if (!isset($_SESSION['usuario'])) {
-    exit("❌ Acceso no autorizado.");
-}
-
-if (!isset($_POST['tiket'])) {
-    exit("❌ Error: No se recibió el ticket.");
-}
-
-$asignado = $_SESSION['usuario'];
-
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
+header('Content-Type: application/json');
 
-$connectionInfo = array(
-    "Database" => $database,
-    "UID" => $username,
-    "PWD" => $password,
-    "TrustServerCertificate" => true
-);
-
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-
-if (!$conn) {
-    die("❌ Error de conexión: " . print_r(sqlsrv_errors(), true));
+if (!isset($_SESSION['usuario'], $_POST['tiket'], $_POST['password'])) {
+    echo json_encode(['success' => false, 'message' => 'Faltan datos.']);
+    exit();
 }
 
 $tiket = $_POST['tiket'];
+$password = $_POST['password'];
+$usuario_actual = $_SESSION['usuario'];
 
-$sqlCheck = "SELECT * FROM log WHERE Tiket = ?";
-$paramsCheck = array($tiket);
-$stmtCheck = sqlsrv_query($conn, $sqlCheck, $paramsCheck);
+// 1. Obtener el hash de la contraseña del usuario desde la BD
+$sql_user = "SELECT password FROM usuarios WHERE usuario = ?";
+$stmt_user = sqlsrv_prepare($conn, $sql_user, [&$usuario_actual]);
+sqlsrv_execute($stmt_user);
 
-if ($stmtCheck === false || sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC) === null) {
-    exit("⚠️ Error: Ticket no encontrado.");
+$user_data = sqlsrv_fetch_array($stmt_user, SQLSRV_FETCH_ASSOC);
+
+if (!$user_data) {
+    echo json_encode(['success' => false, 'message' => 'Usuario no encontrado.']);
+    exit();
 }
 
-$sql = "UPDATE log SET Asignar = ? WHERE Tiket = ?";
-$params = array($asignado, $tiket);
-$stmt = sqlsrv_query($conn, $sql, $params);
+// 2. Verificar la contraseña
+if (password_verify($password, $user_data['password'])) {
+    // 3. Si es correcta, asignar el ticket
+    $nuevo_estatus = 'En Proceso';
+    $timestamp = time(); // Para la actualización inteligente
+    
+    $sql_update = "UPDATE tickets_en_espera SET asignado_a = ?, estatus = ?, fecha_actualizacion_ts = ? WHERE tiket = ?";
+    $params_update = [$usuario_actual, $nuevo_estatus, $timestamp, $tiket];
+    $stmt_update = sqlsrv_prepare($conn, $sql_update, $params_update);
 
-if ($stmt === false) {
-    exit("❌ Error al asignar el ticket: " . print_r(sqlsrv_errors(), true));
+    if (sqlsrv_execute($stmt_update)) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error al asignar el ticket.']);
+    }
+} else {
+    // Si la contraseña es incorrecta
+    echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
 }
-
-echo "✅ Ticket asignado correctamente a $asignado.";
-
-sqlsrv_close($conn);
 ?>
