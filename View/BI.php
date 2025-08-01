@@ -116,7 +116,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #0d6efd, #e73c7e, #23a6d5, #23d5ab);
+            background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
             background-size: 400% 400%;
             animation: gradientBG 20s ease infinite;
             color: #fff;

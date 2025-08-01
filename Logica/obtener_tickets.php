@@ -104,7 +104,7 @@ function generateRowHtml($row) {
     $despacharDisabled = (!$isAsignado || $isRetencion || $isAsignadoAOtro) ? "disabled" : "";
     $retencionDisabled = (!$isAsignado || $isAsignadoAOtro) ? "disabled" : "";
     $selectDisabled = ($isRetencion || $isAsignadoAOtro) ? "disabled" : "";
-    
+
 $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id='$tiket'>";
     $html .= "<td>$tiket</td>";
     $html .= "<td>" . htmlspecialchars($row['NombreTR']) .
@@ -119,7 +119,6 @@ $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id=
             <option value='Pedido preparandose' " . ($estatus == 'Pedido preparandose' ? 'selected' : '') . ">Preparándose</option>
             <option value='En proceso de empaque' " . ($estatus == 'En proceso de empaque' ? 'selected' : '') . ">Empaque</option>
             <option value='Facturación' " . ($estatus == 'Facturación' ? 'selected' : '') . ">Facturación</option>
-            <option value='Retencion' " . ($estatus == 'Retencion' ? 'selected' : '') . ">Retención</option>
         </select>
     </td>";
     $html .= "<td class='asignado-a'>" . ($isAsignado ? htmlspecialchars($asignado) : "<em>No asignado</em>") . "</td>";
