@@ -58,108 +58,164 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(to bottom, #ffffff, #e31f25);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .main-container {
+        display: flex;
+        height: 100vh;
+        padding: 20px 40px;
+        gap: 30px;
+    }
+    .formulario {
+        flex: 1;
+        background: #ffffffd9;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        overflow-y: auto;
+    }
+    .sidebar {
+        height: 800px;
+        width: 350px;
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 25px 20px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .sidebar img {
+        display: block;
+        margin: 0 auto 20px auto;
+        max-width: 100%;
+    }
+    .btn-danger {
+        background-color: #e31f25;
+        color: white;
+        border: none;
+        font-weight: bold;
+        border-radius: 8px;
+        text-decoration: none;
+        display: block;
+        width: 100%;
+        margin-top: -10px;
+        text-align: center;
+    }
+    .btn-danger:hover {
+        background-color: #b71c1c;
+    }
+    .sidebar .form-control,
+    .sidebar .form-select {
+        margin-bottom: 12px;
+    }
+    .input-group.mb-4 {
+        border-radius: 8px;
+    }
+    .input-group.mb-4 input.form-control {
+        height: calc(1.5em + 0.75rem + 2px);
+    }
+    .input-group.mb-4 .btn-success {
+        height: calc(1.5em + 0.75rem + 2px);
+        padding: 0 12px;
+        font-size: 1rem;
+    }
+    .btn-success {
+        background-color: #e31f25;
+        border: none;
+        border-radius: 0 8px 8px 0;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.375rem 0.6rem;
+    }
+    .btn-success:hover {
+        background-color: #b71c1c;
+    }
+    .form-control.flex-grow-1 {
+        flex-grow: 1;
+    }
 
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(to bottom, #ffffff, #e31f25);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .main-container {
-            display: flex;
-            height: 100vh;
-            padding: 20px 40px;
-            gap: 30px;
-        }
-        .formulario {
-            flex: 1;
-            background: #ffffffd9;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            overflow-y: auto;
-        }
-        .sidebar {
-            height: 800px;
-            width: 350px;
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 25px 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        }
-        .sidebar img {
-            display: block;
-            margin: 0 auto 20px auto;
-            max-width: 100%;
-        }
-        .btn-danger {
-            background-color: #e31f25;
-            color: white;
-            border: none;
-            font-weight: bold;
-            border-radius: 8px;
-            text-decoration: none;
-            display: block;
-            width: 100%;
-            margin-top: -10px;
-            text-align: center;
-        }
-        .btn-danger:hover {
-            background-color: #b71c1c;
-        }
-        .sidebar .form-control,
-        .sidebar .form-select {
-            margin-bottom: 12px;
-        }
-        .input-group.mb-4 {
-            border-radius: 8px;
-        }
-        .input-group.mb-4 input.form-control {
-            height: calc(1.5em + 0.75rem + 2px);
-        }
-        .input-group.mb-4 .btn-success {
-            height: calc(1.5em + 0.75rem + 2px);
-            padding: 0 12px;
-            font-size: 1rem;
-        }
-        .btn-success {
-            background-color: #e31f25;
-            border: none;
-            border-radius: 0 8px 8px 0;
-            font-weight: 600;
-            font-size: 0.85rem;
-            padding: 0.375rem 0.6rem;
-        }
-        .btn-success:hover {
-            background-color: #b71c1c;
-        }
-        .form-control.flex-grow-1 {
-            flex-grow: 1;
-        }
-        .table {
-            border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 0 12px rgba(0,0,0,0.05);
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-        .table th,
-        .table td {
-            border: 1px solid #dee2e6;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .table th {
-            background-color: #e31f25;
-            color: white;
-            font-weight: 600;
-        }
-        .table-success {
-            background-color: #d4edda !important;
-        }
-    </style>
+    /* ✅ NUEVO ESTILO PARA TABLA DE FACTURAS */
+    h4 {
+        color: #e31f25;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .table {
+        background-color: #fff;
+        border-collapse: collapse;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        width: 100%;
+        font-size: 0.95rem;
+    }
+
+    .table th,
+    .table td {
+        border: 1px solid #dee2e6;
+        padding: 0.6rem;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.875rem;
+    }
+
+    .table th {
+        background-color: #e31f25;
+        color: white;
+        font-weight: 600;
+    }
+
+    .table-success {
+        background-color: #d4edda !important;
+    }
+
+    .btn-secondary {
+        background-color: #e31f25;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .btn-secondary:hover {
+        background-color: #b71c1c;
+    }
+
+    select.estado-validar {
+        background-color: #f8f9fa;
+        color: #212529;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.875rem;
+    }
+
+    .pagination {
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+
+    .pagination .page-link {
+        color: #e31f25;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        margin: 0 2px;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #e31f25;
+        border-color: #e31f25;
+        color: #fff;
+    }
+</style>
+
 </head>
 <body>
 <div class="main-container">
