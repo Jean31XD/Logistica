@@ -316,10 +316,10 @@ if (!$stmt) {
 </style>
 </head>
 <body>
-<div class="main-container">s
+<div class="main-container">
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 100%;">
+    <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="max-width: 100%;">
     <form method="get" id="formFiltros" class="w-100">
       <label for="inputTransportista" class="form-label">Transportista:</label>
       <input type="text" name="transportista" id="inputTransportista" class="form-control mb-2" placeholder="Buscar..." value="<?= htmlspecialchars($filtro) ?>">
