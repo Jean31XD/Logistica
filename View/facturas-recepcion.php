@@ -52,13 +52,13 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Recepción de Facturas</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
-  <style>
+    <meta charset="UTF-8" />
+    <title>Recepción de Facturas</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+      <style>
     html, body {
       height: 100%;
       margin: 0;
@@ -192,61 +192,60 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
       border-radius: 8px;
     }
   </style>
+
 </head>
 <body>
-  <div class="main-container">
+<div class="main-container">
     <div class="formulario">
-      <div id="contenedorFacturas"></div>
-      <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
+        <div id="contenedorFacturas"></div>
+        <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
     </div>
     <div class="sidebar">
-      <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo lateral">
+        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo lateral">
 
-      <label for="listaTransportistas" class="form-label">Transportista:</label>
-      <select id="listaTransportistas" class="form-select">
-        <option value="">-- Todos --</option>
-        <!-- PHP transportistas -->
-      </select>
+        <label for="listaTransportistas" class="form-label">Transportista:</label>
+        <select id="listaTransportistas" class="form-select">
+            <option value="">-- Todos --</option>
+            <?php foreach ($transportistas as $t): ?>
+                <option value="<?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+        </select>
 
-      <label for="fechaInicio" class="form-label">Desde:</label>
-      <input type="date" id="fechaInicio" class="form-control" />
+        <label for="fechaInicio" class="form-label">Desde:</label>
+        <input type="date" id="fechaInicio" class="form-control" />
 
-      <label for="fechaFin" class="form-label">Hasta:</label>
-      <input type="date" id="fechaFin" class="form-control" />
+        <label for="fechaFin" class="form-label">Hasta:</label>
+        <input type="date" id="fechaFin" class="form-control" />
 
-      <label for="fechaRecibido" class="form-label">Fecha recibido:</label>
-      <input type="date" id="fechaRecibido" class="form-control" />
+        <label for="fechaRecibido" class="form-label">Fecha recibido:</label>
+        <input type="date" id="fechaRecibido" class="form-control" />
 
-      <label for="fechaRecepcion" class="form-label">Fecha recepción:</label>
-      <input type="date" id="fechaRecepcion" class="form-control" />
+        <label for="fechaRecepcion" class="form-label">Fecha recepción:</label>
+        <input type="date" id="fechaRecepcion" class="form-control" />
 
-      <label for="filtroEstatus" class="form-label">Estatus:</label>
-      <select id="filtroEstatus" class="form-select">
-        <option value="">-- Todos --</option>
-        <option value="Completada">Completada</option>
-        <option value="RE">RE</option>
-      </select>
+        <label for="filtroEstatus" class="form-label">Estatus:</label>
+        <select id="filtroEstatus" class="form-select">
+            <option value="">-- Todos --</option>
+            <option value="Completada">Completada</option>
+            <option value="RE">RE</option>
+        </select>
 
-      <label for="buscarFactura" class="form-label">Buscar Factura:</label>
-      <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
+        <!-- NUEVO FILTRO: Buscar por factura -->
+        <label for="buscarFactura" class="form-label">Buscar Factura:</label>
+        <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
 
-      <label for="filtroUsuario" class="form-label">Usuario:</label>
-      <select id="filtroUsuario" class="form-select">
-        <option value="">-- Todos --</option>
-        <!-- PHP usuarios -->
-      </select>
+        <!-- Validación de factura -->
+        <label for="inputFactura" class="form-label">Nº Factura:</label>
+        <div class="input-group mb-4">
+            <input type="text" id="inputFactura" class="form-control flex-grow-1" placeholder="11 dígitos" maxlength="11" />
+            <button class="btn btn-success" onclick="validarFactura()" title="Recibir factura">
+                <i class="bi bi-box-arrow-in-down"></i>
+            </button>
+        </div>
 
-      <label for="inputFactura" class="form-label">Nº Factura:</label>
-      <div class="input-group mb-4">
-        <input type="text" id="inputFactura" class="form-control flex-grow-1" placeholder="11 dígitos" maxlength="11" />
-        <button class="btn btn-success" onclick="validarFactura()" title="Recibir factura">
-          <i class="bi bi-box-arrow-in-down"></i>
-        </button>
-      </div>
-      <div><a href="../Logica/logout.php" class="btn btn-danger">Cerrar Sesión</a></div>
+        <div><a href="../Logica/logout.php" class="btn btn-danger">Cerrar Sesión</a></div>
     </div>
-  </div>
-
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
