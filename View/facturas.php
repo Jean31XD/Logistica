@@ -223,7 +223,7 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
         <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
     </div>
     <div class="sidebar">
-    <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo lateral">
+    <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo lateral">
 
     <label for="listaTransportistas" class="form-label">Transportista:</label>
     <select id="listaTransportistas" class="form-select">
