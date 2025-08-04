@@ -253,6 +253,10 @@ $stmt = sqlsrv_query($conn, $sql, $params);
                 display: none;
             }
         }
+        #factura {
+    background-color: #f8f9fa; /* Fondo claro */
+    color: #000 !important;    /* Texto negro */
+}
     </style>
 </head>
 <body>
