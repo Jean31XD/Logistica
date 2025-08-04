@@ -33,8 +33,8 @@ if (!$conn) {
 }
 
 // 3. Verificar la contraseña del usuario
-// Asumimos que tienes una tabla 'usuarios' con 'usuario' y 'contrasena'
-$sqlUser = "SELECT contrasena FROM usuarios WHERE usuario = ?";
+// Asumimos que tienes una tabla 'usuarios' con 'usuario' y 'password       '
+$sqlUser = "SELECT password FROM usuarios WHERE usuario = ?";
 $paramsUser = [$usuarioAsignar];
 $stmtUser = sqlsrv_query($conn, $sqlUser, $paramsUser);
 
@@ -52,17 +52,17 @@ if (!$userRow) {
     echo json_encode(['success' => false, 'message' => 'Usuario no encontrado.']);
     sqlsrv_close($conn);
     exit;
-}
-
-$hashContrasena = $userRow['contrasena'];
+    }
+// Obtener el hash de la contraseña almacenada
+$hashPassword = $userRow['password'];
 
 // ¡La parte clave! Verificar que la contraseña ingresada coincida con el hash guardado.
-if (!password_verify($passwordIngresada, $hashContrasena)) {
+if (!password_verify($passwordIngresada, $hashPassword )) {
     echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
     sqlsrv_close($conn);
     exit;
 }
-
+    
 // 4. Si la contraseña es correcta, proceder a asignar el ticket
 // Primero, verificar que el ticket no esté ya asignado para evitar race conditions
 $sqlCheck = "SELECT Asignar FROM log WHERE Tiket = ?";
