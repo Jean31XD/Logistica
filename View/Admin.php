@@ -336,7 +336,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['title' => 'Validación', 'desc' => 'Valida facturas escaneadas.', 'link' => '../View/facturas.php', 'icon' => 'fa-check-double'],
                     ['title' => 'Recepción', 'desc' => 'Control de recepción de documentos.', 'link' => '../View/facturas-recepcion.php', 'icon' => 'fa-inbox'],
                     ['title' => 'Reporte de Facturas', 'desc' => 'Reporte por Transportista.', 'link' => '../View/Reporte.php', 'icon' => 'fa-chart-pie'],
-                    ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar']
+                    ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar'],
+                    // --- TARJETA NUEVA AÑADIDA AQUÍ ---
+                    ['title' => 'Gestión de Usuarios', 'desc' => 'Crea, modifica y elimina usuarios.', 'link' => '../View/gestion_usuarios.php', 'icon' => 'fa-users-cog']
                 ];
                 $delay = 0.2;
                 foreach ($cards as $card):
@@ -351,6 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php $delay += 0.1; endforeach; ?>
         </div>
     </section>
+
 
     <section aria-labelledby="gestion-usuarios-title">
         <h2 id="gestion-usuarios-title" class="section-title animate__animated animate__fadeInUp">Gestión de Usuarios</h2>
