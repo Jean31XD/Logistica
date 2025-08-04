@@ -38,8 +38,8 @@ $sqlTotal = "SELECT COUNT(DISTINCT Transportista) AS total
              FROM custinvoicejour
              WHERE Transportista IS NOT NULL
                AND Validar = 'Completada'
-               AND Fecha_Scanner BETWEEN ? AND ?
-               AND Factura NOT LIKE 'NC%'"; // Changed to Fecha_Scanner for consistency with main query
+               AND Fecha BETWEEN ? AND ?
+               AND Factura NOT LIKE 'NC%'"; // Original Fecha column used here for total
 $paramsTotal = [$desdeSQL, $hastaSQL];
 
 if ($filtro) {
@@ -61,7 +61,7 @@ $sql = "SELECT Transportista, COUNT(*) AS Cantidad, MIN(zona) AS zona
         WHERE Transportista IS NOT NULL
           AND Validar = 'Completada'
           AND Fecha_Scanner BETWEEN ? AND ?
-          AND Factura NOT LIKE 'NC%'";
+          AND Factura NOT LIKE 'NC%'"; // Fecha_Scanner used for main query as in original
 $params = [$desdeSQL, $hastaSQL];
 
 if ($filtro) {
@@ -92,13 +92,18 @@ if (!$stmt) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
     <style>
+        /* General Body Styling */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
             background-size: 400% 400%;
             animation: gradientBG 20s ease infinite;
-            color: #fff;
+            color: #fff; /* Default text color for contrast */
             padding: 1.5rem;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         @keyframes gradientBG {
@@ -107,6 +112,7 @@ if (!$stmt) {
             100% { background-position: 0% 50%; }
         }
 
+        /* Glass Panel Effect */
         .glass-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
@@ -117,34 +123,49 @@ if (!$stmt) {
             padding: 2rem;
         }
 
+        /* Main Container Layout */
         .main-container {
             display: flex;
             flex-direction: row-reverse; /* Sidebar on the right */
             gap: 1.5rem;
-            align-items: flex-start;
-            height: 100vh; /* Ensure full height */
+            align-items: flex-start; /* Align items to the top */
+            width: 100%;
+            max-width: 1400px; /* Limit max width for better appearance */
+            margin: auto; /* Center the container */
         }
-        .main-content { flex: 1; }
-        .sidebar { width: 380px; position: sticky; top: 1.5rem; }
+        .main-content {
+            flex: 1; /* Takes remaining space */
+        }
+        .sidebar {
+            width: 380px;
+            position: sticky; /* Make sidebar sticky */
+            top: 1.5rem; /* Distance from top when sticky */
+        }
 
-        .form-label { font-weight: 600; color: #fff; margin-bottom: 0.5rem;}
+        /* Form Control Styling */
+        .form-label {
+            font-weight: 600;
+            color: #fff; /* White label text */
+            margin-bottom: 0.5rem;
+        }
         .form-control {
-            background-color: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff !important;
+            background-color: rgba(0, 0, 0, 0.2); /* Semi-transparent dark background */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Light border */
+            color: #fff !important; /* White text for input values */
             padding: 0.75rem 1rem;
             border-radius: 0.75rem;
         }
         .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.7); /* Lighter white placeholder */
         }
         .form-control:focus {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(0, 0, 0, 0.3); /* Slightly darker on focus */
             border-color: #fff;
-            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25); /* White glow on focus */
             color: #fff;
         }
-        
+
+        /* Custom Button Styles */
         .btn-red {
             background-color: #e31f25;
             color: white;
@@ -160,14 +181,14 @@ if (!$stmt) {
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
         .btn-red:hover {
-            background-color: #b71c1c;
+            background-color: #b71c1c; /* Darker red on hover */
             transform: translateY(-2px);
-            color: white;
+            color: white; /* Ensure text remains white on hover */
         }
 
         .btn-outline-light-red {
-            border: 1px solid #e31f25;
-            color: #e31f25;
+            border: 1px solid #e31f25; /* Red border */
+            color: #e31f25; /* Red text */
             background-color: transparent;
             padding: 0.75rem 1.5rem;
             font-weight: 600;
@@ -180,15 +201,22 @@ if (!$stmt) {
             transition: all 0.3s ease;
         }
         .btn-outline-light-red:hover {
-            background-color: #e31f25;
-            color: #fff;
+            background-color: #e31f25; /* Red fill on hover */
+            color: #fff; /* White text on hover */
         }
 
-        .btn-link { color: #fff; text-decoration: none;}
-        .btn-link:hover { color: rgba(255,255,255,0.8); }
+        .btn-link {
+            color: #fff; /* White link text */
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .btn-link:hover {
+            color: rgba(255,255,255,0.8); /* Slightly faded white on hover */
+        }
 
+        /* Table Styling */
         .table {
-            color: #fff;
+            color: #fff; /* Default text color for table content */
             border-collapse: separate;
             border-spacing: 0;
             width: 100%;
@@ -196,35 +224,38 @@ if (!$stmt) {
         }
 
         .table thead th {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.4); /* Darker header background for contrast */
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             padding: 1rem 0.8rem;
-            color: #fff; /* Ensure header text is white */
+            color: #fff; /* White header text */
+            border-bottom: 2px solid rgba(255, 255, 255, 0.4); /* Stronger border for header */
         }
         .table td, .table th {
             vertical-align: middle;
             padding: 0.9rem 0.8rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff; /* Ensure table body text is white */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Lighter border for rows */
+            color: #fff; /* White table body text */
         }
         .table tbody tr:last-child td {
-            border-bottom: none;
+            border-bottom: none; /* No border for last row */
         }
-        .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
+        }
         .table-responsive {
-            overflow-x: auto; /* Ensures table is scrollable on small screens */
+            overflow-x: auto;
             border-radius: 1.5rem; /* Apply border-radius to the container */
         }
         .table-bordered {
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Overall table border */
         }
         .table-bordered th, .table-bordered td {
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Individual cell borders */
         }
 
-        /* Dropdown specific styles */
+        /* Dropdown Specific Styles */
         .dropdown-menu {
             background-color: #f8f9fa; /* Light background for dropdown */
             border: 1px solid #6c757d;
@@ -232,7 +263,7 @@ if (!$stmt) {
             box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
         }
         .dropdown-item {
-            color: #000; /* Dark text for dropdown items */
+            color: #000; /* Dark text for dropdown items for contrast against light background */
             white-space: normal;
             padding: 0.5rem 1rem;
             font-size: 0.9rem;
@@ -250,34 +281,43 @@ if (!$stmt) {
             border-radius: 0.5rem;
         }
 
+        /* Pagination Styles */
         .pagination .page-link {
             background: transparent;
             border-color: rgba(255,255,255,0.3);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .pagination .page-link:hover {
+            background-color: rgba(255,255,255,0.1);
             color: #fff;
         }
         .pagination .page-item.active .page-link {
             background-color: #e31f25;
             border-color: #e31f25;
             color: #fff;
+            font-weight: bold;
         }
         .pagination .page-item.disabled .page-link {
             background-color: rgba(0,0,0,0.2);
             border-color: rgba(255,255,255,0.2);
             color: rgba(255,255,255,0.5);
+            cursor: not-allowed;
         }
 
-        /* --- RESPONSIVE STYLES --- */
+        /* Responsive Styles */
         @media (max-width: 992px) {
             body {
                 padding: 1rem;
             }
             .main-container {
-                flex-direction: column;
+                flex-direction: column; /* Stack elements vertically */
                 gap: 1.5rem;
+                height: auto; /* Allow height to adjust */
             }
             .sidebar, .main-content {
-                width: 100%;
-                position: static;
+                width: 100%; /* Full width on small screens */
+                position: static; /* Remove sticky positioning */
             }
             .sidebar {
                 padding-top: 1.5rem;
@@ -407,7 +447,6 @@ if (!$stmt) {
         </aside>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // JavaScript for filter submission
