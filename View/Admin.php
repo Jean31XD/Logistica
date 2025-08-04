@@ -204,7 +204,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 20px;
             z-index: 1100;
         }
-        
 
         /* Estilo para hacer visible el logo negro */
         .floating-header .logo img {
@@ -314,21 +313,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <header class="floating-header animate__animated animate__fadeInDown" role="banner">
-       <div class="logo" aria-hidden="true">
-        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo de la empresa" />
-    </div>
-
-    <div class="header-actions">
-        <div class="username" aria-live="polite">
-            <i class="fa-solid fa-user-shield"></i>
-            <span class="header-text"><?= htmlspecialchars($_SESSION['usuario']) ?></span>
-        </div>
-
-        <a href="../Logica/logout.php" class="logout-btn" role="button">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span class="header-text">Cerrar Sesión</span>
-        </a>
+    <div class="logo" aria-hidden="true">
+        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo de la empresa" />
     </div>
+    <div class="username" aria-live="polite">
+        <i class="fa-solid fa-user-shield me-2"></i><?= htmlspecialchars($_SESSION['usuario']) ?>
+    </div>
+    <a href="../Logica/logout.php" class="logout-btn" role="button">
+        <i class="fa-solid fa-right-from-bracket me-1"></i>Cerrar Sesión
+    </a>
 </header>
 
 <main class="container-fluid" role="main">

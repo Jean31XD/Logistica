@@ -158,10 +158,10 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
 $(document).ready(function () {
     let paginaActual = 1;
     let temporizadorInactividad;
-    const LIMITE_INACTIVIDAD_MS = 300 * 1000; // 5 minutos
+    const LIMITE_INACTIVIDAD_MS = 300 * 1000; // 5 minutos (sincronizado con el servidor)
 
     // --- FUNCIONES AUXILIARES ---
-    function debounce(fn, delay = 400) {
+    function debounce(fn, delay = 500) {
         let timeoutId;
         return (...args) => {
             clearTimeout(timeoutId);
@@ -225,7 +225,8 @@ $(document).ready(function () {
                         fila.find('.estado-validar').val('Completada');
                         fila.find('.fecha-scanner').text(respuesta.fecha_scanner || 'Ahora');
                     } else {
-                        // Si la factura no estaba en la vista actual, recargamos para que aparezca
+                        // Si la factura no estaba en la vista actual, recargamos para que aparezca.
+                        // Esto es útil si el usuario está en una página diferente o con filtros activos.
                         cargarFacturas(1);
                     }
                     $('#inputFactura').val('').focus();
@@ -247,7 +248,7 @@ $(document).ready(function () {
     const filtros = '#listaTransportistas, #fechaInicio, #fechaFin, #filtroEstatus, #filtroUsuario';
     $(filtros).on('change', () => cargarFacturas(1));
 
-    $('#buscarFactura').on('input', debounce(() => cargarFacturas(1), 500));
+    $('#buscarFactura').on('input', debounce(() => cargarFacturas(1)));
 
     $('#inputFactura').on('keypress', function(e) {
         if (e.which === 13) { // Tecla Enter
@@ -258,7 +259,7 @@ $(document).ready(function () {
 
     $('#btnValidarFactura').on('click', validarFactura);
 
-    // Delegación de eventos para elementos dinámicos
+    // Delegación de eventos para elementos creados dinámicamente
     $(document).on('change', '.estado-validar', function() {
         const factura = $(this).data('factura');
         const nuevoEstado = $(this).val();
@@ -273,6 +274,7 @@ $(document).ready(function () {
                 if (respuesta.success) {
                     const fila = $('#fila_' + factura);
                     if (fila.length) {
+                        // Feedback visual de éxito
                         fila.css({ transition: 'background-color 0.2s ease', backgroundColor: '#d1e7dd' });
                         setTimeout(() => fila.css('backgroundColor', ''), 1200);
                     }
@@ -290,10 +292,10 @@ $(document).ready(function () {
     });
 
     // Iniciar temporizador de inactividad
-    ['click', 'mousemove', 'keydown', 'scroll'].forEach(evt => document.addEventListener(evt, resetearTemporizador, false));
+    ['click', 'mousemove', 'keydown', 'scroll'].forEach(evt => document.addEventListener(evt, resetearTemporizador));
     resetearTemporizador();
 
-    // Carga inicial
+    // Carga inicial de facturas
     cargarFacturas(1);
 });
 </script>
