@@ -86,11 +86,7 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+   
 
         .main-container {
             display: flex;
@@ -218,13 +214,9 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
             animation: fadeIn 1s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+     
+        
     </style>
-</head>
-<body class="animate__animated animate__fadeIn">
 </head>
 <body>
 <div class="main-container">
@@ -233,7 +225,7 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
         <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
     </div>
     <div class="sidebar">
-    <img src="../IMG/LOGO MC - Blanco.png" alt="Logo lateral">
+    <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo lateral">
 
     <label for="listaTransportistas" class="form-label">Transportista:</label>
     <select id="listaTransportistas" class="form-select">
