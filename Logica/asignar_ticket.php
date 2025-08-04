@@ -1,75 +1,107 @@
 <?php
-// Incluir el archivo de conexión a la base de datos
-require_once 'conexion.php'; 
-
 session_start();
+date_default_timezone_set('America/Santo_Domingo');
+
 header('Content-Type: application/json');
 
-$response = ['success' => false, 'message' => ''];
-
+// 1. Verificación de sesión y datos de entrada
 if (!isset($_SESSION['usuario'])) {
-    $response['message'] = 'Usuario no autenticado.';
-    echo json_encode($response);
-    exit();
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Acceso no autorizado. Debes iniciar sesión.']);
+    exit;
 }
 
-$nuevo_usuario = $_SESSION['usuario'];
-$tiket = $_POST['tiket'] ?? null;
-$password_actual_asignado = $_POST['password_actual'] ?? null;
-$password_nuevo_asignado = $_POST['password_nuevo'] ?? null;
-$usuario_asignado_actual_nombre = $_POST['asignado_actual'] ?? null;
-
-if (!$tiket || !$password_actual_asignado || !$password_nuevo_asignado) {
-    $response['message'] = 'Faltan datos para la asignación.';
-    echo json_encode($response);
-    exit();
+// Se esperan el ticket, la contraseña del usuario actualmente asignado y la del nuevo usuario
+if (!isset($_POST['tiket']) || !isset($_POST['password_asignado']) || !isset($_POST['password_nuevo'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Faltan datos para realizar la operación.']);
+    exit;
 }
 
-$conn = conectarDB();
+$tiket = $_POST['tiket'];
+$passwordAsignado = $_POST['password_asignado'];
+$passwordNuevo = $_POST['password_nuevo'];
+$usuarioAsignar = $_SESSION['usuario'];
 
-try {
-    // 1. Obtener los datos del usuario actual asignado al ticket desde la base de datos
-    $stmt = $conn->prepare("SELECT id_asignacion, password FROM `users` WHERE nombre = ?");
-    $stmt->execute([$usuario_asignado_actual_nombre]);
-    $usuario_actual_info = $stmt->fetch(PDO::FETCH_ASSOC);
+// 2. Conexión a la BD
+require_once __DIR__ . '/../conexionBD/conexion.php';
+$connectionInfo = ["Database" => $database, "UID" => $username, "PWD" => $password, "TrustServerCertificate" => true];
+$conn = sqlsrv_connect($serverName, $connectionInfo);
 
-    // 2. Verificar la contraseña del usuario actualmente asignado
-    if ($usuario_actual_info) {
-        if (!password_verify($password_actual_asignado, $usuario_actual_info['password'])) {
-            $response['message'] = 'La contraseña del usuario actualmente asignado es incorrecta.';
-            echo json_encode($response);
-            exit();
-        }
-    } else {
-        // En caso de que el ticket no tenga un usuario asignado, no se requiere la verificación de su contraseña.
-        // Se puede añadir lógica adicional aquí si es necesario.
-        // Por ahora, asumimos que si no hay un usuario asignado, la asignación es libre.
-    }
-    
-    // 3. Verificar la contraseña del usuario que se está auto-asignando (el de la sesión)
-    $stmt_nuevo = $conn->prepare("SELECT id_asignacion, password FROM `users` WHERE nombre = ?");
-    $stmt_nuevo->execute([$nuevo_usuario]);
-    $usuario_nuevo_info = $stmt_nuevo->fetch(PDO::FETCH_ASSOC);
-
-    if (!$usuario_nuevo_info || !password_verify($password_nuevo_asignado, $usuario_nuevo_info['password'])) {
-        $response['message'] = 'Tu propia contraseña es incorrecta. No puedes auto-asignarte el ticket.';
-        echo json_encode($response);
-        exit();
-    }
-
-    // 4. Si ambas verificaciones (o la única necesaria) son exitosas, proceder con la asignación
-    $stmt_update = $conn->prepare("UPDATE tickets SET estatus = 'En Proceso', asignado_a = ? WHERE tiket = ?");
-    if ($stmt_update->execute([$nuevo_usuario, $tiket])) {
-        $response['success'] = true;
-        $response['message'] = 'Ticket asignado correctamente.';
-    } else {
-        $response['message'] = 'Error al actualizar el ticket en la base de datos.';
-    }
-
-} catch (PDOException $e) {
-    $response['message'] = 'Error de la base de datos: ' . $e->getMessage();
+if (!$conn) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error de conexión a la base de datos.']);
+    exit;
 }
 
-echo json_encode($response);
+// 3. Obtener el usuario actualmente asignado al ticket
+$sqlAsignado = "SELECT Asignar FROM log WHERE Tiket = ?";
+$paramsAsignado = [$tiket];
+$stmtAsignado = sqlsrv_query($conn, $sqlAsignado, $paramsAsignado);
+if ($stmtAsignado === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error al verificar la asignación actual del ticket.']);
+    sqlsrv_close($conn);
+    exit;
+}
 
-$conn = null;
+$rowAsignado = sqlsrv_fetch_array($stmtAsignado, SQLSRV_FETCH_ASSOC);
+$usuarioAsignadoActual = $rowAsignado['Asignar'] ?? null;
+
+// 4. Verificar la contraseña del usuario actualmente asignado
+if ($usuarioAsignadoActual && $usuarioAsignadoActual !== $usuarioAsignar) {
+    // Si el ticket ya tiene un dueño diferente al que lo va a tomar, se pide la contraseña del dueño actual
+    $sqlUserActual = "SELECT contrasena FROM usuarios WHERE usuario = ?";
+    $paramsUserActual = [$usuarioAsignadoActual];
+    $stmtUserActual = sqlsrv_query($conn, $sqlUserActual, $paramsUserActual);
+
+    if ($stmtUserActual === false) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error al consultar el usuario actual del ticket.']);
+        sqlsrv_close($conn);
+        exit;
+    }
+
+    $userRowActual = sqlsrv_fetch_array($stmtUserActual, SQLSRV_FETCH_ASSOC);
+
+    if (!$userRowActual || !password_verify($passwordAsignado, $userRowActual['contrasena'])) {
+        echo json_encode(['success' => false, 'message' => 'La contraseña del usuario actualmente asignado es incorrecta.']);
+        sqlsrv_close($conn);
+        exit;
+    }
+}
+
+// 5. Verificar la contraseña del usuario que va a tomar el ticket
+$sqlUserNuevo = "SELECT contrasena FROM usuarios WHERE usuario = ?";
+$paramsUserNuevo = [$usuarioAsignar];
+$stmtUserNuevo = sqlsrv_query($conn, $sqlUserNuevo, $paramsUserNuevo);
+
+if ($stmtUserNuevo === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error al consultar tus datos de usuario.']);
+    sqlsrv_close($conn);
+    exit;
+}
+
+$userRowNuevo = sqlsrv_fetch_array($stmtUserNuevo, SQLSRV_FETCH_ASSOC);
+if (!$userRowNuevo || !password_verify($passwordNuevo, $userRowNuevo['contrasena'])) {
+    echo json_encode(['success' => false, 'message' => 'Tu propia contraseña es incorrecta. No puedes auto-asignarte el ticket.']);
+    sqlsrv_close($conn);
+    exit;
+}
+
+// 6. Si todas las verificaciones son exitosas, proceder a asignar el ticket
+// Actualizar el ticket
+$sql = "UPDATE log SET Asignar = ?, Estatus = 'Verificación de pedido' WHERE Tiket = ?";
+$params = [$usuarioAsignar, $tiket];
+$stmt = sqlsrv_query($conn, $sql, $params);
+
+if ($stmt === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error al asignar el ticket: ' . print_r(sqlsrv_errors(), true)]);
+} else {
+    echo json_encode(['success' => true]);
+}
+
+sqlsrv_close($conn);
+?>
