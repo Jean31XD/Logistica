@@ -307,6 +307,13 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
             border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
         }
         .form-select { color-scheme: dark; }
+        
+        /* --- REGLA AÑADIDA PARA EL COLOR DE LAS OPCIONES --- */
+        select.form-select option {
+            background: #fff;
+            color: #000;
+        }
+
         .btn { font-weight: 600; border-radius: 0.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .btn:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
         .result-card { background: rgba(0, 0, 0, 0.2); border-radius: 0.5rem; padding: 1rem; font-family: monospace; }

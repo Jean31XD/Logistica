@@ -355,56 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </section>
 
 
-    <section aria-labelledby="gestion-usuarios-title">
-        <h2 id="gestion-usuarios-title" class="section-title animate__animated animate__fadeInUp">Gestión de Usuarios</h2>
-        <div class="cards-container">
-            <article class="card animate__animated animate__zoomIn" style="animation-delay: 0.8s;">
-                <div class="card-header"><i class="fa-solid fa-user-plus me-2"></i>Crear Usuario</div>
-                <div class="card-body">
-                    <?php if ($mensajeCrear): ?><div class="alert <?= $alertCrear ?>"><?= $mensajeCrear ?></div><?php endif; ?>
-                    <form method="post" autocomplete="off" novalidate>
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>" />
-                        <input type="hidden" name="accion" value="crear" />
-                        <div class="mb-3"><label for="usuario" class="form-label">Usuario</label><input type="text" id="usuario" name="usuario" class="form-control" required /></div>
-                        <div class="mb-3"><label for="password" class="form-label">Contraseña</label><input type="password" id="password" name="password" class="form-control" required /></div>
-                        <div class="mb-3"><label for="pantalla" class="form-label">Nivel de Acceso</label><select id="pantalla" name="pantalla" class="form-select" required><option value="" selected disabled>Seleccione...</option><option value="1">Despacho</option><option value="2">Validación</option><option value="3">Recepción</option><option value="0">Administrador</option><option value="4">Reportes</option><option value="5">Admin-limitado</option><option value="6">Reportes Faltantes</option></select></div>
-                        <button type="submit" class="btn btn-success w-100 mt-2"><i class="fa-solid fa-plus-circle me-1"></i>Crear</button>
-                    </form>
-                </div>
-            </article>
 
-            <article class="card animate__animated animate__zoomIn" style="animation-delay: 0.9s;">
-                <div class="card-header"><i class="fa-solid fa-user-pen me-2"></i>Modificar Usuario</div>
-                <div class="card-body">
-                    <?php if ($mensajeModificar): ?><div class="alert <?= $alertModificar ?>"><?= $mensajeModificar ?></div><?php endif; ?>
-                    <form method="post" autocomplete="off" novalidate>
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>" />
-                        <input type="hidden" name="accion" value="modificar" />
-                        <div class="mb-3"><label for="usuario_modificar" class="form-label">Usuario a Modificar</label><input type="text" id="usuario_modificar" name="usuario_modificar" class="form-control" required /></div>
-                        <div class="mb-3"><label for="password_nuevo" class="form-label">Nueva Contraseña</label><input type="password" id="password_nuevo" name="password_nuevo" class="form-control" placeholder="Dejar vacío para no cambiar" /></div>
-                        <div class="mb-3"><label for="pantalla_nuevo" class="form-label">Nuevo Nivel de Acceso</label><select id="pantalla_nuevo" name="pantalla_nuevo" class="form-select"><option value="-1" selected>Sin cambio</option><option value="1">Despacho</option><option value="2">Validación</option><option value="3">Recepción</option><option value="0">Administrador</option><option value="5">Admin-limitado</option><option value="4">Reportes</option><option value="6">Reporte de faltantes</option></select></div>
-                        <button type="submit" class="btn btn-warning text-dark w-100 mt-2"><i class="fa-solid fa-pen me-1"></i>Modificar</button>
-                    </form>
-                </div>
-            </article>
-
-            <article class="card animate__animated animate__zoomIn" style="animation-delay: 1.0s;">
-                <div class="card-header"><i class="fa-solid fa-user-minus me-2"></i>Eliminar Usuario</div>
-                <div class="card-body d-flex flex-column justify-content-center">
-                     <?php if ($mensajeEliminar): ?><div class="alert <?= $alertEliminar ?>"><?= $mensajeEliminar ?></div><?php endif; ?>
-                    <form method="post" autocomplete="off" novalidate>
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>" />
-                        <input type="hidden" name="accion" value="eliminar" />
-                        <div class="mb-3">
-                            <label for="usuario_eliminar" class="form-label">Usuario a Eliminar</label>
-                            <input type="text" id="usuario_eliminar" name="usuario_eliminar" class="form-control" required />
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100 mt-2"><i class="fa-solid fa-trash me-1"></i>Eliminar</button>
-                    </form>
-                </div>
-            </article>
-        </div>
-    </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
