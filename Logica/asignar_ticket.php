@@ -11,17 +11,17 @@ if (!isset($_SESSION['usuario'])) {
     exit;
 }
 
-if (!isset($_POST['tiket']) || !isset($_POST['password_nuevo']) || !isset($_POST['asignado_actual'])) {
+// Se esperan el ticket, la contraseña del usuario actualmente asignado y la del nuevo usuario
+if (!isset($_POST['tiket']) || !isset($_POST['password_asignado']) || !isset($_POST['password_nuevo'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Faltan datos para realizar la operación.']);
     exit;
 }
 
 $tiket = $_POST['tiket'];
-$passwordAsignado = $_POST['password_actual'] ?? ''; // La contraseña del usuario actual puede no enviarse
+$passwordAsignado = $_POST['password_asignado'];
 $passwordNuevo = $_POST['password_nuevo'];
 $usuarioAsignar = $_SESSION['usuario'];
-$usuarioAsignadoActual = $_POST['asignado_actual'];
 
 // 2. Conexión a la BD
 require_once __DIR__ . '/../conexionBD/conexion.php';
@@ -34,8 +34,23 @@ if (!$conn) {
     exit;
 }
 
-// 3. Verificar la contraseña del usuario actual (solo si el ticket ya está asignado)
-if ($usuarioAsignadoActual !== 'No asignado') {
+// 3. Obtener el usuario actualmente asignado al ticket
+$sqlAsignado = "SELECT Asignar FROM log WHERE Tiket = ?";
+$paramsAsignado = [$tiket];
+$stmtAsignado = sqlsrv_query($conn, $sqlAsignado, $paramsAsignado);
+if ($stmtAsignado === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error al verificar la asignación actual del ticket.']);
+    sqlsrv_close($conn);
+    exit;
+}
+
+$rowAsignado = sqlsrv_fetch_array($stmtAsignado, SQLSRV_FETCH_ASSOC);
+$usuarioAsignadoActual = $rowAsignado['Asignar'] ?? null;
+
+// 4. Verificar la contraseña del usuario actualmente asignado
+if ($usuarioAsignadoActual && $usuarioAsignadoActual !== $usuarioAsignar) {
+    // Si el ticket ya tiene un dueño diferente al que lo va a tomar, se pide la contraseña del dueño actual
     $sqlUserActual = "SELECT contrasena FROM usuarios WHERE usuario = ?";
     $paramsUserActual = [$usuarioAsignadoActual];
     $stmtUserActual = sqlsrv_query($conn, $sqlUserActual, $paramsUserActual);
@@ -56,7 +71,7 @@ if ($usuarioAsignadoActual !== 'No asignado') {
     }
 }
 
-// 4. Verificar la contraseña del usuario que va a tomar el ticket
+// 5. Verificar la contraseña del usuario que va a tomar el ticket
 $sqlUserNuevo = "SELECT contrasena FROM usuarios WHERE usuario = ?";
 $paramsUserNuevo = [$usuarioAsignar];
 $stmtUserNuevo = sqlsrv_query($conn, $sqlUserNuevo, $paramsUserNuevo);
@@ -75,7 +90,7 @@ if (!$userRowNuevo || !password_verify($passwordNuevo, $userRowNuevo['contrasena
     exit;
 }
 
-// 5. Si todas las verificaciones son exitosas, proceder a asignar el ticket
+// 6. Si todas las verificaciones son exitosas, proceder a asignar el ticket
 // Actualizar el ticket
 $sql = "UPDATE log SET Asignar = ?, Estatus = 'Verificación de pedido' WHERE Tiket = ?";
 $params = [$usuarioAsignar, $tiket];

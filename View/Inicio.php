@@ -446,6 +446,74 @@ header("Expires: 0");
             }
         });
     });
+
+
+$(document).ready(function () {
+    const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
+    let lastCheckTimestamp = 0;
+    let timers = {}, retencionClicks = {}, retencionBloqueado = {};
+
+    function actualizarTablaInteligentemente() {
+        // ... (resto del código igual) ...
+
+        $.ajax({
+            url: '../Logica/obtener_tickets.php',
+            method: 'POST',
+            data: {
+                since: lastCheckTimestamp,
+                current_ids: currentTicketIds
+            },
+            dataType: 'json',
+            success: function(response) {
+                // ... (resto del código igual) ...
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Error al actualizar la tabla:", textStatus, errorThrown);
+            }
+        });
+    }
+
+    // ... (otras funciones como despacharTicket, manejarRetencion, etc. sin cambios) ...
+
+    $(document).on('click', '.btn-asignar', function() {
+        const tiket = $(this).data('tiket');
+        const asignadoActual = $(`#row_${tiket}`).find('.asignado-a').text().trim();
+        
+        $('#asignarTicketId').text(tiket);
+        $('#asignarTiketInput').val(tiket);
+        $('#asignadoActualInput').val(asignadoActual);
+        
+        // Lógica para mostrar/ocultar los campos del modal
+        if (asignadoActual === 'No asignado' || asignadoActual === '') {
+            $('#modal-text').html(`Para asignarte el ticket <strong>${tiket}</strong>, por favor ingresa tu contraseña.`);
+            $('#passwordActualContainer').hide();
+            $('#passwordActual').prop('required', false);
+            $('#passwordNuevo').prop('required', true).focus();
+        } else {
+            $('#modal-text').html(`Para reasignarte el ticket <strong>${tiket}</strong>, por favor ingresa la contraseña del usuario actualmente asignado (${asignadoActual}) y tu propia contraseña.`);
+            $('#asignadoActualSpan').text(asignadoActual);
+            $('#passwordLabelActual').text(asignadoActual);
+            $('#passwordActualContainer').show();
+            $('#passwordActual').prop('required', true).focus();
+            $('#passwordNuevo').prop('required', true);
+        }
+
+        $('#passwordActual').val('');
+        $('#passwordNuevo').val('');
+        
+        const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
+        asignarModal.show();
+    });
+
+    $('#formAsignar').on('submit', function(e) {
+        // ... (código para manejar el submit del formulario sin cambios) ...
+    });
+    
+    // ... (resto de los manejadores de eventos sin cambios) ...
+});
+
+
+
     </script>
 </body>
 </html>
