@@ -116,16 +116,16 @@ header("Expires: 0");
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa la contraseña del usuario actualmente asignado (<span id="asignadoActualSpan"></span>) y tu propia contraseña.</p>
+                        <p id="modal-text">Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
                         
                         <input type="hidden" id="asignarTiketInput">
                         <input type="hidden" id="asignadoActualInput">
                         
-                        <div class="mb-3">
+                        <div id="passwordActualContainer" class="mb-3" style="display:none;">
                             <label for="passwordActual" class="form-label">Contraseña de <span id="passwordLabelActual"></span>:</label>
                             <input type="password" id="passwordActual" class="form-control" required>
                         </div>
-                        <div class="mb-3">
+                        <div id="passwordNuevoContainer" class="mb-3">
                             <label for="passwordNuevo" class="form-label">Tu Contraseña:</label>
                             <input type="password" id="passwordNuevo" class="form-control" required>
                         </div>
@@ -287,15 +287,27 @@ header("Expires: 0");
             $('#asignarTicketId').text(tiket);
             $('#asignarTiketInput').val(tiket);
             $('#asignadoActualInput').val(asignadoActual);
-            $('#asignadoActualSpan').text(asignadoActual);
-            $('#passwordLabelActual').text(asignadoActual);
+            
+            // Lógica para mostrar/ocultar los campos del modal
+            if (asignadoActual === 'No asignado') {
+                $('#modal-text').html(`Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.`);
+                $('#passwordActualContainer').hide();
+                $('#passwordActual').prop('required', false);
+                $('#passwordNuevo').prop('required', true).focus();
+            } else {
+                $('#modal-text').html(`Para reasignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa la contraseña del usuario actualmente asignado (<span id="asignadoActualSpan"></span>) y tu propia contraseña.`);
+                $('#asignadoActualSpan').text(asignadoActual);
+                $('#passwordLabelActual').text(asignadoActual);
+                $('#passwordActualContainer').show();
+                $('#passwordActual').prop('required', true).focus();
+                $('#passwordNuevo').prop('required', true);
+            }
 
             $('#passwordActual').val('');
             $('#passwordNuevo').val('');
             
             const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
             asignarModal.show();
-            $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#passwordActual').focus());
         });
 
         $('#formAsignar').on('submit', function(e) {
@@ -305,7 +317,13 @@ header("Expires: 0");
             const passwordNuevo = $('#passwordNuevo').val();
             const asignadoActual = $('#asignadoActualInput').val();
 
-            if (!passwordActual || !passwordNuevo) {
+            // Si el ticket no está asignado, solo se valida la contraseña del nuevo usuario
+            if (asignadoActual === 'No asignado' && !passwordNuevo) {
+                 alert('Por favor, ingresa tu contraseña.');
+                 return;
+            }
+            // Si el ticket ya está asignado, se validan ambas contraseñas
+            if (asignadoActual !== 'No asignado' && (!passwordActual || !passwordNuevo)) {
                 alert('Por favor, ingresa ambas contraseñas.');
                 return;
             }
@@ -326,7 +344,11 @@ header("Expires: 0");
                         actualizarTablaInteligentemente();
                     } else {
                         alert('Error: ' + response.message);
-                        $('#passwordActual').val('').focus();
+                        if (asignadoActual !== 'No asignado') {
+                            $('#passwordActual').val('').focus();
+                        } else {
+                             $('#passwordNuevo').val('').focus();
+                        }
                     }
                 },
                 error: () => alert('Ocurrió un error de comunicación. Inténtalo de nuevo.')
