@@ -204,74 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 20px;
             z-index: 1100;
         }
-        /* --- Estilos del Header --- */
-.floating-header {
-    display: flex; /* Activa Flexbox */
-    justify-content: space-between; /* Espacio entre el logo y las acciones */
-    align-items: center; /* Centra los elementos verticalmente */
-    padding: 1rem 1.5rem; /* Relleno superior/inferior y lateral */
-    background-color: #fff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    width: 100%;
-    position: sticky; /* O fixed, si quieres que siempre esté visible */
-    top: 0;
-    z-index: 1020;
-}
-
-.floating-header .logo img {
-    height: 40px; /* Tamaño del logo */
-    display: block;
-}
-
-.header-actions {
-    display: flex; /* Alinear usuario y botón de logout */
-    align-items: center;
-    gap: 1.5rem; /* Espacio entre el nombre y el botón */
-}
-
-.username, .logout-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem; /* Espacio entre el ícono y el texto */
-    text-decoration: none;
-    color: #333;
-    font-weight: 500;
-}
-
-.logout-btn {
-    color: #d32f2f; /* Color rojo para el botón de salir */
-}
-
-/* --- Estilos Responsivos para Móviles --- */
-@media (max-width: 768px) {
-    .floating-header {
-        padding: 0.75rem 1rem; /* Menos relleno en pantallas pequeñas */
-    }
-
-    .header-actions {
-        gap: 1rem; /* Menos espacio entre los íconos */
-    }
-
-    /* La magia ocurre aquí: se oculta el texto */
-    .header-text {
-        display: none;
-    }
-
-    /* Asegurarnos que los íconos se vean bien sin texto */
-    .username, .logout-btn {
-        gap: 0;
-        font-size: 1.2rem; /* Aumentar un poco el tamaño del ícono */
-    }
-    
-    .logout-btn {
-        padding: 0.5rem;
-        border-radius: 50%; /* Hacer el fondo del ícono circular */
-    }
-    
-    .logout-btn:hover {
-        background-color: #fbebeb;
-    }
-}
+        
 
         /* Estilo para hacer visible el logo negro */
         .floating-header .logo img {
