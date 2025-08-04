@@ -70,61 +70,207 @@ if (!$stmt) {
 ?>
 
 <!DOCTYPE html>
-<html lang='es'>
+<html lang="es">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recepción de Facturas ✨</title>
 
-<!-- ESTILOS MODERNOS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
-<style>
-    body {
-        background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
-        background-size: 400% 400%;
-        animation: gradientBG 20s ease infinite;
-        font-family: 'Segoe UI', sans-serif;
-        color: #fff;
-        padding: 20px;
-    }
-    @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
-    }
-    .glass-card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        padding: 20px;
-        margin-bottom: 20px;
-        color: white;
-    }
-    .glass-card h2, .glass-card label, .glass-card .form-label, .glass-card th {
-        color: white;
-    }
-    .table thead th {
-        background-color: #9a1a1a;
-        color: #fff;
-        font-weight: 600;
-    }
-    .btn-danger {
-        background-color: #e31f25;
-        border: none;
-    }
-    .btn-danger:hover {
-        background-color: #a31616;
-    }
-    .select2-container--default .select2-selection--single {
-        background-color: #fff !important;
-        border-radius: 8px;
-        padding: 4px;
-        border: 1px solid #ccc;
-    }
-</style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
+            color: #fff;
+            padding: 1.5rem; /* Increased padding for better spacing */
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            padding: 2rem; /* Increased padding */
+        }
+
+        .main-container { display: flex; gap: 1.5rem; align-items: flex-start; }
+        .main-content { flex: 1; }
+        .sidebar { width: 380px; position: sticky; top: 1.5rem; } /* Slightly wider sidebar */
+
+        .table-container { overflow-x: auto; }
+        .table {
+            color: #fff;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            table-layout: auto;
+        }
+
+        .table thead th {
+            background: rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem 0.8rem;
+        }
+        .table td, .table th {
+            vertical-align: middle;
+            padding: 0.9rem 0.8rem; /* Adjusted padding for table cells */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .table-success { background-color: rgba(25, 135, 84, 0.3) !important; } /* Use a translucent green for success */
+
+        .paginacion a { color: #fff; text-decoration: none; }
+        .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); color: #fff; }
+        .paginacion .page-item.active .page-link { background-color: #fff; color: #b71c1c; border-color: #fff;} /* Red from the new design */
+        .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5);}
+        
+        .form-label { font-weight: 600; color: #fff; margin-bottom: 0.5rem;}
+        .form-control, .form-select {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff !important;
+            padding: 0.75rem 1rem; /* Added padding to form controls */
+            border-radius: 0.75rem; /* More rounded corners */
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #000 !important;
+            height: auto;
+            border-radius: 0.75rem !important; /* Match form control border-radius */
+            padding: 0.375rem 1rem;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: #000 !important;
+            white-space: normal;
+            word-break: break-all;
+            line-height: calc(1.5em + 0.75rem + 2px); /* Align with input height */
+        }
+        select option { background-color: #343a40; }
+        
+        .select2-dropdown {
+            background-color: #f8f9fa;
+            border: 1px solid #6c757d;
+            border-radius: 0.5rem;
+            z-index: 1056;
+        }
+        .select2-results__option {
+            color: #000;
+            white-space: normal;
+        }
+        .select2-results__option--highlighted { background-color: #e31f25; color: #fff; } /* Changed highlight color to red */
+        
+        .btn-red { /* Custom button style for primary actions */
+            background-color: #e31f25;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn-red:hover {
+            background-color: #b71c1c;
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .btn-outline-light-red {
+            border: 1px solid #e31f25;
+            color: #e31f25;
+            background-color: transparent;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .btn-outline-light-red:hover {
+            background-color: #e31f25;
+            color: #fff;
+        }
+
+
+        .btn-link { color: #fff; text-decoration: none;}
+        .btn-link:hover { color: rgba(255,255,255,0.8); }
+
+        .input-group .btn-red {
+            border-radius: 0 0.75rem 0.75rem 0;
+            padding: 0.5rem 1rem; /* Adjust padding for button in input group */
+        }
+        .input-group .form-control:focus {
+            z-index: 1; /* Ensure input focus does not overlap button border */
+        }
+        .input-group > .form-control {
+            border-radius: 0.75rem 0 0 0.75rem;
+        }
+
+        /* --- ESTILOS RESPONSIVOS --- */
+        @media (max-width: 992px) {
+            body {
+                padding: 1rem;
+            }
+            .main-container {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            .sidebar, .main-content {
+                width: 100%;
+                position: static;
+            }
+            .sidebar {
+                padding-top: 1.5rem; /* Adjust padding for mobile */
+            }
+            /* Show table and pagination on smaller screens, just make it scrollable */
+            .table-container {
+                display: block;
+            }
+            .paginacion {
+                display: flex;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="main-container">
