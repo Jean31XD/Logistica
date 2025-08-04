@@ -1,19 +1,20 @@
 <?php
-// Seguridad de sesión
+// --- INICIO DE LÓGICA PHP ---
 ini_set('session.use_strict_mode', 1);
-ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_httppnly', 1);
 ini_set('session.cookie_samesite', 'Strict');
 
 session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
-// Cierre por inactividad (300 segundos = 5 minutos)
-$inactividadLimite = 300; 
+// Cierre por inactividad (200 segundos) - This logic is already handled by the client-side JS and server-side on each request.
+// The inactivity limit on the server side is managed by 'ultimo_acceso' in the session.
+$inactividadLimite = 200;
 
 if (isset($_SESSION['ultimo_acceso']) && (time() - $_SESSION['ultimo_acceso'] > $inactividadLimite)) {
     session_unset();
     session_destroy();
-    header("Location: ../index.php?status=inactivity");
+    header("Location: ../index.php");
     exit();
 }
 $_SESSION['ultimo_acceso'] = time();
@@ -26,8 +27,18 @@ if (!isset($_SESSION['usuario'])) {
 session_regenerate_id(true);
 
 include '../conexionBD/conexion.php';
+if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
 
 header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
+if (isset($_GET['logout'])) {
+    session_unset();
+    session_destroy();
+    header("Location: ../View/index.php");
+    exit();
+}
 
 if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 2, 3, 5])) {
     header("Location: ../index.php");
@@ -35,268 +46,651 @@ if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 2, 3, 
 }
 
 // Cargar transportistas
-$query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL AND Transportista <> '' ORDER BY Transportista ASC";
-$result = sqlsrv_query($conn, $query);
+$queryTransportistas = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL ORDER BY Transportista";
+$resultTransportistas = sqlsrv_query($conn, $queryTransportistas);
 $transportistas = [];
-if ($result) {
-    while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
-        $transportistas[] = $row['Transportista'];
+while ($row = sqlsrv_fetch_array($resultTransportistas, SQLSRV_FETCH_ASSOC)) {
+    $transportistas[] = $row['Transportista'];
+}
+
+// Cargar usuarios si la pantalla es 0, 2 o 5
+$usuarios = [];
+if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
+    $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL ORDER BY Usuario";
+    $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
+    while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
+        $usuarios[] = $row['Usuario'];
     }
 }
 
-// Cargar usuarios
-$usuarios = [];
-if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
-    $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL AND Usuario <> '' ORDER BY Usuario ASC";
-    $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
-    if ($resultUsuarios) {
-        while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
-            $usuarios[] = $row['Usuario'];
-        }
+// Initialize filter variables from GET parameters
+$filtroTransportista = $_GET['transportista'] ?? '';
+$fechaInicio = $_GET['fechaInicio'] ?? '';
+$fechaFin = $_GET['fechaFin'] ?? '';
+$fechaRecibido = $_GET['fechaRecibido'] ?? '';
+$fechaRecepcion = $_GET['fechaRecepcion'] ?? '';
+$filtroEstatus = $_GET['estatus'] ?? '';
+$buscarFactura = $_GET['buscarFactura'] ?? '';
+$filtroUsuario = $_GET['usuario'] ?? '';
+$page = max(1, intval($_GET['page'] ?? 1));
+$limit = 25; // Adjusted limit for display, can be changed
+$offset = ($page - 1) * $limit;
+
+// Build the WHERE clause for facturas query
+$where = "WHERE 1=1";
+$params = [];
+
+if (!empty($filtroTransportista)) {
+    $where .= " AND Transportista = ?";
+    $params[] = $filtroTransportista;
+}
+if (!empty($fechaInicio)) {
+    $where .= " AND Fecha >= ?";
+    $params[] = $fechaInicio;
+}
+if (!empty($fechaFin)) {
+    $where .= " AND Fecha <= ?";
+    $params[] = $fechaFin;
+}
+if (!empty($fechaRecibido)) {
+    $where .= " AND CONVERT(date, Fecha_scanner) = ?";
+    $params[] = $fechaRecibido;
+}
+if (!empty($fechaRecepcion)) {
+    $where .= " AND CONVERT(date, recepcion) = ?";
+    $params[] = $fechaRecepcion;
+}
+if (!empty($filtroEstatus)) {
+    $where .= " AND Validar = ?";
+    $params[] = $filtroEstatus;
+}
+if (!empty($buscarFactura)) {
+    $where .= " AND Factura LIKE ?";
+    $params[] = '%' . $buscarFactura . '%';
+}
+if (in_array($_SESSION['pantalla'], [0, 2, 5]) && !empty($filtroUsuario)) {
+    $where .= " AND Usuario = ?";
+    $params[] = $filtroUsuario;
+}
+
+// Count total rows for pagination
+$count_sql = "SELECT COUNT(*) AS total FROM custinvoicejour $where";
+$count_stmt = sqlsrv_query($conn, $count_sql, $params);
+$total_rows = sqlsrv_fetch_array($count_stmt)['total'] ?? 0;
+$total_pages = $total_rows > 0 ? ceil($total_rows / $limit) : 1;
+
+// Fetch facturas with pagination
+$sql = "
+SELECT
+    Factura, Fecha, Validar AS Estado, Transportista, Fecha_scanner AS Recepcion_ALM,
+    Usuario AS Usuario_ALM, recepcion AS Recepcion_CC, Usuario_de_recepcion AS Usuario_CC, zona AS Localizacion
+FROM custinvoicejour
+$where
+ORDER BY Fecha DESC
+OFFSET $offset ROWS FETCH NEXT $limit ROWS ONLY
+";
+$stmt = sqlsrv_query($conn, $sql, $params);
+
+// Function to format dates
+function formatDate($dateValue, $format) {
+    if (empty($dateValue)) {
+        return '';
+    }
+    try {
+        $dateObj = ($dateValue instanceof DateTime) ? $dateValue : new DateTime($dateValue);
+        return $dateObj->format($format);
+    } catch (Exception $e) {
+        return '';
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Recepción de Facturas ✨</title>
-    <link rel="icon" href="../IMG/favicon.ico">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
     <style>
-        :root { --theme-red: #e31f25; --theme-red-dark: #b71c1c; }
-        html, body { height: 100%; margin: 0; padding: 0; background: linear-gradient(to bottom, #f8f9fa, #e9ecef); font-family: 'Poppins', sans-serif; }
-        .main-container { display: flex; height: 100vh; padding: 20px; gap: 20px; }
-        .formulario { flex: 1; display: flex; flex-direction: column; background: #ffffff; padding: 25px; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-        #contenedorFacturas { flex-grow: 1; overflow-y: auto; }
-        .sidebar { width: 320px; flex-shrink: 0; background-color: #fff; border-radius: 16px; padding: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        .sidebar .logo-container { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
-        .sidebar .logo-container img { height: 60px; }
-        .form-label { font-weight: 600; color: #555; margin-bottom: .3rem; font-size: .9rem; }
-        .form-control, .form-select, .select2-container .select2-selection--single { margin-bottom: 12px !important; border-radius: 8px !important; }
-        .btn-danger { background-color: var(--theme-red); border-color: var(--theme-red); }
-        .btn-danger:hover { background-color: var(--theme-red-dark); border-color: var(--theme-red-dark); }
-        .btn-success { background-color: var(--theme-red); border-color: var(--theme-red); border-radius: 0 8px 8px 0 !important; }
-        .btn-success:hover { background-color: var(--theme-red-dark); border-color: var(--theme-red-dark); }
-        .table-container { margin-top: 1rem; }
-        .table { font-size: 0.9rem; }
-        .table th { background-color: var(--theme-red); color: white; }
-        .table td, .table th { vertical-align: middle; }
-        .table-success { --bs-table-bg: #d1e7dd; --bs-table-border-color: #a3cfbb; }
-        #loading-spinner { display: none; text-align: center; padding: 40px; }
-        .sidebar-footer { margin-top: auto; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
+            color: #fff;
+            padding: 1.5rem; /* Increased padding for better spacing */
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            padding: 2rem; /* Increased padding */
+        }
+
+        .main-container { display: flex; gap: 1.5rem; align-items: flex-start; }
+        .main-content { flex: 1; }
+        .sidebar { width: 380px; position: sticky; top: 1.5rem; } /* Slightly wider sidebar */
+
+        .table-container { overflow-x: auto; }
+        .table {
+            color: #fff;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            table-layout: auto;
+        }
+
+        .table thead th {
+            background: rgba(0, 0, 0, 0.4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem 0.8rem;
+        }
+        .table td, .table th {
+            vertical-align: middle;
+            padding: 0.9rem 0.8rem; /* Adjusted padding for table cells */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .table-success { background-color: rgba(25, 135, 84, 0.3) !important; } /* Use a translucent green for success */
+
+        .paginacion a { color: #fff; text-decoration: none; }
+        .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); color: #fff; }
+        .paginacion .page-item.active .page-link { background-color: #fff; color: #b71c1c; border-color: #fff;} /* Red from the new design */
+        .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5);}
+        
+        .form-label { font-weight: 600; color: #fff; margin-bottom: 0.5rem;}
+        .form-control, .form-select {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff !important;
+            padding: 0.75rem 1rem; /* Added padding to form controls */
+            border-radius: 0.75rem; /* More rounded corners */
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: #fff;
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #000 !important;
+            height: auto;
+            border-radius: 0.75rem !important; /* Match form control border-radius */
+            padding: 0.375rem 1rem;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: #000 !important;
+            white-space: normal;
+            word-break: break-all;
+            line-height: calc(1.5em + 0.75rem + 2px); /* Align with input height */
+        }
+        select option { background-color: #343a40; }
+        
+        .select2-dropdown {
+            background-color: #f8f9fa;
+            border: 1px solid #6c757d;
+            border-radius: 0.5rem;
+            z-index: 1056;
+        }
+        .select2-results__option {
+            color: #000;
+            white-space: normal;
+        }
+        .select2-results__option--highlighted { background-color: #e31f25; color: #fff; } /* Changed highlight color to red */
+        
+        .btn-red { /* Custom button style for primary actions */
+            background-color: #e31f25;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn-red:hover {
+            background-color: #b71c1c;
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .btn-outline-light-red {
+            border: 1px solid #e31f25;
+            color: #e31f25;
+            background-color: transparent;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .btn-outline-light-red:hover {
+            background-color: #e31f25;
+            color: #fff;
+        }
+
+
+        .btn-link { color: #fff; text-decoration: none;}
+        .btn-link:hover { color: rgba(255,255,255,0.8); }
+
+        .input-group .btn-red {
+            border-radius: 0 0.75rem 0.75rem 0;
+            padding: 0.5rem 1rem; /* Adjust padding for button in input group */
+        }
+        .input-group .form-control:focus {
+            z-index: 1; /* Ensure input focus does not overlap button border */
+        }
+        .input-group > .form-control {
+            border-radius: 0.75rem 0 0 0.75rem;
+        }
+
+        /* --- ESTILOS RESPONSIVOS --- */
+        @media (max-width: 992px) {
+            body {
+                padding: 1rem;
+            }
+            .main-container {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            .sidebar, .main-content {
+                width: 100%;
+                position: static;
+            }
+            .sidebar {
+                padding-top: 1.5rem; /* Adjust padding for mobile */
+            }
+            /* Show table and pagination on smaller screens, just make it scrollable */
+            .table-container {
+                display: block;
+            }
+            .paginacion {
+                display: flex;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="main-container">
-    <div class="sidebar">
-        <div class="logo-container"><img src="../IMG/LOGO MC - NEGRO.png" alt="Logo"></div>
+    <aside class="sidebar glass-panel animate__animated animate__fadeInLeft">
+        <div class="text-center mb-4">
+            <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo" style="max-width: 150px; height: auto; margin-bottom: 1.5rem;">
+            <h4 class="mt-3 mb-0">Gestión de Facturas</h4>
+        </div>
+        <form id="filtroForm" method="get" autocomplete="off">
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <label for="listaTransportistas" class="form-label">Transportista:</label>
+                    <select id="listaTransportistas" name="transportista" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <?php foreach ($transportistas as $t): ?>
+                            <option value="<?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>" <?= $filtroTransportista === $t ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="col-6">
+                    <label for="fechaInicio" class="form-label">Desde:</label>
+                    <input type="date" id="fechaInicio" name="fechaInicio" class="form-control" value="<?= htmlspecialchars($fechaInicio) ?>" />
+                </div>
+                <div class="col-6">
+                    <label for="fechaFin" class="form-label">Hasta:</label>
+                    <input type="date" id="fechaFin" name="fechaFin" class="form-control" value="<?= htmlspecialchars($fechaFin) ?>" />
+                </div>
+
+                <div class="col-12">
+                    <label for="fechaRecibido" class="form-label">Fecha Recibido:</label>
+                    <input type="date" id="fechaRecibido" name="fechaRecibido" class="form-control" value="<?= htmlspecialchars($fechaRecibido) ?>" />
+                </div>
+                
+                <div class="col-12">
+                    <label for="fechaRecepcion" class="form-label">Fecha Recepción:</label>
+                    <input type="date" id="fechaRecepcion" name="fechaRecepcion" class="form-control" value="<?= htmlspecialchars($fechaRecepcion) ?>" />
+                </div>
+
+                <div class="col-12">
+                    <label for="filtroEstatus" class="form-label">Estatus:</label>
+                    <select id="filtroEstatus" name="estatus" class="form-select">
+                        <option value="">-- Todos --</option>
+                        <option value="Completada" <?= $filtroEstatus === 'Completada' ? 'selected' : '' ?>>Completada</option>
+                        <option value="RE" <?= $filtroEstatus === 'RE' ? 'selected' : '' ?>>RE</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label for="buscarFactura" class="form-label">Buscar Factura:</label>
+                    <input type="text" id="buscarFactura" name="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" value="<?= htmlspecialchars($buscarFactura) ?>" />
+                </div>
+
+                <?php if (in_array($_SESSION['pantalla'], [0, 2, 5])): ?>
+                    <div class="col-12">
+                        <label for="filtroUsuario" class="form-label">Usuario:</label>
+                        <select id="filtroUsuario" name="usuario" class="form-select">
+                            <option value="">-- Todos --</option>
+                            <?php foreach ($usuarios as $u): ?>
+                                <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>" <?= $filtroUsuario === $u ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="d-grid gap-3 mb-4">
+                <button type="submit" class="btn btn-red animate__animated animate__pulse animate__infinite"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                <a href="recepcion_facturas.php" class="btn btn-outline-light-red"><i class="fas fa-broom"></i> Limpiar Filtros</a>
+            </div>
+            
+            <input type="hidden" name="page" value="<?= $page ?>">
+
+            <div class="mt-4 text-center">
+                <label for="inputFactura" class="form-label">Nº Factura:</label>
+                <div class="input-group mb-3">
+                    <input type="text" id="inputFactura" class="form-control" placeholder="11 dígitos" maxlength="11" />
+                    <button class="btn btn-red" type="button" onclick="validarFactura()" title="Recibir factura">
+                        <i class="bi bi-box-arrow-in-down"></i> Recibir
+                    </button>
+                </div>
+                <a href="../Logica/logout.php" class="btn btn-link">Cerrar Sesión <i class="fa-solid fa-right-from-bracket"></i></a>
+            </div>
+        </form>
+    </aside>
+
+    <main class="main-content glass-panel animate__animated animate__fadeInRight">
+        <h2 class="mb-4">Facturas Recibidas</h2>
         
-        <label for="listaTransportistas" class="form-label">Transportista:</label>
-        <select id="listaTransportistas" class="form-select">
-            <option value="">-- Todos --</option>
-            <?php foreach ($transportistas as $t): ?>
-                <option value="<?= htmlspecialchars($t) ?>"><?= htmlspecialchars($t) ?></option>
-            <?php endforeach; ?>
-        </select>
-
-        <label for="fechaInicio" class="form-label">Desde:</label>
-        <input type="date" id="fechaInicio" class="form-control" />
-
-        <label for="fechaFin" class="form-label">Hasta:</label>
-        <input type="date" id="fechaFin" class="form-control" />
-
-        <label for="filtroEstatus" class="form-label">Estatus:</label>
-        <select id="filtroEstatus" class="form-select">
-            <option value="">-- Todos --</option>
-            <option value="Completada">Completada</option>
-            <option value="RE">RE</option>
-            <option value="Pendiente">Pendiente</option>
-        </select>
-
-        <label for="buscarFactura" class="form-label">Buscar Factura:</label>
-        <input type="text" id="buscarFactura" class="form-control" placeholder="Nº de factura" maxlength="11" />
-
-        <?php if (in_array($_SESSION['pantalla'], [0, 2, 5])): ?>
-            <label for="filtroUsuario" class="form-label">Usuario:</label>
-            <select id="filtroUsuario" class="form-select">
-                <option value="">-- Todos --</option>
-                <?php foreach ($usuarios as $u): ?>
-                    <option value="<?= htmlspecialchars($u) ?>"><?= htmlspecialchars($u) ?></option>
-                <?php endforeach; ?>
-            </select>
+        <div id="contenedorFacturas" class="table-container">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Factura</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Transportista</th>
+                        <th>Recepción ALM</th>
+                        <th>Usuario ALM</th>
+                        <th>Recepción CC</th>
+                        <th>Usuario CC</th>
+                        <th>Localización</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
+                    <tr id="fila_<?= htmlspecialchars($row['Factura'] ?? '') ?>" class="<?= ($row['Estado'] === 'Completada') ? 'table-success' : '' ?>">
+                        <td><?= htmlspecialchars($row['Factura'] ?? '') ?></td>
+                        <td><?= formatDate($row['Fecha'], 'd/m/Y') ?></td>
+                        <td>
+                            <select class="form-select estado-validar" onchange="actualizarEstado('<?= htmlspecialchars($row['Factura'] ?? '') ?>', this.value)">
+                                <option value="Sin Estado" <?= (empty($row['Estado']) || $row['Estado'] === 'Sin Estado') ? 'selected' : '' ?>>Sin Estado</option>
+                                <option value="Completada" <?= $row['Estado'] === 'Completada' ? 'selected' : '' ?>>Completada</option>
+                                <option value="RE" <?= $row['Estado'] === 'RE' ? 'selected' : '' ?>>RE</option>
+                            </select>
+                        </td>
+                        <td><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
+                        <td class="fecha-scanner"><?= formatDate($row['Recepcion_ALM'], 'Y-m-d H:i') ?></td>
+                        <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '') ?></td>
+                        <td><?= formatDate($row['Recepcion_CC'], 'Y-m-d H:i') ?></td>
+                        <td><?= htmlspecialchars($row['Usuario_CC'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['Localizacion'] ?? '') ?></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-light-red" onclick="validarFacturaTabla('<?= htmlspecialchars($row['Factura'] ?? '') ?>')">
+                                <i class="bi bi-box-arrow-in-down"></i> Recibir
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endwhile; else: ?>
+                    <tr><td colspan="10" class="text-center py-4">No se encontraron facturas con los filtros seleccionados.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <?php if ($total_rows > $limit): ?>
+        <nav class="paginacion mt-4 d-flex justify-content-center">
+            <ul class="pagination">
+                <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>"><a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">&laquo;</a></li>
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?= ($page == $i) ? 'active' : '' ?>"><a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a></li>
+                <?php endfor; ?>
+                <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>"><a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">&raquo;</a></li>
+            </ul>
+        </nav>
         <?php endif; ?>
-
-        <div class="sidebar-footer">
-            <label for="inputFactura" class="form-label">Recepción Rápida:</label>
-            <div class="input-group">
-                <input type="text" id="inputFactura" class="form-control" placeholder="Nº Factura de 11 dígitos" maxlength="11" />
-                <button id="btnValidarFactura" class="btn btn-success" title="Recibir factura">
-                    <i class="bi bi-box-arrow-in-down"></i>
-                </button>
-            </div>
-            <a href="../Logica/logout.php" class="btn btn-danger w-100 mt-3">Cerrar Sesión</a>
-        </div>
-    </div>
-
-    <div class="formulario">
-        <div id="loading-spinner">
-            <div class="spinner-border text-danger" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-        </div>
-        <div id="contenedorFacturas"></div>
-    </div>
+    </main>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-$(document).ready(function () {
-    let paginaActual = 1;
-    let temporizadorInactividad;
-    const LIMITE_INACTIVIDAD_MS = 300 * 1000; // 5 minutos (sincronizado con el servidor)
+let paginaActual = <?= $page ?>;
 
-    // --- FUNCIONES AUXILIARES ---
-    function debounce(fn, delay = 500) {
-        let timeoutId;
-        return (...args) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => fn.apply(this, args), delay);
-        };
+$(document).ready(function () {
+    function initializeSelect2(selector, placeholderText) {
+        $(selector).select2({
+            placeholder: placeholderText,
+            allowClear: true,
+            theme: 'bootstrap-5'
+        });
     }
+
+    initializeSelect2('#listaTransportistas', 'Buscar transportista...');
+    initializeSelect2('#filtroUsuario', 'Buscar usuario...');
+
+    // Event listeners for filter changes to submit the form
+    $('#filtroForm select, #filtroForm input[type="date"], #filtroForm input[type="text"]').on('change keyup', function() {
+        if ($(this).attr('id') === 'buscarFactura' && event.type === 'keyup') {
+            // Only trigger on Enter for search input to avoid excessive requests
+            if (event.key === 'Enter') {
+                $('input[name="page"]').val(1);
+                $('#filtroForm').submit();
+            }
+        } else if ($(this).attr('id') !== 'buscarFactura') {
+            $('input[name="page"]').val(1);
+            $('#filtroForm').submit();
+        }
+    });
+
+    // Handle form submission explicitly for date inputs or on filter button click
+    $('#filtroForm').on('submit', function(event) {
+        // Prevent default form submission and handle it via JS
+        // This is if you want to use AJAX for filtering instead of full page reloads
+        // If you prefer full page reloads, you can remove this.
+        // For now, the PHP side is set up for full page reloads on filter submit.
+    });
+
+    $('#inputFactura').on('input', function () {
+        const valor = this.value.trim();
+        if (valor.length === 11) {
+            // Automatically validate if 11 digits are entered
+            validarFactura();
+        }
+    });
+
+    // Client-side inactivity timer
+    const tiempoLimite = 5 * 60 * 1000; // 5 minutes in ms
+    let temporizador;
 
     function resetearTemporizador() {
-        clearTimeout(temporizadorInactividad);
-        temporizadorInactividad = setTimeout(() => {
-            alert("Su sesión ha expirado por inactividad.");
+        clearTimeout(temporizador);
+        console.log("Temporizador reiniciado por actividad");
+        temporizador = setTimeout(() => {
+            alert("Su sesión ha expirado por inactividad. Será redirigido al login.");
             window.location.href = "../Logica/logout.php";
-        }, LIMITE_INACTIVIDAD_MS);
+        }, tiempoLimite);
     }
 
-    // --- LÓGICA PRINCIPAL ---
-    
-    function cargarFacturas(pagina = 1) {
-        paginaActual = pagina;
-        const formData = new FormData();
-        formData.append('transportista', $('#listaTransportistas').val());
-        formData.append('desde', $('#fechaInicio').val());
-        formData.append('hasta', $('#fechaFin').val());
-        formData.append('estatus', $('#filtroEstatus').val());
-        formData.append('usuario', $('#filtroUsuario').val() || '');
-        formData.append('buscarFactura', $('#buscarFactura').val().trim());
-        formData.append('pagina', pagina);
+    ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, resetearTemporizador, false);
+    });
+    resetearTemporizador(); // Initialize on page load
 
-        $('#loading-spinner').show();
-        $('#contenedorFacturas').css('opacity', 0.5);
+    // Function to handle invoice validation
+    window.validarFactura = function() {
+        const factura = document.getElementById('inputFactura').value.trim();
+        const transportista = document.getElementById('listaTransportistas').value;
 
-        fetch('../Logica/get_facturas.php', { method: 'POST', body: formData })
-            .then(res => res.text())
-            .then(html => {
-                $('#contenedorFacturas').html(html);
-            })
-            .catch(error => console.error("Error al cargar facturas:", error))
-            .finally(() => {
-                $('#loading-spinner').hide();
-                $('#contenedorFacturas').css('opacity', 1);
-            });
-    }
-
-    function validarFactura() {
-        const factura = $('#inputFactura').val().trim();
-        const transportista = $('#listaTransportistas').val();
-        if (factura.length !== 11) return alert("El número de factura debe tener 11 dígitos.");
-        if (!transportista) return alert("Debe seleccionar un transportista.");
+        if (!factura || !transportista) {
+            alert("Debe seleccionar un transportista e ingresar una factura.");
+            return;
+        }
 
         const formData = new FormData();
         formData.append('factura', factura);
         formData.append('transportista', transportista);
 
-        fetch('../Logica/Validar_factura.php', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(respuesta => {
-                if (respuesta && respuesta.encontrada) {
-                    const fila = $('#fila_' + factura);
-                    if (fila.length) {
-                        fila.addClass('table-success');
-                        fila.find('.estado-validar').val('Completada');
-                        fila.find('.fecha-scanner').text(respuesta.fecha_scanner || 'Ahora');
-                    } else {
-                        // Si la factura no estaba en la vista actual, recargamos para que aparezca.
-                        // Esto es útil si el usuario está en una página diferente o con filtros activos.
-                        cargarFacturas(1);
-                    }
-                    $('#inputFactura').val('').focus();
-                } else {
-                    alert("Factura no encontrada para el transportista seleccionado.");
+        fetch('../Logica/Validar_factura.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => {
+            if (res.status === 401) {
+                alert("Sesión expirada. Por favor, inicie sesión nuevamente.");
+                window.location.href = "../View/index.php";
+                return;
+            }
+            return res.json();
+        })
+        .then(respuesta => {
+            if (!respuesta) return;
+            if (respuesta.encontrada) {
+                const fila = document.getElementById('fila_' + factura);
+                if (fila) {
+                    fila.classList.add('table-success');
+                    const select = fila.querySelector('.estado-validar');
+                    const fechaScanner = fila.querySelector('.fecha-scanner');
+                    if (select) select.value = 'Completada';
+                    if (fechaScanner) fechaScanner.textContent = respuesta.fecha_scanner || new Date().toLocaleString();
                 }
-            })
-            .catch(error => console.error("Error en validación:", error));
+                document.getElementById('inputFactura').value = '';
+                document.getElementById('inputFactura').focus();
+                // Reload the current page to reflect changes and re-apply filters
+                window.location.href = window.location.href; // Simple page reload
+            } else {
+                alert("Factura no encontrada o ya ha sido procesada.");
+            }
+        })
+        .catch(error => {
+            console.error("Error al validar factura:", error);
+            alert("Error al validar factura.");
+        });
     }
 
-    // --- INICIALIZACIÓN Y MANEJADORES DE EVENTOS ---
+    // Function to handle invoice validation from table row button
+    window.validarFacturaTabla = function(factura) {
+        const transportista = document.getElementById('listaTransportistas').value;
 
-    $('#listaTransportistas, #filtroUsuario').select2({
-        placeholder: "Seleccionar...",
-        allowClear: true,
-        width: '100%'
-    });
-
-    const filtros = '#listaTransportistas, #fechaInicio, #fechaFin, #filtroEstatus, #filtroUsuario';
-    $(filtros).on('change', () => cargarFacturas(1));
-
-    $('#buscarFactura').on('input', debounce(() => cargarFacturas(1)));
-
-    $('#inputFactura').on('keypress', function(e) {
-        if (e.which === 13) { // Tecla Enter
-            e.preventDefault();
-            validarFactura();
+        if (!transportista) {
+            alert("Debe seleccionar un transportista antes de validar una factura desde la tabla.");
+            return;
         }
-    });
 
-    $('#btnValidarFactura').on('click', validarFactura);
+        const formData = new FormData();
+        formData.append('factura', factura);
+        formData.append('transportista', transportista);
 
-    // Delegación de eventos para elementos creados dinámicamente
-    $(document).on('change', '.estado-validar', function() {
-        const factura = $(this).data('factura');
-        const nuevoEstado = $(this).val();
-        
+        fetch('../Logica/Validar_factura.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => {
+            if (res.status === 401) {
+                alert("Sesión expirada. Por favor, inicie sesión nuevamente.");
+                window.location.href = "../View/index.php";
+                return;
+            }
+            return res.json();
+        })
+        .then(respuesta => {
+            if (!respuesta) return;
+            if (respuesta.success) {
+                const fila = document.getElementById('fila_' + factura);
+                if (fila) {
+                    fila.classList.add('table-success');
+                    const select = fila.querySelector('.estado-validar');
+                    const fechaScanner = fila.querySelector('.fecha-scanner');
+                    if (select) select.value = 'Completada';
+                    if (fechaScanner) fechaScanner.textContent = respuesta.fecha_scanner || new Date().toLocaleString();
+                }
+                alert("Factura " + factura + " validada correctamente.");
+                window.location.href = window.location.href; // Reload to reflect changes
+            } else {
+                alert(respuesta.message || "Factura no encontrada o ya ha sido procesada.");
+            }
+        })
+        .catch(error => {
+            console.error("Error al validar factura desde la tabla:", error);
+            alert("Error al validar factura.");
+        });
+    }
+
+    // Function to update invoice status
+    window.actualizarEstado = function(factura, nuevoEstado) {
         const formData = new FormData();
         formData.append('factura', factura);
         formData.append('nuevoEstado', nuevoEstado);
-        
-        fetch('../Logica/actualizar_estado.php', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(respuesta => {
-                if (respuesta.success) {
-                    const fila = $('#fila_' + factura);
-                    if (fila.length) {
-                        // Feedback visual de éxito
-                        fila.css({ transition: 'background-color 0.2s ease', backgroundColor: '#d1e7dd' });
-                        setTimeout(() => fila.css('backgroundColor', ''), 1200);
-                    }
-                } else {
-                    alert("No se pudo actualizar el estado.");
-                }
-            })
-            .catch(error => console.error("Error al actualizar estado:", error));
-    });
 
-    $(document).on('click', '.page-link', function(e){
-        e.preventDefault();
-        const page = $(this).data('page');
-        if(page) cargarFacturas(page);
-    });
-
-    // Iniciar temporizador de inactividad
-    ['click', 'mousemove', 'keydown', 'scroll'].forEach(evt => document.addEventListener(evt, resetearTemporizador));
-    resetearTemporizador();
-
-    // Carga inicial de facturas
-    cargarFacturas(1);
+        fetch('../Logica/actualizar_estado.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(respuesta => {
+            if (respuesta.success) {
+                // Reload the current page to reflect changes
+                window.location.href = window.location.href;
+            } else {
+                alert("No se pudo actualizar el estado: " + (respuesta.message || "Error desconocido."));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error al actualizar estado.");
+        });
+    }
 });
 </script>
 </body>
