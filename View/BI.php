@@ -203,7 +203,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         .paginacion .page-link { background: transparent; border-color: rgba(255,255,255,0.3); }
         .paginacion .page-item.active .page-link { background-color: #fff; color: #0d6efd; border-color: #fff;}
         .paginacion .page-item.disabled .page-link { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2);}
-        .form-label { font-weight: 600; opacity: 0.9; }
+        .form-label { font-weight: 600; }
         .form-control, .form-select {
             background-color: rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
