@@ -36,9 +36,9 @@ $sinceDate = date('Y-m-d H:i:s', $sinceTimestamp);
 // 3. Buscar tickets actualizados o nuevos desde la última revisión
 // Se buscan los que no están en un estado "final" como 'Despachado' o 'Se fue'
 $sqlUpdates = "SELECT l.Tiket, l.NombreTR, f.Cedula, f.Matricula, l.Empresa, l.Asignar, l.Estatus
-                FROM [log] l
-                LEFT JOIN facebd f ON l.NombreTR = f.Nombres
-                WHERE l.FechaModificacion > ? AND l.Estatus NOT IN ('Despachado', 'Se fue')";
+               FROM [log] l
+               LEFT JOIN facebd f ON l.NombreTR = f.Nombres
+               WHERE l.FechaModificacion > ? AND l.Estatus NOT IN ('Despachado', 'Se fue')";
 
 $paramsUpdates = [$sinceDate];
 $stmtUpdates = sqlsrv_query($conn, $sqlUpdates, $paramsUpdates);
@@ -100,7 +100,7 @@ function generateRowHtml($row) {
 
     $claseFila = $isRetencion ? 'table-danger' : '';
     
-    // El botón de 'Asignar' ya no se deshabilita
+    $asignarDisabled = $isAsignado ? "disabled title='Ya asignado a $asignado'" : "";
     $despacharDisabled = (!$isAsignado || $isRetencion || $isAsignadoAOtro) ? "disabled" : "";
     $retencionDisabled = (!$isAsignado || $isAsignadoAOtro) ? "disabled" : "";
     $selectDisabled = ($isRetencion || $isAsignadoAOtro) ? "disabled" : "";
@@ -111,6 +111,7 @@ $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id=
              "<br><small style='color: black;'><strong>Cédula:</strong> " . htmlspecialchars($row['Cedula'] ?? 'N/A') .
              "<br><strong>Matrícula:</strong> " . htmlspecialchars($row['Matricula'] ?? 'N/A') . "</small></td>";
     $html .= "<td>" . htmlspecialchars($row['Empresa']) . "</td>";
+    // ... el resto de tu código HTML para la fila
     $html .= "<td>
         <select class='form-select form-select-sm estatus-select' data-tiket='$tiket' $selectDisabled>
             <option value=' ' " . ($estatus == ' ' ? 'selected' : '') . ">Pendiente</option>
@@ -121,8 +122,7 @@ $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id=
         </select>
     </td>";
     $html .= "<td class='asignado-a'>" . ($isAsignado ? htmlspecialchars($asignado) : "<em>No asignado</em>") . "</td>";
-    // El botón de asignar ya no tiene la condición de 'disabled'
-    $html .= "<td><button class='btn btn-primary btn-sm btn-asignar' data-tiket='$tiket'>Asignar</button></td>";
+    $html .= "<td><button class='btn btn-primary btn-sm btn-asignar' data-tiket='$tiket' $asignarDisabled>Asignar</button></td>";
     $html .= "<td><button class='btn btn-success btn-sm btn-despachar' data-tiket='$tiket' $despacharDisabled>Despachar</button></td>";
     $html .= "<td><button class='btn btn-warning btn-sm btn-retencion' data-tiket='$tiket' $retencionDisabled>Retención</button></td>";
     $html .= "</tr>";
