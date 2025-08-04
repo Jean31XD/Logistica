@@ -209,8 +209,18 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
             background-color: #d4edda !important;
         }
 
-        .animate__animated.animate__fadeIn {
-            --animate-duration: 0.8s;
+        .titulo-tabla {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
