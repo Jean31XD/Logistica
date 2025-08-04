@@ -16,56 +16,7 @@ echo <<<HTML
         backdrop-filter: blur(10px);
     }
 
-    table {
-        background-color: rgba(255, 255, 255, 0.05);
-        border-collapse: separate;
-        border-spacing: 0;
-        border-radius: 12px;
-        overflow: hidden;
-        backdrop-filter: blur(10px);
-    }
 
-    .table th,
-    .table td {
-        color: #fff;
-        vertical-align: middle;
-        font-size: 0.875rem;
-    }
-
-    .table-light th {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #fff;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .table-bordered {
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .table-bordered th,
-    .table-bordered td {
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    select.estado-validar {
-        background-color: rgba(0, 0, 0, 0.4);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .table-success {
-        background-color: rgba(76, 175, 80, 0.2) !important;
-    }
-
-    .btn-secondary {
-        background-color: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-    }
-
-    .btn-secondary:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-    }
 </style>
 HTML;
 
