@@ -82,7 +82,6 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
             padding: 0;
             background: linear-gradient(135deg, #8B0000, #e31f25);
             background-size: 200% 200%;
-            animation: gradientMove 10s ease infinite;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
@@ -211,7 +210,6 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
             font-weight: bold;
             text-align: center;
             margin-bottom: 1rem;
-            animation: fadeIn 1s ease;
         }
 
      
