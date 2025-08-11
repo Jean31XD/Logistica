@@ -8,7 +8,7 @@ header("Pragma: no-cache");
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
 // Solo admin
-if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
+if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 1) {
     header("Location: ../index.php");
     exit();
 }
