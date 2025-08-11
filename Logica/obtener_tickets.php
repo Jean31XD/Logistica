@@ -86,32 +86,34 @@ echo json_encode($response);
  * Mantener esta lógica en el servidor simplifica el JavaScript.
  */
 function generateRowHtml($row) {
-    global $usuarioSesion; // Necesitamos el usuario de la sesión para la lógica de deshabilitación
+    global $usuarioSesion; 
     if (!isset($usuarioSesion)) $usuarioSesion = $_SESSION['usuario'];
 
     $tiket = htmlspecialchars($row['Tiket']);
     $estatus = htmlspecialchars($row['Estatus']);
     $asignado = trim($row['Asignar']);
 
-    // Lógica para deshabilitar botones
+    // Lógica de estado y deshabilitación
     $isAsignado = !empty($asignado);
     $isRetencion = $estatus === 'Retencion';
-    $isAsignadoAOtro = $isAsignado && ($asignado !== $usuarioSesion);
+    $isAsignadoAMi = $isAsignado && ($asignado === $usuarioSesion);
+    $isAsignadoAOtro = $isAsignado && !$isAsignadoAMi;
 
     $claseFila = $isRetencion ? 'table-danger' : '';
     
-    $asignarDisabled = $isAsignado ? "disabled title='Ya asignado a $asignado'" : "";
-    $despacharDisabled = (!$isAsignado || $isRetencion || $isAsignadoAOtro) ? "disabled" : "";
-    $retencionDisabled = (!$isAsignado || $isAsignadoAOtro) ? "disabled" : "";
-    $selectDisabled = ($isRetencion || $isAsignadoAOtro) ? "disabled" : "";
+    // El botón de asignar/reasignar ahora solo se deshabilita si está asignado a MÍ MISMO.
+    $asignarDisabled = $isAsignadoAMi ? "disabled title='Ya te encuentras asignado a este ticket'" : "";
+    
+    $despacharDisabled = (!$isAsignadoAMi || $isRetencion) ? "disabled" : "";
+    $retencionDisabled = !$isAsignadoAMi ? "disabled" : "";
+    $selectDisabled = ($isRetencion || !$isAsignadoAMi) ? "disabled" : "";
 
-$html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id='$tiket'>";
+    $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id='$tiket'>";
     $html .= "<td>$tiket</td>";
     $html .= "<td>" . htmlspecialchars($row['NombreTR']) .
              "<br><small style='color: black;'><strong>Cédula:</strong> " . htmlspecialchars($row['Cedula'] ?? 'N/A') .
              "<br><strong>Matrícula:</strong> " . htmlspecialchars($row['Matricula'] ?? 'N/A') . "</small></td>";
     $html .= "<td>" . htmlspecialchars($row['Empresa']) . "</td>";
-    // ... el resto de tu código HTML para la fila
     $html .= "<td>
         <select class='form-select form-select-sm estatus-select' data-tiket='$tiket' $selectDisabled>
             <option value=' ' " . ($estatus == ' ' ? 'selected' : '') . ">Pendiente</option>
@@ -121,8 +123,18 @@ $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id=
             <option value='Facturación' " . ($estatus == 'Facturación' ? 'selected' : '') . ">Facturación</option>
         </select>
     </td>";
-    $html .= "<td class='asignado-a'>" . ($isAsignado ? htmlspecialchars($asignado) : "<em>No asignado</em>") . "</td>";
-    $html .= "<td><button class='btn btn-primary btn-sm btn-asignar' data-tiket='$tiket' $asignarDisabled>Asignar</button></td>";
+    $html .= "<td class='asignado-a'>" . ($isAsignado ? "<strong>" . htmlspecialchars($asignado) . "</strong>" : "<em>No asignado</em>") . "</td>";
+    
+    // --- LÓGICA DEL BOTÓN MODIFICADA ---
+    $html .= "<td>";
+    if ($isAsignadoAOtro) {
+        $html .= "<button class='btn btn-warning btn-sm btn-asignar' data-tiket='$tiket' data-asignado-a='".htmlspecialchars($asignado)."' $asignarDisabled>Re-asignar</button>";
+    } else {
+        $html .= "<button class='btn btn-primary btn-sm btn-asignar' data-tiket='$tiket' data-asignado-a='' $asignarDisabled>Asignar</button>";
+    }
+    $html .= "</td>";
+    // --- FIN DE LA LÓGICA DEL BOTÓN ---
+
     $html .= "<td><button class='btn btn-success btn-sm btn-despachar' data-tiket='$tiket' $despacharDisabled>Despachar</button></td>";
     $html .= "<td><button class='btn btn-warning btn-sm btn-retencion' data-tiket='$tiket' $retencionDisabled>Retención</button></td>";
     $html .= "</tr>";

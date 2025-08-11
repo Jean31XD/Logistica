@@ -121,7 +121,7 @@ header("Expires: 0");
     </style>
 </head>
 <body>
-    <div class="modal fade" id="asignarModal" tabindex="-1" aria-labelledby="asignarModalLabel" aria-hidden="true">
+<div class="modal fade" id="asignarModal" tabindex="-1" aria-labelledby="asignarModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="formAsignar">
@@ -130,13 +130,14 @@ header("Expires: 0");
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
+                    <p id="modalAsignarTexto">Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
                     
                     <input type="hidden" id="asignarTiketInput">
+                    <input type="hidden" id="currentAssigneeInput"> 
                     
                     <div class="mb-3">
-                        <label for="usuarioPassword" class="form-label">Contraseña:</label>
-                        <input type="password" id="usuarioPassword" class="form-control" required>
+                        <label for="usuarioPassword" id="passwordLabel" class="form-label">Tu Contraseña:</label>
+                        <input type="password" id="usuarioPassword" class="form-control" required autocomplete="current-password">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -310,45 +311,67 @@ $(document).ready(function () {
     // MANEJADORES DE EVENTOS (UNIFICADOS)
     // =================================================================
 
-    // 1. Asignar ticket (abre el modal de contraseña)
-    $(document).on('click', '.btn-asignar', function() {
-        if ($(this).is(':disabled')) return;
-        const tiket = $(this).data('tiket');
-        $('#asignarTicketId').text(tiket);
-        $('#asignarTiketInput').val(tiket);
-        $('#usuarioPassword').val('');
-        const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
-        asignarModal.show();
-        $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
-    });
-
-    // 2. Confirmar asignación con contraseña
-    $('#formAsignar').on('submit', function(e) {
-        e.preventDefault();
-        const tiket = $('#asignarTiketInput').val();
-        const password = $('#usuarioPassword').val();
-        if (!password) {
-            alert('Por favor, ingresa tu contraseña.');
-            return;
-        }
-        $.ajax({
-            url: '../Logica/asignar_ticket.php',
-            method: 'POST',
-            data: { tiket, password },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
-                    actualizarTablaInteligentemente();
-                } else {
-                    alert('Error: ' + response.message);
-                    $('#usuarioPassword').val('').focus();
-                }
-            },
-            error: () => alert('Ocurrió un error de comunicación. Inténtalo de nuevo.')
-        });
-    });
+// 1. Asignar o Re-asignar ticket (abre el modal)
+$(document).on('click', '.btn-asignar', function() {
+    if ($(this).is(':disabled')) return;
     
+    const tiket = $(this).data('tiket');
+    const asignadoA = $(this).data('asignado-a') || ''; // Obtiene el usuario actual o un string vacío
+
+    // Rellenar campos del modal
+    $('#asignarTicketId').text(tiket);
+    $('#asignarTiketInput').val(tiket);
+    $('#currentAssigneeInput').val(asignadoA); // Guardamos el dueño actual
+    $('#usuarioPassword').val('');
+
+    // Cambiar texto del modal dinámicamente según si se está reasignando
+    if (asignadoA) {
+        $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, por favor ingresa la contraseña de <strong>${asignadoA}</strong>.`);
+        $('#passwordLabel').text(`Contraseña de ${asignadoA}:`);
+    } else {
+        $('#modalAsignarTexto').html(`Para asignarte el ticket <strong>${tiket}</strong>, por favor ingresa tu contraseña.`);
+        $('#passwordLabel').text('Tu Contraseña:');
+    }
+
+    const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
+    asignarModal.show();
+    $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
+});
+
+// 2. Confirmar asignación con contraseña (Lógica de envío)
+$('#formAsignar').on('submit', function(e) {
+    e.preventDefault();
+    const tiket = $('#asignarTiketInput').val();
+    const password = $('#usuarioPassword').val();
+    const currentAssignee = $('#currentAssigneeInput').val(); // Obtenemos el dueño actual
+
+    if (!password) {
+        alert('Por favor, ingresa la contraseña requerida.');
+        return;
+    }
+
+    $.ajax({
+        url: '../Logica/asignar_ticket.php', // El backend se encarga de la lógica
+        method: 'POST',
+        data: {
+            tiket: tiket,
+            password: password,
+            current_assignee: currentAssignee // Enviamos el dueño actual
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
+                // Forzamos una actualización inmediata para ver el cambio
+                actualizarTablaInteligentemente(); 
+            } else {
+                alert('Error: ' + response.message);
+                $('#usuarioPassword').val('').focus();
+            }
+        },
+        error: () => alert('Ocurrió un error de comunicación. Inténtalo de nuevo.')
+    });
+});
     // 3. Cambiar el estatus (select)
     $(document).on('change', '.estatus-select', function() {
         if ($(this).is(':disabled')) return;
