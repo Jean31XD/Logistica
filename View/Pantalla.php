@@ -52,43 +52,17 @@ function obtenerDatosDeTickets() {
     return $datos;
 }
 
+// --- NUEVA LÓGICA AJAX ---
 // Si la solicitud es para actualizar datos (AJAX)
 if (isset($_GET['ajax'])) {
+    // Indicamos que la respuesta será en formato JSON
+    header('Content-Type: application/json');
+    
     $datos = obtenerDatosDeTickets();
     
-    if (empty($datos)) {
-        echo '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-info-circle me-2"></i>No hay tickets activos en este momento.</td></tr>';
-    } else {
-        // Generamos solo el cuerpo de la tabla para la actualización
-        foreach ($datos as $row) {
-            $estatus = htmlspecialchars($row['Estatus']);
-            $claseFila = '';
-            $icono = 'fa-clock'; // Icono por defecto
-            switch ($estatus) {
-                case "Retencion":
-                    $claseFila = "status-retencion";
-                    $icono = "fa-hand-paper";
-                    break;
-                case "Facturación":
-                    $claseFila = "status-facturacion";
-                    $icono = "fa-check-circle";
-                    break;
-                case "En Proceso":
-                    $claseFila = "status-proceso";
-                    $icono = "fa-cogs";
-                    break;
-            }
-            $ticketID = htmlspecialchars($row['Tiket']);
-            echo '<tr class="animate__animated animate__fadeIn" data-ticket="' . $ticketID . '">';
-            echo '<td>' . $ticketID . '</td>';
-            echo '<td>' . htmlspecialchars($row['NombreTR']) . '</td>';
-            echo '<td>' . htmlspecialchars($row['Empresa']) . '</td>';
-            echo '<td><i class="fas ' . $icono . ' me-2"></i>' . $estatus . '</td>';
-            echo '<td>' . (isset($row['ventanilla']) ? htmlspecialchars($row['ventanilla']) : '<span class="text-muted">N/A</span>') . '</td>';
-            echo '<td class="tiempo-celda" data-ticket-id="' . $ticketID . '">00:00:00</td>';
-            echo '</tr>';
-        }
-    }
+    // Codificamos el array de datos a formato JSON y lo enviamos
+    echo json_encode($datos);
+    
     exit; // Termina el script para no enviar el HTML completo
 }
 
@@ -206,26 +180,11 @@ if (isset($_GET['ajax'])) {
         
         .table tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
         .table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
-
-        /* Estilos de estatus */
-        .status-retencion {
-            background: linear-gradient(90deg, rgba(220, 53, 69, 0.5), rgba(220, 53, 69, 0.2));
-            border-left: 5px solid #dc3545;
-        }
-        .status-facturacion {
-            background: linear-gradient(90deg, rgba(25, 135, 84, 0.5), rgba(25, 135, 84, 0.2));
-            border-left: 5px solid #198754;
-        }
-        .status-proceso {
-            background: linear-gradient(90deg, rgba(13, 202, 240, 0.5), rgba(13, 202, 240, 0.2));
-            border-left: 5px solid #0dcaf0;
-        }
         
         .tiempo-celda {
             font-weight: 600;
             font-size: 1.3rem;
         }
-
     </style>
 </head>
 <body>
@@ -235,7 +194,8 @@ if (isset($_GET['ajax'])) {
     </header>
 
     <div class="main-container text-center">
-        <div class="tabla-container animate__animated animate__fadeIn" style="animation-delay: 0.0s;">
+        <h1 class="titulo-principal animate__animated animate__fadeInUp">MONITOR DE TICKETS</h1>
+        <div class="tabla-container animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -249,8 +209,7 @@ if (isset($_GET['ajax'])) {
                         </tr>
                     </thead>
                     <tbody id="tablaDatos">
-                        <!-- Los datos se cargarán aquí dinámicamente -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -279,37 +238,100 @@ if (isset($_GET['ajax'])) {
                 });
             }
 
+            // --- NUEVO JAVASCRIPT PARA ACTUALIZACIÓN INTELIGENTE ---
             function actualizarDatos() {
-                // Usamos el parámetro 'ajax=1' para que el PHP solo devuelva el cuerpo de la tabla
                 fetch('?ajax=1')
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Error en la red o en el servidor.');
                         }
-                        return response.text();
+                        return response.json(); // Ahora esperamos una respuesta JSON
                     })
                     .then(data => {
                         const tbody = document.getElementById('tablaDatos');
-                        const activeTickets = new Set();
-
-                        // Guardar los IDs de los tickets que vienen en la nueva data
-                        const newTbody = document.createElement('tbody');
-                        newTbody.innerHTML = data;
-                        newTbody.querySelectorAll('tr').forEach(tr => {
-                            if(tr.dataset.ticket) {
-                                activeTickets.add(tr.dataset.ticket);
-                            }
+                        const filasActuales = tbody.querySelectorAll('tr[data-ticket]');
+                        const mapaFilasActuales = new Map();
+                        filasActuales.forEach(fila => {
+                           mapaFilasActuales.set(fila.dataset.ticket, fila);
                         });
-                        
-                        // Limpiar del objeto de tiempos los tickets que ya no están activos
-                        for (const ticketID in tiemposInicio) {
-                            if (!activeTickets.has(ticketID)) {
-                                delete tiemposInicio[ticketID];
+
+                        const ticketsActivos = new Set();
+
+                        // Si no hay datos, mostrar mensaje y limpiar
+                        if (data.length === 0) {
+                            if (!tbody.querySelector('td[colspan="6"]')) {
+                                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-info-circle me-2"></i>No hay tickets activos en este momento.</td></tr>';
                             }
+                            return; 
                         }
                         
-                        tbody.innerHTML = data;
-                        actualizarTiempos();
+                        // Limpiar el mensaje de "no hay tickets" si lo hubiera
+                        if (tbody.querySelector('td[colspan="6"]')) {
+                            tbody.innerHTML = '';
+                        }
+                        
+                        // 1. AÑADIR O ACTUALIZAR FILAS
+                        data.forEach(ticket => {
+                            const ticketID = String(ticket.Tiket); // Asegurarse que es string para consistencia
+                            ticketsActivos.add(ticketID);
+
+                            const estatus = ticket.Estatus;
+                            let icono = 'fa-clock';
+                            switch (estatus) {
+                                case "Retencion": icono = "fa-hand-paper"; break;
+                                case "Facturación": icono = "fa-check-circle"; break;
+                                case "En Proceso": icono = "fa-cogs"; break;
+                            }
+
+                            const ventanillaHTML = ticket.ventanilla ? ticket.ventanilla : '<span class="text-muted">N/A</span>';
+
+                            if (mapaFilasActuales.has(ticketID)) {
+                                // --- El ticket ya existe, así que ACTUALIZAMOS ---
+                                const fila = mapaFilasActuales.get(ticketID);
+                                let estatusCell = fila.cells[3];
+                                let ventanillaCell = fila.cells[4];
+                                
+                                let nuevoEstatusHTML = `<i class="fas ${icono} me-2"></i>${estatus}`;
+
+                                // Solo actualizamos el contenido si ha cambiado
+                                if (estatusCell.innerHTML !== nuevoEstatusHTML) {
+                                   estatusCell.innerHTML = nuevoEstatusHTML;
+                                }
+                                if (ventanillaCell.innerHTML !== ventanillaHTML) {
+                                    ventanillaCell.innerHTML = ventanillaHTML;
+                                }
+                                
+                            } else {
+                                // --- El ticket es nuevo, así que lo AÑADIMOS ---
+                                const nuevaFila = document.createElement('tr');
+                                nuevaFila.className = 'animate__animated animate__fadeIn'; // Animación solo para los nuevos
+                                nuevaFila.dataset.ticket = ticketID;
+
+                                nuevaFila.innerHTML = `
+                                    <td>${ticketID}</td>
+                                    <td>${ticket.NombreTR}</td>
+                                    <td>${ticket.Empresa}</td>
+                                    <td><i class="fas ${icono} me-2"></i>${estatus}</td>
+                                    <td>${ventanillaHTML}</td>
+                                    <td class="tiempo-celda" data-ticket-id="${ticketID}">00:00:00</td>
+                                `;
+                                tbody.appendChild(nuevaFila);
+                            }
+                        });
+
+                        // 2. ELIMINAR FILAS QUE YA NO EXISTEN
+                        mapaFilasActuales.forEach((fila, ticketID) => {
+                            if (!ticketsActivos.has(ticketID)) {
+                                // Animación de salida y luego eliminar el elemento
+                                fila.classList.remove('animate__fadeIn');
+                                fila.classList.add('animate__fadeOut');
+                                fila.addEventListener('animationend', () => fila.remove());
+                                
+                                // Limpiamos su temporizador
+                                delete tiemposInicio[ticketID];
+                            }
+                        });
+
                     })
                     .catch(error => {
                         console.error('Error al actualizar los datos:', error);
@@ -319,9 +341,9 @@ if (isset($_GET['ajax'])) {
             }
 
             // Llama a la función para actualizar los tiempos cada segundo
-            setInterval(actualizarTiempos, 000);
+            setInterval(actualizarTiempos, 1000);
             // Llama a la función para actualizar los datos desde el servidor cada 3 segundos
-            setInterval(actualizarDatos, 0000);
+            setInterval(actualizarDatos, 3000);
             
             // Carga inicial de datos
             actualizarDatos();
