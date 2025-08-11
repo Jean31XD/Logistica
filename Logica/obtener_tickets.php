@@ -120,7 +120,7 @@ function generateRowHtml($row) {
             <option value='Verificación de pedido' " . ($estatus == 'Verificación de pedido' ? 'selected' : '') . ">Verificación</option>
             <option value='Pedido preparandose' " . ($estatus == 'Pedido preparandose' ? 'selected' : '') . ">Preparándose</option>
             <option value='En proceso de empaque' " . ($estatus == 'En proceso de empaque' ? 'selected' : '') . ">Empaque</option>
-            <option value='Facturación' class='table-success' " . ($estatus == 'Facturación' ? 'selected' : '') . ">Facturación</option>
+            <option value='Facturación' style='color: green;' " . ($estatus == 'Facturación' ? 'selected' : '') . ">Facturación</option>
         </select>
     </td>";
     $html .= "<td class='asignado-a'>" . ($isAsignado ? "<strong>" . htmlspecialchars($asignado) . "</strong>" : "<em>No asignado</em>") . "</td>";
