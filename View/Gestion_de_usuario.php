@@ -16,12 +16,8 @@ if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
     exit();
 }
 
-// En un escenario real, la conexión vendría de un archivo separado.
-// require_once __DIR__ . '/../conexionBD/conexion.php';
-
 /**
  * Establece la conexión con la base de datos SQL Server.
- * (Función mantenida para simular la conexión del require_once)
  * @return false|resource El objeto de conexión o false si falla.
  */
 function conectarBD()
@@ -64,70 +60,29 @@ function verificarCSRF($tokenEnviado, $tokenSesion) {
     return is_string($tokenEnviado) && is_string($tokenSesion) && hash_equals($tokenSesion, $tokenEnviado);
 }
 
-
 // Conectar a la base de datos
 $conn = conectarBD();
 
-// Inicializar variables de mensajes para ambas secciones
+// Inicializar variables de mensajes
 $mensajeTransportista = "";
 $datosConsultados = null;
 $mensajeCrear = $alertCrear = "";
 $mensajeModificar = $alertModificar = "";
 $mensajeEliminar = $alertEliminar = "";
+$mensajeVentanilla = $alertVentanilla = "";
 
 
 // --- SECCIÓN 2: PROCESAMIENTO DE FORMULARIOS (POST) ---
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die("Error: Token CSRF inválido. Por favor, recargue la página e intente de nuevo.");
-    }
-
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
-
-    switch ($accion) {
-        case 'crear':
-            // Código para crear
-            break;
-
-        case 'modificar':
-            // Código para modificar
-            break;
-
-        case 'eliminar':
-            // Código para eliminar
-            break;
-
-        case 'asignar_ventanilla':
-            $usuario_v = trim($_POST['usuario_v'] ?? '');
-            $ventanilla = trim($_POST['ventanilla'] ?? '');
-
-            if (!empty($usuario_v) && !empty($ventanilla)) {
-                $sql = "UPDATE Usuarios SET Ventanilla = ? WHERE Usuario = ?";
-                $params = [$ventanilla, $usuario_v];
-                $stmt = sqlsrv_prepare($conn, $sql, $params);
-
-                if ($stmt && sqlsrv_execute($stmt)) {
-                    $mensajeVentanilla = "✅ Ventanilla asignada correctamente.";
-                    $alertVentanilla = "success";
-                } else {
-                    $mensajeVentanilla = "❌ Error al asignar ventanilla.";
-                    $alertVentanilla = "danger";
-                }
-            } else {
-                $mensajeVentanilla = "⚠️ Complete todos los campos.";
-                $alertVentanilla = "warning";
-            }
-            break;
-    }
-}
+    $csrf = $_POST['csrf_token'] ?? '';
 
     // Validar token CSRF para TODAS las acciones de tipo POST
     if (!verificarCSRF($csrf, $_SESSION['csrf_token'])) {
         die("Error: Token CSRF inválido. Por favor, recargue la página e intente de nuevo.");
     }
 
-    // --- Lógica para Gestión de Usuarios (CÓDIGO NUEVO Y MEJORADO) ---
     switch ($accion) {
         case 'crear':
             $usuario = trim($_POST['usuario'] ?? '');
@@ -155,7 +110,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $alertCrear = "alert-danger";
             } else {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                // Asumo que la columna de password en BD es 'password' según el nuevo código
                 $stmtInsert = sqlsrv_prepare($conn, "INSERT INTO usuarios (usuario, password, pantalla) VALUES (?, ?, ?)", [$usuario, $hash, $pantalla]);
                 if ($stmtInsert && sqlsrv_execute($stmtInsert)) {
                     $mensajeCrear = "✅ Usuario <strong>$usuario</strong> creado exitosamente.";
@@ -227,9 +181,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $alertEliminar = "alert-danger";
             } else {
                 $stmtDelete = sqlsrv_prepare($conn, "DELETE FROM usuarios WHERE usuario = ?", [$usuarioEliminar]);
-                
+
                 if ($stmtDelete && sqlsrv_execute($stmtDelete)) {
-                     // sqlsrv_rows_affected solo funciona después de la ejecución
                     if (sqlsrv_rows_affected($stmtDelete) > 0) {
                         $mensajeEliminar = "✅ Usuario <strong>$usuarioEliminar</strong> eliminado.";
                         $alertEliminar = "alert-success";
@@ -241,28 +194,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $mensajeEliminar = "❌ Error al ejecutar la eliminación.";
                     $alertEliminar = "alert-danger";
                 }
-                if (isset($_POST['asignar_ventanilla'])) {
-    $usuario_v = trim($_POST['usuario_v']);
-    $ventanilla = trim($_POST['ventanilla']);
-
-    if (!empty($usuario_v) && !empty($ventanilla)) {
-        $sql = "UPDATE Usuarios SET Ventanilla = ? WHERE Usuario = ?";
-        $params = [$ventanilla, $usuario_v];
-        $stmt = sqlsrv_prepare($conn, $sql, $params);
-
-        if ($stmt && sqlsrv_execute($stmt)) {
-            $mensajeVentanilla = "✅ Ventanilla asignada correctamente.";
-            $alertVentanilla = "success";
-        } else {
-            $mensajeVentanilla = "❌ Error al asignar ventanilla.";
-            $alertVentanilla = "danger";
-        }
-    } else {
-        $mensajeVentanilla = "⚠️ Complete todos los campos.";
-        $alertVentanilla = "warning";
-    }
-}
-
+            }
+            break;
+            
+        case 'asignar_ventanilla':
+            $usuario_v = trim($_POST['usuario_v']);
+            $ventanilla = trim($_POST['ventanilla']);
+        
+            if (!empty($usuario_v) && !empty($ventanilla)) {
+                // Se asume que la columna es 'Ventanilla' en la tabla 'Usuarios'
+                $sql = "UPDATE Usuarios SET Ventanilla = ? WHERE Usuario = ?";
+                $params = [$ventanilla, $usuario_v];
+                $stmt = sqlsrv_prepare($conn, $sql, $params);
+        
+                if ($stmt && sqlsrv_execute($stmt)) {
+                    if (sqlsrv_rows_affected($stmt) > 0) {
+                        $mensajeVentanilla = "✅ Ventanilla <strong>'$ventanilla'</strong> asignada correctamente al usuario <strong>'$usuario_v'</strong>.";
+                        $alertVentanilla = "alert-success";
+                    } else {
+                        $mensajeVentanilla = "🤷 El usuario no fue encontrado o ya tenía esa ventanilla asignada.";
+                        $alertVentanilla = "alert-info";
+                    }
+                } else {
+                    $mensajeVentanilla = "❌ Error al ejecutar la asignación de ventanilla.";
+                    $alertVentanilla = "alert-danger";
+                }
+            } else {
+                $mensajeVentanilla = "⚠️ Debe seleccionar un usuario y una ventanilla.";
+                $alertVentanilla = "alert-warning";
             }
             break;
 
@@ -298,7 +257,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
             break;
     }
-
+}
 
 
 // --- SECCIÓN 3: LÓGICA DE CONSULTA DE TRANSPORTISTA (GET) ---
@@ -315,17 +274,31 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
         $mensajeTransportista = "🤷 No se encontraron datos para la cédula proporcionada.";
     }
 }
+
+// --- SECCIÓN 4: OBTENER DATOS PARA MOSTRAR ---
+// Obtener todos los usuarios con sus ventanillas para la tabla de visualización
+$listaUsuarios = [];
+$sqlUsuarios = "SELECT Usuario, Ventanilla FROM Usuarios ORDER BY Usuario ASC";
+$stmtUsuarios = sqlsrv_query($conn, $sqlUsuarios);
+if ($stmtUsuarios) {
+    while ($row = sqlsrv_fetch_array($stmtUsuarios, SQLSRV_FETCH_ASSOC)) {
+        $listaUsuarios[] = $row;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de gestion de usuarios </title>
+    <title>Panel de Gestión</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -359,7 +332,7 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
             border-bottom: 1px solid rgba(255, 255, 255, 0.2); background-color: transparent !important;
             font-size: 1.25rem; font-weight: 600; color: #fff;
         }
-        .form-control, .form-select {
+        .form-control, .form-select, .select2-container--bootstrap-5 .select2-selection {
             background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3);
             color: #fff; border-radius: 0.5rem;
         }
@@ -368,14 +341,8 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
             background-color: rgba(255, 255, 255, 0.3); color: #fff;
             border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
         }
-        .form-select { color-scheme: dark; }
-        
-        /* --- REGLA AÑADIDA PARA EL COLOR DE LAS OPCIONES --- */
-        select.form-select option {
-            background: #fff;
-            color: #000;
-        }
-
+        .form-select, .select2-container--bootstrap-5 .select2-selection { color-scheme: dark; color: #fff; }
+        select.form-select option, .select2-results__option { background: #fff; color: #000; }
         .btn { font-weight: 600; border-radius: 0.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .btn:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
         .result-card { background: rgba(0, 0, 0, 0.2); border-radius: 0.5rem; padding: 1rem; font-family: monospace; }
@@ -385,6 +352,8 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
         .alert-danger { background: rgba(220, 53, 69, 0.8); color: #fff; }
         .alert-warning { background: rgba(255, 193, 7, 0.8); color: #212529; }
         .alert-info { background: rgba(13, 202, 240, 0.8); color: #fff; }
+        .table-custom { background-color: rgba(0, 0, 0, 0.2); color: #fff; }
+        .table-custom th { color: var(--warning-color); }
     </style>
 </head>
 <body>
@@ -397,7 +366,7 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
         </h1>
         <?php if (!empty($mensajeTransportista)): ?>
             <div class="alert alert-info alert-dismissible fade show animate__animated animate__fadeInUp" role="alert">
-                <?= htmlspecialchars($mensajeTransportista) ?>
+                <?= $mensajeTransportista // No necesita htmlspecialchars porque el mensaje se construye en el servidor ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
@@ -442,7 +411,7 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
             </div>
         </div>
         <div class="row">
-            <div class="col-lg-6 mb-4 animate__animated animate__zoomIn" style="animation-delay: 0.4s;">
+             <div class="col-lg-6 mb-4 animate__animated animate__zoomIn" style="animation-delay: 0.4s;">
                 <div class="card">
                     <div class="card-header"><i class="fa-solid fa-search me-2" style="color: var(--primary-color);"></i>Consultar Transportista</div>
                     <div class="card-body">
@@ -483,7 +452,7 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
     <section id="gestion-usuarios" aria-labelledby="gestion-usuarios-title">
         <h2 id="gestion-usuarios-title" class="section-title animate__animated animate__fadeInUp">Gestión de Usuarios</h2>
         <div class="row justify-content-center">
-            <div class="col-lg-4 mb-4">
+             <div class="col-lg-4 mb-4">
                 <article class="card animate__animated animate__zoomIn" style="animation-delay: 0.8s;">
                     <div class="card-header"><i class="fa-solid fa-user-plus me-2"></i>Crear Usuario</div>
                     <div class="card-body">
@@ -499,8 +468,7 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
                     </div>
                 </article>
             </div>
-
-            <div class="col-lg-4 mb-4">
+             <div class="col-lg-4 mb-4">
                 <article class="card animate__animated animate__zoomIn" style="animation-delay: 0.9s;">
                     <div class="card-header"><i class="fa-solid fa-user-pen me-2"></i>Modificar Usuario</div>
                     <div class="card-body">
@@ -516,8 +484,7 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
                     </div>
                 </article>
             </div>
-
-            <div class="col-lg-4 mb-4">
+             <div class="col-lg-4 mb-4">
                  <article class="card animate__animated animate__zoomIn" style="animation-delay: 1.0s;">
                     <div class="card-header"><i class="fa-solid fa-user-minus me-2"></i>Eliminar Usuario</div>
                     <div class="card-body d-flex flex-column justify-content-center">
@@ -536,58 +503,100 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
             </div>
         </div>
     </section>
-    <!-- FORMULARIO ASIGNAR VENTANILLA -->
-<div class="card mt-4">
-    <div class="card-header bg-info text-white">
-        <h5 class="mb-0">Asignar Ventanilla</h5>
-    </div>
-    <div class="card-body">
-<form method="POST" action="">
-    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
-    <div class="mb-3">
-        <label for="usuario_v" class="form-label">Usuario</label>
-        <select id="usuario_v" name="usuario_v" class="form-select" required>
-            <option value="">Seleccione un usuario</option>
-            <?php
-            $sqlUsuarios = "SELECT Usuario FROM Usuarios ORDER BY Usuario ASC";
-            $stmtUsuarios = sqlsrv_query($conn, $sqlUsuarios);
-            while ($row = sqlsrv_fetch_array($stmtUsuarios, SQLSRV_FETCH_ASSOC)) {
-                echo "<option value='" . htmlspecialchars($row['Usuario']) . "'>" . htmlspecialchars($row['Usuario']) . "</option>";
-            }
-            ?>
-        </select>
-    </div>
+    <hr style="border-width: 2px; border-color: rgba(255,255,255,0.3); margin: 3rem 0;">
 
-    <div class="mb-3">
-        <label for="ventanilla" class="form-label">Ventanilla</label>
-        <select id="ventanilla" name="ventanilla" class="form-select" required>
-            <option value="">Seleccione...</option>
-            <option value="Ventanilla 1">Ventanilla 1</option>
-            <option value="Ventanilla 2">Ventanilla 2</option>
-            <option value="Ventanilla 3">Ventanilla 3</option>
-            <option value="Ventanilla 4">Ventanilla 4</option>
-            <option value="Ventanilla 5">Ventanilla 5</option>
-        </select>
-    </div>
+    <section id="gestion-ventanillas" aria-labelledby="gestion-ventanillas-title">
+        <h2 id="gestion-ventanillas-title" class="section-title animate__animated animate__fadeInUp">Gestión de Ventanillas</h2>
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card animate__animated animate__fadeInLeft">
+                    <div class="card-header"><i class="fa-solid fa-desktop me-2"></i>Asignar Ventanilla a Usuario</div>
+                    <div class="card-body">
+                        <?php if ($mensajeVentanilla): ?>
+                            <div class="alert <?= $alertVentanilla ?> alert-dismissible fade show" role="alert">
+                                <?= $mensajeVentanilla ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="accion" value="asignar_ventanilla">
+                            <div class="mb-3">
+                                <label for="usuario_v" class="form-label">Usuario</label>
+                                <select id="usuario_v" name="usuario_v" class="form-select" required>
+                                    <option value="">Seleccione un usuario</option>
+                                    <?php
+                                    // Re-usamos la lista de usuarios ya obtenida
+                                    foreach ($listaUsuarios as $user) {
+                                        echo "<option value='" . htmlspecialchars($user['Usuario']) . "'>" . htmlspecialchars($user['Usuario']) . "</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ventanilla" class="form-label">Ventanilla</label>
+                                <select id="ventanilla" name="ventanilla" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione...</option>
+                                    <option value="Ventanilla 1">Ventanilla 1</option>
+                                    <option value="Ventanilla 2">Ventanilla 2</option>
+                                    <option value="Ventanilla 3">Ventanilla 3</option>
+                                    <option value="Ventanilla 4">Ventanilla 4</option>
+                                    <option value="Ventanilla 5">Ventanilla 5</option>
+                                    <option value="">Quitar Asignación</option> </select>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100"><i class="fa-solid fa-check-double me-1"></i>Asignar / Modificar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card animate__animated animate__fadeInRight">
+                    <div class="card-header"><i class="fa-solid fa-list-ul me-2"></i>Ventanillas Asignadas Actualmente</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Ventanilla Asignada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($listaUsuarios)): ?>
+                                        <tr>
+                                            <td colspan="2" class="text-center">No hay usuarios registrados.</td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($listaUsuarios as $user): ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($user['Usuario']) ?></td>
+                                                <td><?= htmlspecialchars($user['Ventanilla'] ?: 'No asignada') ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
 
-    <button type="submit" name="asignar_ventanilla" class="btn btn-primary">Asignar</button>
-</form>
-
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Inicializar Select2 en el selector de usuarios para la asignación de ventanilla
     $('#usuario_v').select2({
-        placeholder: "Buscar usuario...",
+        theme: "bootstrap-5",
+        placeholder: "Buscar y seleccionar un usuario...",
         allowClear: true
     });
 });
 </script>
-
-</script>
-</div>
-
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
