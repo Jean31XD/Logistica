@@ -502,28 +502,29 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
         <h5 class="mb-0">Asignar Ventanilla</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="">
-            <div class="row g-2">
-                <div class="col-md-6">
-                    <label for="usuario_v" class="form-label">Nombre de Usuario</label>
-                    <input type="text" id="usuario_v" name="usuario_v" class="form-control" required>
-                </div>
-                <div class="col-md-6">
-                    <label for="ventanilla" class="form-label">Ventanilla</label>
-                    <select id="ventanilla" name="ventanilla" class="form-select" required>
-                        <option value="">Seleccione...</option>
-                        <option value="Ventanilla 1">Ventanilla 1</option>
-                        <option value="Ventanilla 2">Ventanilla 2</option>
-                        <option value="Ventanilla 3">Ventanilla 3</option>
-                        <option value="Ventanilla 4">Ventanilla 4</option>
-                        <option value="Ventanilla 5">Ventanilla 5</option>
-                    </select>
-                </div>
-            </div>
-            <button type="submit" name="asignar_ventanilla" class="btn btn-primary mt-3">
-                Asignar
-            </button>
-        </form>
+<form method="POST" action="">
+    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+    <div class="row g-2">
+        <div class="col-md-6">
+            <label for="usuario_v" class="form-label">Nombre de Usuario</label>
+            <input type="text" id="usuario_v" name="usuario_v" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+            <label for="ventanilla" class="form-label">Ventanilla</label>
+            <select id="ventanilla" name="ventanilla" class="form-select" required>
+                <option value="">Seleccione...</option>
+                <option value="Ventanilla 1">Ventanilla 1</option>
+                <option value="Ventanilla 2">Ventanilla 2</option>
+                <option value="Ventanilla 3">Ventanilla 3</option>
+                <option value="Ventanilla 4">Ventanilla 4</option>
+                <option value="Ventanilla 5">Ventanilla 5</option>
+            </select>
+        </div>
+    </div>
+    <button type="submit" name="asignar_ventanilla" class="btn btn-primary mt-3">Asignar</button>
+</form>
+
         <?php if (!empty($mensajeVentanilla)): ?>
 <div class="alert alert-<?= $alertVentanilla ?> mt-2">
     <?= $mensajeVentanilla ?>
