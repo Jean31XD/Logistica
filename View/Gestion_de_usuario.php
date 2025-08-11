@@ -78,9 +78,49 @@ $mensajeEliminar = $alertEliminar = "";
 
 // --- SECCIÓN 2: PROCESAMIENTO DE FORMULARIOS (POST) ---
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die("Error: Token CSRF inválido. Por favor, recargue la página e intente de nuevo.");
+    }
+
     $accion = $_POST['accion'] ?? '';
-    $csrf = $_POST['csrf_token'] ?? '';
+
+    switch ($accion) {
+        case 'crear':
+            // Código para crear
+            break;
+
+        case 'modificar':
+            // Código para modificar
+            break;
+
+        case 'eliminar':
+            // Código para eliminar
+            break;
+
+        case 'asignar_ventanilla':
+            $usuario_v = trim($_POST['usuario_v'] ?? '');
+            $ventanilla = trim($_POST['ventanilla'] ?? '');
+
+            if (!empty($usuario_v) && !empty($ventanilla)) {
+                $sql = "UPDATE Usuarios SET Ventanilla = ? WHERE Usuario = ?";
+                $params = [$ventanilla, $usuario_v];
+                $stmt = sqlsrv_prepare($conn, $sql, $params);
+
+                if ($stmt && sqlsrv_execute($stmt)) {
+                    $mensajeVentanilla = "✅ Ventanilla asignada correctamente.";
+                    $alertVentanilla = "success";
+                } else {
+                    $mensajeVentanilla = "❌ Error al asignar ventanilla.";
+                    $alertVentanilla = "danger";
+                }
+            } else {
+                $mensajeVentanilla = "⚠️ Complete todos los campos.";
+                $alertVentanilla = "warning";
+            }
+            break;
+    }
+}
 
     // Validar token CSRF para TODAS las acciones de tipo POST
     if (!verificarCSRF($csrf, $_SESSION['csrf_token'])) {
@@ -505,33 +545,45 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
 <form method="POST" action="">
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
-    <div class="row g-2">
-        <div class="col-md-6">
-            <label for="usuario_v" class="form-label">Nombre de Usuario</label>
-            <input type="text" id="usuario_v" name="usuario_v" class="form-control" required>
-        </div>
-        <div class="col-md-6">
-            <label for="ventanilla" class="form-label">Ventanilla</label>
-            <select id="ventanilla" name="ventanilla" class="form-select" required>
-                <option value="">Seleccione...</option>
-                <option value="Ventanilla 1">Ventanilla 1</option>
-                <option value="Ventanilla 2">Ventanilla 2</option>
-                <option value="Ventanilla 3">Ventanilla 3</option>
-                <option value="Ventanilla 4">Ventanilla 4</option>
-                <option value="Ventanilla 5">Ventanilla 5</option>
-            </select>
-        </div>
+    <div class="mb-3">
+        <label for="usuario_v" class="form-label">Usuario</label>
+        <select id="usuario_v" name="usuario_v" class="form-select" required>
+            <option value="">Seleccione un usuario</option>
+            <?php
+            $sqlUsuarios = "SELECT Usuario FROM Usuarios ORDER BY Usuario ASC";
+            $stmtUsuarios = sqlsrv_query($conn, $sqlUsuarios);
+            while ($row = sqlsrv_fetch_array($stmtUsuarios, SQLSRV_FETCH_ASSOC)) {
+                echo "<option value='" . htmlspecialchars($row['Usuario']) . "'>" . htmlspecialchars($row['Usuario']) . "</option>";
+            }
+            ?>
+        </select>
     </div>
-    <button type="submit" name="asignar_ventanilla" class="btn btn-primary mt-3">Asignar</button>
+
+    <div class="mb-3">
+        <label for="ventanilla" class="form-label">Ventanilla</label>
+        <select id="ventanilla" name="ventanilla" class="form-select" required>
+            <option value="">Seleccione...</option>
+            <option value="Ventanilla 1">Ventanilla 1</option>
+            <option value="Ventanilla 2">Ventanilla 2</option>
+            <option value="Ventanilla 3">Ventanilla 3</option>
+            <option value="Ventanilla 4">Ventanilla 4</option>
+            <option value="Ventanilla 5">Ventanilla 5</option>
+        </select>
+    </div>
+
+    <button type="submit" name="asignar_ventanilla" class="btn btn-primary">Asignar</button>
 </form>
 
-        <?php if (!empty($mensajeVentanilla)): ?>
-<div class="alert alert-<?= $alertVentanilla ?> mt-2">
-    <?= $mensajeVentanilla ?>
-</div>
-<?php endif; ?>
+<script>
+$(document).ready(function() {
+    $('#usuario_v').select2({
+        placeholder: "Buscar usuario...",
+        allowClear: true
+    });
+});
+</script>
 
-    </div>
+</script>
 </div>
 
 </main>
