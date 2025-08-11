@@ -194,7 +194,6 @@ if (isset($_GET['ajax'])) {
     </header>
 
     <div class="main-container text-center">
-        <h1 class="titulo-principal animate__animated animate__fadeInUp">MONITOR DE TICKETS</h1>
         <div class="tabla-container animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
             <div class="table-responsive">
                 <table class="table">
