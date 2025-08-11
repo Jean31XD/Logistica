@@ -88,7 +88,7 @@ if (isset($_GET['ajax'])) {
         }
         .table tbody tr:hover {
             transform: translateY(-5px) scale(1.01);
-            background-color: rgba(255, 255, 255, 0.1) !important;
+            background-color: rgba(255, 255, 255, 0.15) !important;
             box-shadow: 0 8px 25px rgba(0,0,0,0.4);
         }
         .table tbody td { padding: 1.5rem; vertical-align: middle; border: none; text-align: center; }
@@ -96,13 +96,13 @@ if (isset($_GET['ajax'])) {
         .table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
         .tiempo-celda { font-weight: 600; font-size: 1.3rem; }
 
-        /* --- NUEVOS ESTILOS PARA ESTATUS DE FILA --- */
-        .fila-facturacion {
-            background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15)) !important;
+        /* --- ESTILOS CORREGIDOS PARA ESTATUS DE FILA --- */
+        .table tbody tr.fila-facturacion {
+            background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15));
             border-left: 5px solid #198754;
         }
-        .fila-retencion {
-            background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15)) !important;
+        .table tbody tr.fila-retencion {
+            background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15));
             border-left: 5px solid #dc3545;
         }
 
@@ -115,6 +115,7 @@ if (isset($_GET['ajax'])) {
     </header>
 
     <div class="main-container text-center">
+        <h1 class="titulo-principal animate__animated animate__fadeInUp">MONITOR DE TICKETS</h1>
         <div class="tabla-container animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
             <div class="table-responsive">
                 <table class="table">
@@ -161,6 +162,7 @@ if (isset($_GET['ajax'])) {
                             if (!tbody.querySelector('td[colspan="6"]')) {
                                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-info-circle me-2"></i>No hay tickets activos.</td></tr>';
                             }
+                            mapaFilasActuales.forEach(fila => fila.remove()); // Limpiar si quedan filas
                             return; 
                         }
                         
@@ -171,10 +173,9 @@ if (isset($_GET['ajax'])) {
                             ticketsActivos.add(ticketID);
 
                             const estatus = ticket.Estatus;
-                            let icono = 'fa-cogs'; // Icono por defecto para "En Proceso"
+                            let icono = 'fa-cogs';
                             let claseFila = '';
                             
-                            // Asignar icono y clase de color según el estatus
                             if (estatus === 'Facturación') {
                                 icono = 'fa-check-circle';
                                 claseFila = 'fila-facturacion';
@@ -186,20 +187,22 @@ if (isset($_GET['ajax'])) {
                             const ventanillaHTML = ticket.ventanilla ? ticket.ventanilla : '<span class="text-muted">N/A</span>';
 
                             if (mapaFilasActuales.has(ticketID)) {
-                                // --- ACTUALIZAR FILA EXISTENTE ---
                                 const fila = mapaFilasActuales.get(ticketID);
                                 fila.cells[3].innerHTML = `<i class="fas ${icono} me-2"></i>${estatus}`;
                                 fila.cells[4].innerHTML = ventanillaHTML;
 
-                                // Actualizar la clase de color
                                 fila.classList.remove('fila-facturacion', 'fila-retencion');
-                                if (claseFila) fila.classList.add(claseFila);
+                                if (claseFila) {
+                                    fila.classList.add(claseFila);
+                                }
                                 
                             } else {
-                                // --- AÑADIR NUEVA FILA ---
                                 const nuevaFila = tbody.insertRow();
+                                // Primero se asignan las clases, incluyendo la de animación y la de color
                                 nuevaFila.className = `animate__animated animate__fadeIn ${claseFila}`;
                                 nuevaFila.dataset.ticket = ticketID;
+
+                                // Luego se asigna el contenido
                                 nuevaFila.innerHTML = `
                                     <td>${ticketID}</td>
                                     <td>${ticket.NombreTR}</td>
@@ -211,7 +214,6 @@ if (isset($_GET['ajax'])) {
                             }
                         });
 
-                        // --- ELIMINAR FILAS ANTIGUAS ---
                         mapaFilasActuales.forEach((fila, ticketID) => {
                             if (!ticketsActivos.has(ticketID)) {
                                 fila.classList.remove('animate__fadeIn');
