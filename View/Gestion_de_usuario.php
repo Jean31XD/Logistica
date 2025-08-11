@@ -298,7 +298,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
             break;
     }
-}
+
 
 
 // --- SECCIÓN 3: LÓGICA DE CONSULTA DE TRANSPORTISTA (GET) ---
