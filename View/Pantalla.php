@@ -1,11 +1,10 @@
 <?php
 // --- Lógica para obtener datos ---
 function obtenerDatosDeTickets() {
-    // Es importante que el path a tu archivo de conexión sea correcto.
+    // Asegúrate de que la ruta a tu archivo de conexión es la correcta
     require_once __DIR__ . '/../conexionBD/conexion.php'; 
     
-    // Asegúrate de que las variables $serverName, $database, $username, $password 
-    // están definidas en el archivo de conexión.
+    // Tus variables de conexión deben estar definidas en el archivo de arriba
     $connectionInfo = [
         "Database" => $database, 
         "UID" => $username, 
@@ -14,20 +13,13 @@ function obtenerDatosDeTickets() {
         "CharacterSet" => "UTF-8"
     ];
     $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) { 
-        // En un entorno real, sería bueno registrar este error.
-        // die(print_r(sqlsrv_errors(), true)); 
-        return []; 
-    }
+    if ($conn === false) { return []; }
 
     $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
             FROM log 
             LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
     $stmt = sqlsrv_query($conn, $sql);
-    if ($stmt === false) { 
-        sqlsrv_close($conn); 
-        return []; 
-    }
+    if ($stmt === false) { sqlsrv_close($conn); return []; }
 
     $datos = [];
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) { 
@@ -38,7 +30,7 @@ function obtenerDatosDeTickets() {
     return $datos;
 }
 
-// --- LÓGICA AJAX ---
+// --- LÓGICA AJAX PARA EL FRONTEND ---
 if (isset($_GET['ajax'])) {
     header('Content-Type: application/json');
     echo json_encode(obtenerDatosDeTickets());
@@ -81,7 +73,6 @@ if (isset($_GET['ajax'])) {
         }
         .header-flotante img { max-width: 350px; width: 100%; filter: drop-shadow(0 0 15px rgba(0,0,0,0.5)); }
         .main-container { padding: 2rem 1rem; }
-        .titulo-principal { font-weight: 700; font-size: 2.5rem; text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5); margin-bottom: 2rem; }
         .tabla-container {
             background-color: rgba(0, 0, 0, 0.3); border-radius: 15px;
             padding: 1.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -246,7 +237,7 @@ if (isset($_GET['ajax'])) {
 
             setInterval(actualizarTiempos, 1000);
             setInterval(actualizarDatos, 3000);
-            actualizarDatos(); // Carga inicial
+            actualizarDatos(); // Carga inicial de datos
         });
     </script>
 
