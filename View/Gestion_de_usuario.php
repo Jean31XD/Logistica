@@ -550,38 +550,7 @@ if ($stmtUsuarios) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card animate__animated animate__fadeInRight">
-                    <div class="card-header"><i class="fa-solid fa-list-ul me-2"></i>Ventanillas Asignadas Actualmente</div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-custom table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Usuario</th>
-                                        <th>Ventanilla Asignada</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($listaUsuarios)): ?>
-                                        <tr>
-                                            <td colspan="2" class="text-center">No hay usuarios registrados.</td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($listaUsuarios as $user): ?>
-                                            <tr>
-                                                <td><?= htmlspecialchars($user['Usuario']) ?></td>
-                                                <td><?= htmlspecialchars($user['Ventanilla'] ?: 'No asignada') ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
     </section>
 </main>
 
