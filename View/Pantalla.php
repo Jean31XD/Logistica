@@ -1,22 +1,38 @@
 <?php
 // --- Lógica para obtener datos ---
 function obtenerDatosDeTickets() {
-    require_once __DIR__ . '/../conexionBD/conexion.php';
+    // Es importante que el path a tu archivo de conexión sea correcto.
+    require_once __DIR__ . '/../conexionBD/conexion.php'; 
+    
+    // Asegúrate de que las variables $serverName, $database, $username, $password 
+    // están definidas en el archivo de conexión.
     $connectionInfo = [
-        "Database" => $database, "UID" => $username, "PWD" => $password,
-        "TrustServerCertificate" => true, "CharacterSet" => "UTF-8"
+        "Database" => $database, 
+        "UID" => $username, 
+        "PWD" => $password,
+        "TrustServerCertificate" => true, 
+        "CharacterSet" => "UTF-8"
     ];
     $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) { return []; }
+    if ($conn === false) { 
+        // En un entorno real, sería bueno registrar este error.
+        // die(print_r(sqlsrv_errors(), true)); 
+        return []; 
+    }
 
     $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
             FROM log 
             LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
     $stmt = sqlsrv_query($conn, $sql);
-    if ($stmt === false) { sqlsrv_close($conn); return []; }
+    if ($stmt === false) { 
+        sqlsrv_close($conn); 
+        return []; 
+    }
 
     $datos = [];
-    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) { $datos[] = $row; }
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) { 
+        $datos[] = $row; 
+    }
     sqlsrv_free_stmt($stmt);
     sqlsrv_close($conn);
     return $datos;
@@ -96,14 +112,14 @@ if (isset($_GET['ajax'])) {
         .table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
         .tiempo-celda { font-weight: 600; font-size: 1.3rem; }
 
-        /* --- ESTILOS CORREGIDOS PARA ESTATUS DE FILA --- */
+        /* --- ESTILOS PARA EL COLOR DE LAS FILAS --- */
         .table tbody tr.fila-facturacion {
             background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15));
-            border-left: 5px solid #198754;
+            border-left: 5px solid #198754; /* Verde */
         }
         .table tbody tr.fila-retencion {
             background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15));
-            border-left: 5px solid #dc3545;
+            border-left: 5px solid #dc3545; /* Rojo */
         }
 
     </style>
@@ -161,7 +177,7 @@ if (isset($_GET['ajax'])) {
                             if (!tbody.querySelector('td[colspan="6"]')) {
                                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="fas fa-info-circle me-2"></i>No hay tickets activos.</td></tr>';
                             }
-                            mapaFilasActuales.forEach(fila => fila.remove()); // Limpiar si quedan filas
+                            mapaFilasActuales.forEach(fila => fila.remove());
                             return; 
                         }
                         
@@ -197,11 +213,9 @@ if (isset($_GET['ajax'])) {
                                 
                             } else {
                                 const nuevaFila = tbody.insertRow();
-                                // Primero se asignan las clases, incluyendo la de animación y la de color
                                 nuevaFila.className = `animate__animated animate__fadeIn ${claseFila}`;
                                 nuevaFila.dataset.ticket = ticketID;
 
-                                // Luego se asigna el contenido
                                 nuevaFila.innerHTML = `
                                     <td>${ticketID}</td>
                                     <td>${ticket.NombreTR}</td>
@@ -232,7 +246,7 @@ if (isset($_GET['ajax'])) {
 
             setInterval(actualizarTiempos, 1000);
             setInterval(actualizarDatos, 3000);
-            actualizarDatos();
+            actualizarDatos(); // Carga inicial
         });
     </script>
 
