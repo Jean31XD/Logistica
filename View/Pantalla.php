@@ -183,13 +183,13 @@ if (isset($_GET['ajax'])) {
                             let icono = 'fa-cogs';
                             let claseFila = '';
                             
-                    $estatus = htmlspecialchars($row['Estatus']);
-                    $claseFila = "";
-                    if ($estatus === "Retencion") {
-                        $claseFila = "table-danger";
-                    } elseif ($estatus === "Facturación") {
-                        $claseFila = "table-success";
-                    }
+                            if (estatus === 'Facturación') {
+                                icono = 'fa-check-circle';
+                                claseFila = 'table-success';
+                            } else if (estatus === 'Retencion') {
+                                icono = 'fa-hand-paper';
+                                claseFila = 'table-danger';
+                            }
 
                             const ventanillaHTML = ticket.ventanilla ? ticket.ventanilla : '<span class="text-muted">N/A</span>';
 
