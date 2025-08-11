@@ -99,7 +99,12 @@ function generateRowHtml($row) {
     $isAsignadoAMi = $isAsignado && ($asignado === $usuarioSesion);
     $isAsignadoAOtro = $isAsignado && !$isAsignadoAMi;
 
-    $claseFila = $isRetencion ? 'table-danger' : '';
+        $claseFila = '';
+    if ($isRetencion) {
+        $claseFila = 'table-danger';
+    } elseif ($estatus === 'Facturación') {
+        $claseFila = 'table-success'; // Use 'table-success' for green
+    }
     
     // El botón de asignar/reasignar ahora solo se deshabilita si está asignado a MÍ MISMO.
     $asignarDisabled = $isAsignadoAMi ? "disabled title='Ya te encuentras asignado a este ticket'" : "";
@@ -120,7 +125,7 @@ function generateRowHtml($row) {
             <option value='Verificación de pedido' " . ($estatus == 'Verificación de pedido' ? 'selected' : '') . ">Verificación</option>
             <option value='Pedido preparandose' " . ($estatus == 'Pedido preparandose' ? 'selected' : '') . ">Preparándose</option>
             <option value='En proceso de empaque' " . ($estatus == 'En proceso de empaque' ? 'selected' : '') . ">Empaque</option>
-            <option value='Facturación' style='color: green;' " . ($estatus == 'Facturación' ? 'selected' : '') . ">Facturación</option>
+            <option value='Facturación' " . ($estatus == 'Facturación' ? 'selected' : '') . ">Facturación</option>
         </select>
     </td>";
     $html .= "<td class='asignado-a'>" . ($isAsignado ? "<strong>" . htmlspecialchars($asignado) . "</strong>" : "<em>No asignado</em>") . "</td>";
