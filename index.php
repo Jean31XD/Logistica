@@ -88,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                 // Redirige según el perfil del usuario
                 switch ($row['pantalla']) {
                     case 0: header("Location: View/Admin.php"); break;
-                    case 1: header("Location: View/Inicio.php"); break;
+                    case 1: header("Location: View/Inicio_gestion.php"); break;
                     case 2: header("Location: View/facturas.php"); break;
                     case 3: header("Location: View/CXC.php"); break;
                     case 4: header("Location: View/Reporte.php"); break;
