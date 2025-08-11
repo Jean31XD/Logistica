@@ -235,8 +235,7 @@ if (isset($_GET['ajax'])) {
     </header>
 
     <div class="main-container text-center">
-        <h1 class="titulo-principal animate__animated animate__fadeInUp">MONITOR DE TICKETS</h1>
-        <div class="tabla-container animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
+        <div class="tabla-container animate__animated animate__fadeIn" style="animation-delay: 0.0s;">
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -320,9 +319,9 @@ if (isset($_GET['ajax'])) {
             }
 
             // Llama a la función para actualizar los tiempos cada segundo
-            setInterval(actualizarTiempos, 1000);
+            setInterval(actualizarTiempos, 000);
             // Llama a la función para actualizar los datos desde el servidor cada 3 segundos
-            setInterval(actualizarDatos, 3000);
+            setInterval(actualizarDatos, 0000);
             
             // Carga inicial de datos
             actualizarDatos();
