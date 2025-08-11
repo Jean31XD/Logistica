@@ -24,7 +24,7 @@ if (empty($_SESSION['csrf_token'])) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel de Validación ✨</title>
+  <title>Panel de Despacho </title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
@@ -184,7 +184,7 @@ if (empty($_SESSION['csrf_token'])) {
 </header>
 
 <main class="container-fluid" role="main">
-    <h1 class="main-title mb-4 animate__animated animate__fadeInDown">Panel de Validación</h1>
+    <h1 class="main-title mb-4 animate__animated animate__fadeInDown">Panel de Despacho</h1>
 
     <section aria-labelledby="acceso-rapido-title">
         <h2 id="acceso-rapido-title" class="section-title animate__animated animate__fadeInUp">Acceso Rápido</h2>

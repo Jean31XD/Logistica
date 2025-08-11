@@ -201,6 +201,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mensajeEliminar = "❌ Error al ejecutar la eliminación.";
                     $alertEliminar = "alert-danger";
                 }
+                if (isset($_POST['asignar_ventanilla'])) {
+    $usuario_v = trim($_POST['usuario_v']);
+    $ventanilla = trim($_POST['ventanilla']);
+
+    if (!empty($usuario_v) && !empty($ventanilla)) {
+        $sql = "UPDATE Usuarios SET Ventanilla = ? WHERE Usuario = ?";
+        $params = [$ventanilla, $usuario_v];
+        $stmt = sqlsrv_prepare($conn, $sql, $params);
+
+        if ($stmt && sqlsrv_execute($stmt)) {
+            $mensajeVentanilla = "✅ Ventanilla asignada correctamente.";
+            $alertVentanilla = "success";
+        } else {
+            $mensajeVentanilla = "❌ Error al asignar ventanilla.";
+            $alertVentanilla = "danger";
+        }
+    } else {
+        $mensajeVentanilla = "⚠️ Complete todos los campos.";
+        $alertVentanilla = "warning";
+    }
+}
+
             }
             break;
 
@@ -474,6 +496,43 @@ if (isset($_GET['cedula_consulta']) && !empty($_GET['cedula_consulta'])) {
             </div>
         </div>
     </section>
+    <!-- FORMULARIO ASIGNAR VENTANILLA -->
+<div class="card mt-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Asignar Ventanilla</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label for="usuario_v" class="form-label">Nombre de Usuario</label>
+                    <input type="text" id="usuario_v" name="usuario_v" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="ventanilla" class="form-label">Ventanilla</label>
+                    <select id="ventanilla" name="ventanilla" class="form-select" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Ventanilla 1">Ventanilla 1</option>
+                        <option value="Ventanilla 2">Ventanilla 2</option>
+                        <option value="Ventanilla 3">Ventanilla 3</option>
+                        <option value="Ventanilla 4">Ventanilla 4</option>
+                        <option value="Ventanilla 5">Ventanilla 5</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" name="asignar_ventanilla" class="btn btn-primary mt-3">
+                Asignar
+            </button>
+        </form>
+        <?php if (!empty($mensajeVentanilla)): ?>
+<div class="alert alert-<?= $alertVentanilla ?> mt-2">
+    <?= $mensajeVentanilla ?>
+</div>
+<?php endif; ?>
+
+    </div>
+</div>
+
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
