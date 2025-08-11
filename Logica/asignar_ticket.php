@@ -9,9 +9,16 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
+// 1. Incluir la conexión. ESTO YA CREA LA VARIABLE $conn.
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-// Obtener datos de la petición AJAX
+// Si la conexión desde el archivo incluido falla, $conn será false.
+if (!$conn) {
+    echo json_encode(['success' => false, 'message' => 'Error de conexión con la base de datos (desde conexion.php).']);
+    exit();
+}
+
+// 2. Obtener datos de la petición AJAX
 $tiket = $_POST['tiket'] ?? null;
 $password = $_POST['password'] ?? null;
 $currentAssignee = $_POST['current_assignee'] ?? ''; // El usuario que tiene el ticket ahora
@@ -22,18 +29,11 @@ if (!$tiket || !$password) {
     exit();
 }
 
-// Conectar a la base de datos
-$conn = sqlsrv_connect($serverName, ["Database" => $database, "UID" => $username, "PWD" => $password_db, "TrustServerCertificate" => true]);
-if (!$conn) {
-    echo json_encode(['success' => false, 'message' => 'Error de conexión con la base de datos.']);
-    exit();
-}
-
+// 3. El resto de tu lógica (que ya está bien)
 // Determinar qué usuario debemos verificar
 $user_to_check = '';
 if (!empty($currentAssignee)) {
     // --- CASO 1: RE-ASIGNACIÓN ---
-    // El ticket ya tiene dueño. Debemos verificar la contraseña del dueño actual.
     if ($currentAssignee === $sessionUser) {
         echo json_encode(['success' => false, 'message' => 'No puedes reasignarte un ticket que ya es tuyo.']);
         sqlsrv_close($conn);
@@ -42,7 +42,6 @@ if (!empty($currentAssignee)) {
     $user_to_check = $currentAssignee;
 } else {
     // --- CASO 2: ASIGNACIÓN NUEVA ---
-    // El ticket está libre. Verificamos la contraseña del usuario que lo está tomando.
     $user_to_check = $sessionUser;
 }
 
@@ -85,3 +84,4 @@ if (password_verify($password, $hashed_password)) {
 }
 
 sqlsrv_close($conn);
+?>
