@@ -104,14 +104,15 @@ if (isset($_GET['ajax'])) {
         .tiempo-celda { font-weight: 600; font-size: 1.3rem; }
 
         /* --- ESTILOS PARA EL COLOR DE LAS FILAS --- */
-        .table tbody tr.fila-facturacion {
-            background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15));
-            border-left: 5px solid #198754; /* Verde */
-        }
-        .table tbody tr.fila-retencion {
-            background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15));
-            border-left: 5px solid #dc3545; /* Rojo */
-        }
+/* --- ESTILOS PARA EL COLOR DE LAS FILAS (CORREGIDO) --- */
+.table tbody tr.fila-facturacion {
+    background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15)) !important;
+    border-left: 5px solid #198754; /* Verde */
+}
+.table tbody tr.fila-retencion {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15)) !important;
+    border-left: 5px solid #dc3545; /* Rojo */
+}
 
     </style>
 </head>
