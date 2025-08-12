@@ -64,66 +64,95 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             height: 100%;
             margin: 0;
             padding: 0;
-            background: linear-gradient(to bottom, #ffffff, #e31f25);
+            background: linear-gradient(135deg, #8B0000, #e31f25);
+            background-size: 200% 200%;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+   
+
         .main-container {
             display: flex;
             height: 100vh;
             padding: 20px 40px;
             gap: 30px;
         }
+
         .formulario {
             flex: 1;
-            background: #ffffffd9;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
             overflow-y: auto;
         }
+
         .sidebar {
-            height: 800px;
+            height: auto;
+            min-height: 700px;
             width: 350px;
-            background-color: #fff;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
             padding: 25px 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
         }
+
         .sidebar img {
             display: block;
             margin: 0 auto 20px auto;
             max-width: 100%;
         }
+
+        .sidebar h2 {
+            font-size: 1.4rem;
+            color: #fff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
         .btn-danger {
             background-color: #e31f25;
             color: white;
             border: none;
+            padding: 0.5rem 1rem;
             font-weight: bold;
             border-radius: 8px;
-            text-decoration: none;
             display: block;
             width: 100%;
-            margin-top: -10px;
-            text-align: center;
+            margin-top: 10px;
+            transition: background-color 0.3s;
         }
+
         .btn-danger:hover {
             background-color: #b71c1c;
         }
-        .sidebar .form-control,
-        .sidebar .form-select {
+
+        .form-label {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .form-control,
+        .form-select {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ccc;
+            border-radius: 10px;
             margin-bottom: 12px;
         }
+
+        .select2-container--default .select2-selection--single {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            height: 38px;
+            padding: 5px;
+        }
+
         .input-group.mb-4 {
             border-radius: 8px;
         }
-        .input-group.mb-4 input.form-control {
-            height: calc(1.5em + 0.75rem + 2px);
-        }
-        .input-group.mb-4 .btn-success {
-            height: calc(1.5em + 0.75rem + 2px);
-            padding: 0 12px;
-            font-size: 1rem;
-        }
+
         .btn-success {
             background-color: #e31f25;
             border: none;
@@ -132,33 +161,43 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             font-size: 0.85rem;
             padding: 0.375rem 0.6rem;
         }
+
         .btn-success:hover {
             background-color: #b71c1c;
         }
-        .form-control.flex-grow-1 {
-            flex-grow: 1;
-        }
+
         .table {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 0 12px rgba(0,0,0,0.05);
-            border-collapse: collapse;
-            font-size: 0.95rem;
+            overflow: hidden;
+            box-shadow: 0 0 12px rgba(0,0,0,0.15);
         }
-        .table th,
-        .table td {
-            border: 1px solid #dee2e6;
+
+        .table th {
+            background-color: #e31f25;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .table td, .table th {
             text-align: center;
             vertical-align: middle;
         }
-        .table th {
-            background-color: #e31f25;
-            color: white;
-            font-weight: 600;
-        }
+
         .table-success {
             background-color: #d4edda !important;
         }
+
+        .titulo-tabla {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+     
+        
     </style>
 </head>
 <body>
@@ -168,7 +207,7 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
         <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
     </div>
     <div class="sidebar">
-        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo lateral">
+        <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo lateral">
 
         <label for="listaTransportistas" class="form-label">Transportista:</label>
         <select id="listaTransportistas" class="form-select">
@@ -297,7 +336,7 @@ function validarFactura() {
 }
 
 function iniciarInactividad() {
-    const tiempoLimite = 5 * 60 * 1000; // 5 minutos
+    const tiempoLimite = 2 * 60 * 1000; // 5 minutos
     function resetearTemporizador() {
         clearTimeout(temporizador);
         temporizador = setTimeout(() => {

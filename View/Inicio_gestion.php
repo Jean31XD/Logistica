@@ -7,7 +7,7 @@ header("Pragma: no-cache");
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
 // Verificar autenticación y permisos
-if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 3) {
+if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 1) {
     header("Location: ../index.php");
     exit();
 }
@@ -24,7 +24,7 @@ if (empty($_SESSION['csrf_token'])) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel de Validación ✨</title>
+  <title>Panel de Despacho </title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
@@ -184,24 +184,24 @@ if (empty($_SESSION['csrf_token'])) {
 </header>
 
 <main class="container-fluid" role="main">
-    <h1 class="main-title mb-4 animate__animated animate__fadeInDown">Panel de Validación</h1>
+    <h1 class="main-title mb-4 animate__animated animate__fadeInDown">Panel de Despacho</h1>
 
     <section aria-labelledby="acceso-rapido-title">
         <h2 id="acceso-rapido-title" class="section-title animate__animated animate__fadeInUp">Acceso Rápido</h2>
         <div class="cards-container mb-5">
             <article class="card animate__animated animate__zoomIn" style="animation-delay: 0.2s;">
-                <div class="card-header"><i class="fa-solid fa-inbox me-2"></i>Recepción</div>
+                <div class="card-header"><i class="fa-solid fa-inbox me-2"></i>Despacho</div>
                 <div class="card-body d-flex flex-column justify-content-between">
-                    <p>Control de recepción de documentos.</p>
-                    <a href="../View/facturas-recepcion.php" class="btn btn-outline-light w-100 mt-3" role="link">Ingresar</a>
+                    <p>Control de despacho de clientes.</p>
+                    <a href="../View/Inicio.php" class="btn btn-outline-light w-100 mt-3" role="link">Ingresar</a>
                 </div>
             </article>
 
             <article class="card animate__animated animate__zoomIn" style="animation-delay: 0.3s;">
-                <div class="card-header"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Reporte Facturas CXC</div>
+                <div class="card-header"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Creacion de choferes</div>
                 <div class="card-body d-flex flex-column justify-content-between">
-                    <p>Reporte de Facturas faltantes.</p>
-                    <a href="../View/BI.php" class="btn btn-outline-light w-100 mt-3" role="link">Ingresar</a>
+                    <p>Registro de nuevos choferes.</p>
+                    <a href="../View/Gestion_de_camiones.php" class="btn btn-outline-light w-100 mt-3" role="link">Ingresar</a>
                 </div>
             </article>
         </div>

@@ -1,53 +1,87 @@
 <?php
 session_start();
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+date_default_timezone_set('America/Santo_Domingo');
 
+header('Content-Type: application/json');
 
 if (!isset($_SESSION['usuario'])) {
-    exit("❌ Acceso no autorizado.");
+    echo json_encode(['success' => false, 'message' => 'Acceso denegado. Debes iniciar sesión.']);
+    exit();
 }
 
-if (!isset($_POST['tiket'])) {
-    exit("❌ Error: No se recibió el ticket.");
-}
-
-$asignado = $_SESSION['usuario'];
-
+// 1. Incluir la conexión. ESTO YA CREA LA VARIABLE $conn.
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-
-$connectionInfo = array(
-    "Database" => $database,
-    "UID" => $username,
-    "PWD" => $password,
-    "TrustServerCertificate" => true
-);
-
-$conn = sqlsrv_connect($serverName, $connectionInfo);
-
+// Si la conexión desde el archivo incluido falla, $conn será false.
 if (!$conn) {
-    die("❌ Error de conexión: " . print_r(sqlsrv_errors(), true));
+    echo json_encode(['success' => false, 'message' => 'Error de conexión con la base de datos (desde conexion.php).']);
+    exit();
 }
 
-$tiket = $_POST['tiket'];
+// 2. Obtener datos de la petición AJAX
+$tiket = $_POST['tiket'] ?? null;
+$password = $_POST['password'] ?? null;
+$currentAssignee = $_POST['current_assignee'] ?? ''; // El usuario que tiene el ticket ahora
+$sessionUser = $_SESSION['usuario']; // El usuario que quiere tomar el ticket
 
-$sqlCheck = "SELECT * FROM log WHERE Tiket = ?";
-$paramsCheck = array($tiket);
-$stmtCheck = sqlsrv_query($conn, $sqlCheck, $paramsCheck);
-
-if ($stmtCheck === false || sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC) === null) {
-    exit("⚠️ Error: Ticket no encontrado.");
+if (!$tiket || !$password) {
+    echo json_encode(['success' => false, 'message' => 'Faltan datos (ticket o contraseña).']);
+    exit();
 }
 
-$sql = "UPDATE log SET Asignar = ? WHERE Tiket = ?";
-$params = array($asignado, $tiket);
-$stmt = sqlsrv_query($conn, $sql, $params);
-
-if ($stmt === false) {
-    exit("❌ Error al asignar el ticket: " . print_r(sqlsrv_errors(), true));
+// 3. El resto de tu lógica (que ya está bien)
+// Determinar qué usuario debemos verificar
+$user_to_check = '';
+if (!empty($currentAssignee)) {
+    // --- CASO 1: RE-ASIGNACIÓN ---
+    if ($currentAssignee === $sessionUser) {
+        echo json_encode(['success' => false, 'message' => 'No puedes reasignarte un ticket que ya es tuyo.']);
+        sqlsrv_close($conn);
+        exit();
+    }
+    $user_to_check = $currentAssignee;
+} else {
+    // --- CASO 2: ASIGNACIÓN NUEVA ---
+    $user_to_check = $sessionUser;
 }
 
-echo "✅ Ticket asignado correctamente a $asignado.";
+// Buscar el hash de la contraseña del usuario a verificar
+$sql_get_hash = "SELECT password FROM usuarios WHERE usuario = ?";
+$params_get_hash = [$user_to_check];
+$stmt_get_hash = sqlsrv_query($conn, $sql_get_hash, $params_get_hash);
+
+if ($stmt_get_hash === false) {
+    echo json_encode(['success' => false, 'message' => 'Error al consultar el usuario.']);
+    sqlsrv_close($conn);
+    exit();
+}
+
+$row = sqlsrv_fetch_array($stmt_get_hash, SQLSRV_FETCH_ASSOC);
+
+if (!$row || !isset($row['password'])) {
+    echo json_encode(['success' => false, 'message' => "El usuario a verificar ('$user_to_check') no fue encontrado."]);
+    sqlsrv_close($conn);
+    exit();
+}
+
+$hashed_password = $row['password'];
+
+// Verificar la contraseña
+if (password_verify($password, $hashed_password)) {
+    // Contraseña correcta. Procedemos a asignar el ticket al usuario de la sesión.
+    $sql_update = "UPDATE log SET Asignar = ?, FechaModificacion = GETDATE() WHERE Tiket = ?";
+    $params_update = [$sessionUser, $tiket];
+    $stmt_update = sqlsrv_query($conn, $sql_update, $params_update);
+
+    if ($stmt_update && sqlsrv_rows_affected($stmt_update) > 0) {
+        echo json_encode(['success' => true, 'message' => 'Ticket asignado a ' . $sessionUser . ' correctamente.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Contraseña correcta, pero falló la asignación del ticket.']);
+    }
+} else {
+    // Contraseña incorrecta
+    echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
+}
 
 sqlsrv_close($conn);
 ?>
