@@ -102,8 +102,6 @@ if (isset($_GET['ajax'])) {
         .table tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
         .table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
         .tiempo-celda { font-weight: 600; font-size: 1.3rem; }
-        
-        /* Elimino las clases personalizadas para que las de Bootstrap funcionen */
     </style>
 </head>
 <body>
@@ -175,21 +173,23 @@ if (isset($_GET['ajax'])) {
                             
                             if (estatus === 'Facturación') {
                                 icono = 'fa-check-circle';
-                                claseFila = 'table-success'; // Clase de Bootstrap
+                                claseFila = 'table-success';
                             } else if (estatus === 'Retencion') {
                                 icono = 'fa-hand-paper';
-                                claseFila = 'table-danger'; // Clase de Bootstrap
+                                claseFila = 'table-danger';
                             }
 
                             const ventanillaHTML = ticket.ventanilla ? ticket.ventanilla : '<span class="text-muted">N/A</span>';
 
                             if (mapaFilasActuales.has(ticketID)) {
                                 const fila = mapaFilasActuales.get(ticketID);
+
+                                // Asegúrate de eliminar todas las clases de color posibles antes de agregar una nueva
+                                fila.classList.remove('table-success', 'table-danger');
+
                                 fila.cells[3].innerHTML = `<i class="fas ${icono} me-2"></i>${estatus}`;
                                 fila.cells[4].innerHTML = ventanillaHTML;
 
-                                // Eliminar clases de color antiguas de Bootstrap
-                                fila.classList.remove('table-success', 'table-danger');
                                 if (claseFila) {
                                     fila.classList.add(claseFila);
                                 }
