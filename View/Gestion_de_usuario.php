@@ -226,39 +226,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
 
         // --- Lógica para Gestión de Transportistas ---
-        case 'insertar':
-        case 'actualizar':
-        case 'eliminar_transportista':
-            $nombre = $_POST['nombre'] ?? '';
-            $cedula = $_POST['cedula'] ?? '';
-            $empresa = $_POST['empresa'] ?? '';
-            $rnc = $_POST['rnc'] ?? '';
-            $matricula = $_POST['matricula'] ?? '';
+   // --- Lógica para Gestión de Transportistas ---
+case 'insertar':
+case 'actualizar':
+case 'eliminar_transportista':
 
-            if ($accion === 'insertar') {
-                $query = "INSERT INTO facebd (Nombres, Cedula, Empresa, RNC, Matricula) VALUES (?, ?, ?, ?, ?)";
-                $params = [$nombre, $cedula, $empresa, $rnc, $matricula];
-                $stmt = sqlsrv_query($conn, $query, $params);
-                $mensajeTransportista = $stmt ? "✅ Transportista agregado correctamente." : "❌ Error al insertar transportista.";
-            }
+    // Recuperar datos del formulario
+    $nombre = $_POST['nombre'] ?? '';
+    $cedula = $_POST['cedula'] ?? '';
+    $empresa = $_POST['empresa'] ?? '';
+    $rnc = $_POST['rnc'] ?? '';
+    $matricula = $_POST['matricula'] ?? '';
 
-            if ($accion === 'actualizar') {
-                $query = "UPDATE facebd SET Nombres = ?, Empresa = ?, RNC = ?, Matricula = ? WHERE Cedula = ?";
-                $params = [$nombre, $empresa, $rnc, $matricula, $cedula];
-                $stmt = sqlsrv_query($conn, $query, $params);
-                $mensajeTransportista = $stmt ? "✅ Transportista actualizado correctamente." : "❌ Error al actualizar transportista.";
-            }
-
-            if ($accion === 'eliminar_transportista') {
-                $query = "DELETE FROM facebd WHERE Cedula = ?";
-                $params = [$cedula];
-                $stmt = sqlsrv_query($conn, $query, $params);
-                $mensajeTransportista = $stmt ? "🗑️ Transportista eliminado correctamente." : "❌ Error al eliminar transportista.";
-            }
-            break;
+    // Usuario autenticado
+    if (!isset($_SESSION['usuario'])) {
+        die("Acceso denegado. Debe iniciar sesión.");
     }
-}
+    $usuario = $_SESSION['usuario'];
 
+    if ($accion === 'insertar') {
+        $query = "INSERT INTO facebd (Nombres, Cedula, Empresa, RNC, Matricula, creado_por) 
+                  VALUES (?, ?, ?, ?, ?, ?)";
+        $params = [$nombre, $cedula, $empresa, $rnc, $matricula, $usuario];
+        $stmt = sqlsrv_query($conn, $query, $params);
+        $mensajeTransportista = $stmt ? "✅ Transportista agregado correctamente." : "❌ Error al insertar transportista.";
+    }
+
+    if ($accion === 'actualizar') {
+        $query = "UPDATE facebd 
+                  SET Nombres = ?, Empresa = ?, RNC = ?, Matricula = ?, creado_por = ?
+                  WHERE Cedula = ?";
+        $params = [$nombre, $empresa, $rnc, $matricula, $usuario, $cedula];
+        $stmt = sqlsrv_query($conn, $query, $params);
+        $mensajeTransportista = $stmt ? "✅ Transportista actualizado correctamente." : "❌ Error al actualizar transportista.";
+    }
+
+    if ($accion === 'eliminar_transportista') {
+        $query = "DELETE FROM facebd WHERE Cedula = ?";
+        $params = [$cedula];
+        $stmt = sqlsrv_query($conn, $query, $params);
+        $mensajeTransportista = $stmt ? "🗑️ Transportista eliminado correctamente." : "❌ Error al eliminar transportista.";
+    }
+    break;
+
+}
+}
 
 // --- SECCIÓN 3: LÓGICA DE CONSULTA DE TRANSPORTISTA (GET) ---
 
@@ -568,4 +580,4 @@ $(document).ready(function() {
 });
 </script>
 </body>
-</html>
+</html> 

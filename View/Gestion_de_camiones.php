@@ -54,10 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $matricula = $_POST['matricula'] ?? '';
 
     switch ($accion) {
-        case 'insertar':
-            $stmt = sqlsrv_query($conn, "INSERT INTO facebd (Nombres, Cedula, Empresa, RNC, Matricula) VALUES (?, ?, ?, ?, ?)", [$nombre, $cedula, $empresa, $rnc, $matricula]);
-            $mensaje = $stmt ? "✅ Transportista agregado" : "❌ Error al insertar";
-            break;
+     case 'insertar':
+    $creado_por = $_SESSION['usuario']; // Usuario logueado
+    $stmt = sqlsrv_query(
+        $conn,
+        "INSERT INTO facebd (Nombres, Cedula, Empresa, RNC, Matricula, creado_por) VALUES (?, ?, ?, ?, ?, ?)",
+        [$nombre, $cedula, $empresa, $rnc, $matricula, $creado_por]
+    );
+    $mensaje = $stmt ? "✅ Transportista agregado" : "❌ Error al insertar";
+    break;
+
         case 'actualizar':
             $stmt = sqlsrv_query($conn, "UPDATE facebd SET Nombres=?, Empresa=?, RNC=?, Matricula=? WHERE Cedula=?", [$nombre, $empresa, $rnc, $matricula, $cedula]);
             $mensaje = $stmt ? "✅ Transportista actualizado" : "❌ Error al actualizar";
