@@ -42,7 +42,6 @@ header("Expires: 0");
             padding: 1.5rem;
         }
 
-        /* Panel superior blanco */
         .header-panel {
             background: #ffffff;
             color: #333;
@@ -62,7 +61,6 @@ header("Expires: 0");
             text-shadow: none;
         }
 
-        /* Panel de vidrio para el contenedor de la tabla */
         .glass-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
@@ -76,7 +74,6 @@ header("Expires: 0");
         .table-container { margin-top: 2rem; }
         .table { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
         
-        /* Encabezado de la tabla blanco */
         .table thead th {
             background: #ffffff;
             color: var(--theme-red);
@@ -84,7 +81,6 @@ header("Expires: 0");
             font-weight: 700;
         }
 
-        /* Aumento de padding para mejor espaciado */
         .table td, .table th {
             vertical-align: middle;
             padding: 0.75rem 1rem;
@@ -101,7 +97,6 @@ header("Expires: 0");
         .btn { font-weight: 600; }
         .btn:disabled { transform: none; box-shadow: none; }
         
-        /* Modal mantiene el estilo oscuro/vidrio */
         .modal-content {
             background: rgba(10, 25, 40, 0.85);
             backdrop-filter: blur(15px);
@@ -200,7 +195,7 @@ header("Expires: 0");
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i>Enviar</button>
+                    <button type="button" id="btnEnviarFactura" class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i>Enviar</button>
                 </div>
             </form>
         </div>
@@ -263,7 +258,6 @@ $(document).ready(function () {
         $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
             if (!response.toLowerCase().includes('error')) {
                 delete timers[tiket];
-                // Llama a la actualización de la tabla aquí para que sea inmediata
                 actualizarTablaInteligentemente(); 
             } else {
                 alert(response);
@@ -372,8 +366,10 @@ $(document).ready(function () {
         }
     });
 
-    $('#formFactura').on('submit', function (e) {
-        e.preventDefault();
+    // Cambiamos el evento a un clic en el botón, no en el submit del formulario
+    $('#btnEnviarFactura').on('click', function (e) {
+        e.preventDefault(); // Detiene el envío por defecto, aunque el botón es de tipo 'button'
+        
         const tiket = $('#facturaTiket').val();
         const seFue = $('#seFueCheckbox').is(':checked');
         const facturas = $('#facturaNumero').val().trim();
