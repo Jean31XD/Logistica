@@ -1,6 +1,6 @@
 <?php
 ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0); // Mantener en 0 para desarrollo local (no HTTPS)
+ini_set('session.cookie_secure', 0);
 ini_set('session.use_strict_mode', 1);
 
 session_start();
@@ -42,7 +42,6 @@ header("Expires: 0");
             padding: 1.5rem;
         }
 
-        /* Panel superior blanco */
         .header-panel {
             background: #ffffff;
             color: #333;
@@ -62,7 +61,6 @@ header("Expires: 0");
             text-shadow: none;
         }
 
-        /* Panel de vidrio para el contenedor de la tabla */
         .glass-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
@@ -76,7 +74,6 @@ header("Expires: 0");
         .table-container { margin-top: 2rem; }
         .table { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
         
-        /* Encabezado de la tabla blanco */
         .table thead th {
             background: #ffffff;
             color: var(--theme-red);
@@ -84,10 +81,9 @@ header("Expires: 0");
             font-weight: 700;
         }
 
-        /* Aumento de padding para mejor espaciado */
         .table td, .table th {
             vertical-align: middle;
-            padding: 0.75rem 1rem; /* Aumentado de 0.5rem 0.5rem a 0.75rem 1rem */
+            padding: 0.75rem 1rem;
         }
 
         .table tbody tr { transition: background-color 0.3s ease; }
@@ -101,7 +97,6 @@ header("Expires: 0");
         .btn { font-weight: 600; }
         .btn:disabled { transform: none; box-shadow: none; }
         
-        /* Modal mantiene el estilo oscuro/vidrio */
         .modal-content {
             background: rgba(10, 25, 40, 0.85);
             backdrop-filter: blur(15px);
@@ -170,7 +165,7 @@ header("Expires: 0");
                 </tr>
             </thead>
             <tbody>
-                </tbody>
+            </tbody>
         </table>
     </div>
 </div>
@@ -185,7 +180,7 @@ header("Expires: 0");
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="facturaTiket">
-                    <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335">
+                    <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" autocomplete="off">
                     <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
 
                     <div class="form-check form-switch mt-3">
@@ -200,7 +195,7 @@ header("Expires: 0");
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i>Enviar</button>
+                    <button type="button" id="btnEnviarFactura" class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i>Enviar</button>
                 </div>
             </form>
         </div>
@@ -210,21 +205,16 @@ header("Expires: 0");
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function () {
-    // --- VARIABLES GLOBALES DEL SCRIPT ---
     const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
     let lastCheckTimestamp = 0;
     let timers = {}, retencionClicks = {}, retencionBloqueado = {};
 
-    // =================================================================
-    // LÓGICA DE ACTUALIZACIÓN INTELIGENTE (EL NÚCLEO DEL SISTEMA)
-    // =================================================================
     function actualizarTablaInteligentemente() {
         const currentTicketIds = $('#tablaTickets tbody tr').map(function() {
             return $(this).data('tiket-id');
         }).get();
 
         $.ajax({
-            // CORRECCIÓN: Apuntando al script correcto de actualizaciones delta
             url: '../Logica/obtener_tickets.php', 
             method: 'POST',
             data: { 
@@ -233,7 +223,6 @@ $(document).ready(function () {
             },
             dataType: 'json',
             success: function(response) {
-                // Actualizar o agregar filas
                 if (response.updates && response.updates.length > 0) {
                     response.updates.forEach(ticket => {
                         const existingRow = $(`#row_${ticket.tiket}`);
@@ -248,7 +237,6 @@ $(document).ready(function () {
                         }
                     });
                 }
-                // Eliminar filas que ya no están activas
                 if (response.deletions && response.deletions.length > 0) {
                     response.deletions.forEach(tiketId => {
                         $(`#row_${tiketId}`).fadeOut(400, function() { $(this).remove(); });
@@ -262,19 +250,9 @@ $(document).ready(function () {
         });
     }
 
-    // --- Inicio y el intervalo de actualización ---
     actualizarTablaInteligentemente();
-    setInterval(actualizarTablaInteligentemente, 3000);
+    setInterval(actualizarTablaInteligentemente, 5000);
 
-
-    // =================================================================
-    // FUNCIONES DE ACCIÓN (Despachar, Retener, etc.)
-    // =================================================================
-    
-    /**
-     * Envía la información para despachar un ticket.
-     * Al finalizar, llama a la actualización inteligente.
-     */
     function despacharTicket(tiket, factura) {
         let tiempo = timers[tiket] || 0;
         $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
@@ -287,10 +265,6 @@ $(document).ready(function () {
         });
     }
 
-    /**
-     * Gestiona la lógica de poner o quitar una retención.
-     * Al finalizar, llama a la actualización inteligente.
-     */
     function manejarRetencion(tiket, boton) {
         if (retencionBloqueado[tiket]) return;
         retencionBloqueado[tiket] = true;
@@ -306,73 +280,63 @@ $(document).ready(function () {
         });
     }
 
+    $(document).on('click', '.btn-asignar', function() {
+        if ($(this).is(':disabled')) return;
+        
+        const tiket = $(this).data('tiket');
+        const asignadoA = $(this).data('asignado-a') || '';
 
-    // =================================================================
-    // MANEJADORES DE EVENTOS (UNIFICADOS)
-    // =================================================================
+        $('#asignarTicketId').text(tiket);
+        $('#asignarTiketInput').val(tiket);
+        $('#currentAssigneeInput').val(asignadoA);
+        $('#usuarioPassword').val('');
 
-// 1. Asignar o Re-asignar ticket (abre el modal)
-$(document).on('click', '.btn-asignar', function() {
-    if ($(this).is(':disabled')) return;
-    
-    const tiket = $(this).data('tiket');
-    const asignadoA = $(this).data('asignado-a') || ''; // Obtiene el usuario actual o un string vacío
+        if (asignadoA) {
+            $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, por favor ingresa la contraseña de <strong>${asignadoA}</strong>.`);
+            $('#passwordLabel').text(`Contraseña de ${asignadoA}:`);
+        } else {
+            $('#modalAsignarTexto').html(`Para asignarte el ticket <strong>${tiket}</strong>, por favor ingresa tu contraseña.`);
+            $('#passwordLabel').text('Tu Contraseña:');
+        }
 
-    // Rellenar campos del modal
-    $('#asignarTicketId').text(tiket);
-    $('#asignarTiketInput').val(tiket);
-    $('#currentAssigneeInput').val(asignadoA); // Guardamos el dueño actual
-    $('#usuarioPassword').val('');
-
-    // Cambiar texto del modal dinámicamente según si se está reasignando
-    if (asignadoA) {
-        $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, por favor ingresa la contraseña de <strong>${asignadoA}</strong>.`);
-        $('#passwordLabel').text(`Contraseña de ${asignadoA}:`);
-    } else {
-        $('#modalAsignarTexto').html(`Para asignarte el ticket <strong>${tiket}</strong>, por favor ingresa tu contraseña.`);
-        $('#passwordLabel').text('Tu Contraseña:');
-    }
-
-    const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
-    asignarModal.show();
-    $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
-});
-
-// 2. Confirmar asignación con contraseña (Lógica de envío)
-$('#formAsignar').on('submit', function(e) {
-    e.preventDefault();
-    const tiket = $('#asignarTiketInput').val();
-    const password = $('#usuarioPassword').val();
-    const currentAssignee = $('#currentAssigneeInput').val(); // Obtenemos el dueño actual
-
-    if (!password) {
-        alert('Por favor, ingresa la contraseña requerida.');
-        return;
-    }
-
-    $.ajax({
-        url: '../Logica/asignar_ticket.php', // El backend se encarga de la lógica
-        method: 'POST',
-        data: {
-            tiket: tiket,
-            password: password,
-            current_assignee: currentAssignee // Enviamos el dueño actual
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
-                // Forzamos una actualización inmediata para ver el cambio
-                actualizarTablaInteligentemente(); 
-            } else {
-                alert('Error: ' + response.message);
-                $('#usuarioPassword').val('').focus();
-            }
-        },
-        error: () => alert('Ocurrió un error de comunicación. Inténtalo de nuevo.')
+        const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
+        asignarModal.show();
+        $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
     });
-});
-    // 3. Cambiar el estatus (select)
+
+    $('#formAsignar').on('submit', function(e) {
+        e.preventDefault();
+        const tiket = $('#asignarTiketInput').val();
+        const password = $('#usuarioPassword').val();
+        const currentAssignee = $('#currentAssigneeInput').val();
+
+        if (!password) {
+            alert('Por favor, ingresa la contraseña requerida.');
+            return;
+        }
+
+        $.ajax({
+            url: '../Logica/asignar_ticket.php',
+            method: 'POST',
+            data: {
+                tiket: tiket,
+                password: password,
+                current_assignee: currentAssignee
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
+                    actualizarTablaInteligentemente(); 
+                } else {
+                    alert('Error: ' + response.message);
+                    $('#usuarioPassword').val('').focus();
+                }
+            },
+            error: () => alert('Ocurrió un error de comunicación. Inténtalo de nuevo.')
+        });
+    });
+
     $(document).on('change', '.estatus-select', function() {
         if ($(this).is(':disabled')) return;
         const tiket = $(this).data('tiket');
@@ -380,7 +344,6 @@ $('#formAsignar').on('submit', function(e) {
         $.post('../Logica/actualizar_estatus.php', { tiket, estatus: nuevoEstatus });
     });
 
-    // 4. Despachar ticket (abre el modal de factura)
     $(document).on('click', '.btn-despachar', function() {
         if ($(this).is(':disabled')) return;
         const tiket = $(this).data('tiket');
@@ -390,10 +353,23 @@ $('#formAsignar').on('submit', function(e) {
         $('#codigoSeFueContainer').hide();
         new bootstrap.Modal(document.getElementById('facturaModal')).show();
     });
+    
+    $('#facturaNumero').on('input', function() {
+        let valor = $(this).val();
+        valor = valor.replace(/;/g, '');
+        const regex = new RegExp(`(.{11})`, 'g');
+        const nuevoValor = valor.replace(regex, '$1;');
+        if (nuevoValor.endsWith(';') && nuevoValor.length > 1) {
+            $(this).val(nuevoValor.slice(0, -1));
+        } else {
+            $(this).val(nuevoValor);
+        }
+    });
 
-    // 5. Enviar el formulario de factura/despacho
-    $('#formFactura').on('submit', function (e) {
-        e.preventDefault();
+    // Cambiamos el evento a un clic en el botón, no en el submit del formulario
+    $('#btnEnviarFactura').on('click', function (e) {
+        e.preventDefault(); // Detiene el envío por defecto, aunque el botón es de tipo 'button'
+        
         const tiket = $('#facturaTiket').val();
         const seFue = $('#seFueCheckbox').is(':checked');
         const facturas = $('#facturaNumero').val().trim();
@@ -418,37 +394,11 @@ $('#formAsignar').on('submit', function(e) {
         despacharTicket(tiket, facturas);
     });
 
-    // 6. Retener ticket
- function manejarRetencion(tiket, boton) {
-    if (retencionBloqueado[tiket]) return;
-    retencionBloqueado[tiket] = true;
-    $(boton).prop('disabled', true);
-    let contador = retencionClicks[tiket] || 0;
-    if (contador === 0) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'insertar' }, function(response) {
-            retencionClicks[tiket] = 1;
-            $('#row_' + tiket).addClass('table-danger');
-            $('#row_' + tiket + ' .estatus').text('Retención');
-            $(boton).prop('disabled', false);
-            retencionBloqueado[tiket] = false;
-        });
-    } else if (contador === 1) {
-        $.post('../Logica/accion_retencion.php', { tiket, accion: 'actualizar' }, function(response) {
-            retencionClicks[tiket] = 2;
-            $('#row_' + tiket).removeClass('table-danger');
-            $('#row_' + tiket + ' .estatus').text('En Proceso');
-            $(boton).prop('disabled', true);
-        });
-    } else {
-        alert("Este botón ya no se puede presionar más.");
-    }
-}
+    $(document).on('click', '.btn-retencion', function () {
+        let tiket = $(this).data('tiket');
+        manejarRetencion(tiket, this);
+    });
 
-$(document).on('click', '.btn-retencion', function () {
-    let tiket = $(this).data('tiket');
-    manejarRetencion(tiket, this);
-});
-    // 7. Lógica del checkbox "Se fue" en el modal de despacho
     $('#seFueCheckbox').on('change', function () {
         const isChecked = this.checked;
         $('#facturaNumero').prop('disabled', isChecked).val(isChecked ? '' : $('#facturaNumero').val());
@@ -456,7 +406,6 @@ $(document).on('click', '.btn-retencion', function () {
         if(!isChecked) $('#codigoSeFue').val('');
     });
     
-    // 8. Corrección para el botón de "atrás" del navegador
     window.addEventListener('pageshow', function(event) {
         if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
             window.location.reload();
