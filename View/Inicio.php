@@ -264,7 +264,7 @@ $(document).ready(function () {
 
     // --- Inicio y el intervalo de actualización ---
     actualizarTablaInteligentemente();
-    setInterval(actualizarTablaInteligentemente, 3000);
+    setInterval(actualizarTablaInteligentemente, 1000);
 
 
     // =================================================================

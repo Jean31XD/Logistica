@@ -104,16 +104,14 @@ if (isset($_GET['ajax'])) {
         .tiempo-celda { font-weight: 600; font-size: 1.3rem; }
 
         /* --- ESTILOS PARA EL COLOR DE LAS FILAS --- */
-/* --- ESTILOS PARA EL COLOR DE LAS FILAS (CORREGIDO) --- */
-.table tbody tr.fila-facturacion {
-    background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15)) !important;
-    border-left: 5px solid #198754; /* Verde */
-}
-.table tbody tr.fila-retencion {
-    background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15)) !important;
-    border-left: 5px solid #dc3545; /* Rojo */
-}
-
+        .table tbody tr.fila-facturacion {
+            background: linear-gradient(90deg, rgba(25, 135, 84, 0.4), rgba(25, 135, 84, 0.15)) !important;
+            border-left: 5px solid #198754; /* Verde */
+        }
+        .table tbody tr.fila-retencion {
+            background: linear-gradient(90deg, rgba(220, 53, 69, 0.4), rgba(220, 53, 69, 0.15)) !important;
+            border-left: 5px solid #dc3545; /* Rojo */
+        }
     </style>
 </head>
 <body>
@@ -185,10 +183,10 @@ if (isset($_GET['ajax'])) {
                             
                             if (estatus === 'Facturación') {
                                 icono = 'fa-check-circle';
-                                claseFila = 'table-success';
+                                claseFila = 'fila-facturacion'; // Clase CSS personalizada
                             } else if (estatus === 'Retencion') {
                                 icono = 'fa-hand-paper';
-                                claseFila = 'table-danger';
+                                claseFila = 'fila-retencion'; // Clase CSS personalizada
                             }
 
                             const ventanillaHTML = ticket.ventanilla ? ticket.ventanilla : '<span class="text-muted">N/A</span>';
@@ -198,6 +196,7 @@ if (isset($_GET['ajax'])) {
                                 fila.cells[3].innerHTML = `<i class="fas ${icono} me-2"></i>${estatus}`;
                                 fila.cells[4].innerHTML = ventanillaHTML;
 
+                                // Eliminar clases de color antiguas y agregar la nueva
                                 fila.classList.remove('fila-facturacion', 'fila-retencion');
                                 if (claseFila) {
                                     fila.classList.add(claseFila);
