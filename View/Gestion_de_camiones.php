@@ -107,7 +107,6 @@ if (!empty($_GET['cedula_consulta'])) {
 <?php endif; ?>
 
 <div class="row g-4">
-    <!-- Agregar -->
     <div class="col-lg-6">
         <div class="card p-4">
             <h5><i class="fa fa-plus-circle me-2 text-success"></i>Agregar</h5>
@@ -123,7 +122,6 @@ if (!empty($_GET['cedula_consulta'])) {
             </form>
         </div>
     </div>
-    <!-- Actualizar -->
     <div class="col-lg-6">
         <div class="card p-4">
             <h5><i class="fa fa-pen me-2 text-warning"></i>Actualizar</h5>
@@ -139,7 +137,6 @@ if (!empty($_GET['cedula_consulta'])) {
             </form>
         </div>
     </div>
-    <!-- Consultar -->
     <div class="col-lg-6">
         <div class="card p-4">
             <h5><i class="fa fa-search me-2 text-primary"></i>Consultar</h5>
@@ -154,7 +151,6 @@ if (!empty($_GET['cedula_consulta'])) {
             <?php endif; ?>
         </div>
     </div>
-    <!-- Eliminar -->
     <div class="col-lg-6">
         <div class="card p-4">
             <h5><i class="fa fa-trash me-2 text-danger"></i>Eliminar</h5>
@@ -167,5 +163,11 @@ if (!empty($_GET['cedula_consulta'])) {
         </div>
     </div>
 </div>
+<div class="mt-4 text-center">
+    <a href="javascript:history.back()" class="btn btn-secondary">
+        <i class="fa fa-arrow-left me-2"></i>Volver atrás
+    </a>
+</div>
+
 </body>
 </html>
