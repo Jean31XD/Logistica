@@ -62,12 +62,12 @@ $zona = $_GET['zona'] ?? '';
         .card-resumen h5 { font-size: 0.9rem; font-weight: 500; margin: 0; color: #94a3b8; }
         .card-resumen p { font-size: 1.75rem; font-weight: 700; margin: 0; }
         .accordion-button { background-color: var(--bs-light); color: var(--bs-body-color); }
-        .accordion-button:not(.collapsed) { background-color: var(--bs-primary); color: #fff; }
-        .accordion-button:focus { box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.5); }
+        .accordion-button:not(.collapsed) { background-color: var(--bs-danger); color: #fff; }
+        .accordion-button:focus { box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.5); }
         .form-control, .form-select, .select2-selection { background-color: var(--bs-secondary) !important; border: 1px solid var(--bs-border-color) !important; color: var(--bs-body-color) !important; }
         .select2-dropdown { background-color: #2c3440; border-color: var(--bs-border-color); }
         .select2-results__option { color: var(--bs-body-color); }
-        .select2-results__option--highlighted { background-color: var(--bs-primary); }
+        .select2-results__option--highlighted { background-color: var(--bs-danger); }
         .table { min-width: 1000px; }
         .table > :not(caption) > * > * { background-color: transparent; border-bottom-color: var(--bs-border-color); vertical-align: middle; }
         .table thead th { font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem; }
