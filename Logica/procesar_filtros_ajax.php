@@ -89,7 +89,6 @@ if ($stmt && $total_rows > 0) {
             <td data-label="Usuario ALM"><?= htmlspecialchars($row['Usuario_ALM'] ?? '—') ?></td>
             <td data-label="Usuario CC"><?= htmlspecialchars($row['Usuario_CC'] ?? '—') ?></td>
             <td data-label="Localización"><?= htmlspecialchars($row['Localizacion'] ?? '—') ?></td>
-            <td data-label="Acciones"><button class="btn btn-sm btn-outline-primary py-0 px-2"><i class="fa-solid fa-ellipsis"></i></button></td>
         </tr>
         <?php
     }
