@@ -303,7 +303,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         <div class="table-container">
             <table class="table table-sm table-hover">
                 <thead>
-                    <tr><th>Fecha</th><th>Factura</th><th>Estado</th><th>Transportista</th><th>Recepción ALM</th><th>Usuario ALM</th><th>Recepción CC</th><th>Usuario CC</th><th>Localización</th></tr>
+                    <tr class="table-light"><th>Fecha</th><th>Factura</th><th>Estado</th><th>Transportista</th><th>Recepción ALM</th><th>Usuario ALM</th><th>Recepción CC</th><th>Usuario CC</th><th>Localización</th></tr>
                 </thead>
                 <tbody>
                     <?php if ($stmt && $total_rows > 0): while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
