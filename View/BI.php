@@ -91,7 +91,7 @@ $zona = $_GET['zona'] ?? '';
 </head>
 <body class="p-3 p-md-4">
     <header class="dashboard-header">
-        <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="height: 150px;">
+        <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="height: 100px;">
         <a href="../Logica/logout.php" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión</a>
     </header>
 
@@ -133,7 +133,7 @@ $zona = $_GET['zona'] ?? '';
             <div id="loader"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>
             <div class="table-responsive" id="tabla-container">
                 <table class="table">
-                    <thead><tr><th>Factura</th><th>Fecha</th><th>Estado</th><th>Transportista</th><th>Usuario ALM</th><th>Usuario CC</th><th>Localización</th><th>Acciones</th></tr></thead>
+                    <thead><tr><th>Factura</th><th>Fecha</th><th>Estado</th><th>Transportista</th><th>Usuario ALM</th><th>Usuario CC</th><th>Localización</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
