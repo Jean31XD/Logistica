@@ -189,6 +189,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            color: #fff; /* <-- CAMBIO REALIZADO */
         }
         .table td, .table th {
             vertical-align: middle;
@@ -255,7 +256,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
         }
         #factura {
     background-color: #f8f9fa; /* Fondo claro */
-    color: #000 !important;    /* Texto negro */
+    color: #000 !important;   /* Texto negro */
 }
     </style>
 </head>
@@ -302,7 +303,7 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 
         <div class="table-container">
             <table class="table table-sm table-hover">
-                <thead class="table-light">
+                <thead>
                     <tr><th>Fecha</th><th>Factura</th><th>Estado</th><th>Transportista</th><th>Recepción ALM</th><th>Usuario ALM</th><th>Recepción CC</th><th>Usuario CC</th><th>Localización</th></tr>
                 </thead>
                 <tbody>
