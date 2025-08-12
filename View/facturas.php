@@ -9,6 +9,7 @@ date_default_timezone_set('America/Santo_Domingo');
 
 // Cierre por inactividad (200 segundos)
 $inactividadLimite = 200;
+
 if (isset($_SESSION['ultimo_acceso'])) {
     $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
     if ($tiempoInactivo > $inactividadLimite) {
@@ -24,6 +25,7 @@ if (!isset($_SESSION['usuario'])) {
     header("Location: ../View/index.php");
     exit();
 }
+
 session_regenerate_id(true);
 
 include '../conexionBD/conexion.php';
@@ -32,263 +34,312 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
 
+if (isset($_GET['logout'])) {
+    session_unset();
+    session_destroy();
+    header("Location: ../View/index.php");
+    exit();
+}
+
 if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 2, 3, 5])) {
     header("Location: ../index.php");
     exit();
 }
 
-// Cargar datos para los filtros
+// Cargar transportistas
+$query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";
+$result = sqlsrv_query($conn, $query);
 $transportistas = [];
-$t_result = sqlsrv_query($conn, "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL ORDER BY Transportista");
-while ($row = sqlsrv_fetch_array($t_result, SQLSRV_FETCH_ASSOC)) $transportistas[] = $row['Transportista'];
+while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
+    $transportistas[] = $row['Transportista'];
+}
 
+// Cargar usuarios si la pantalla es 0, 2 o 5
 $usuarios = [];
 if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
-    $u_result = sqlsrv_query($conn, "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL ORDER BY Usuario");
-    while ($row = sqlsrv_fetch_array($u_result, SQLSRV_FETCH_ASSOC)) $usuarios[] = $row['Usuario'];
+    $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL";
+    $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
+    while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
+        $usuarios[] = $row['Usuario'];
+    }
 }
+
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recibir Facturas ✨</title>
+    <title>Recibir Facturas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
     <style>
-        :root {
-            --brand-color: #e31f25;
-            --brand-dark: #8B0000;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text-light: #f8f9fa;
-            --text-dark: #343a40;
-        }
-
-        body {
-            background: linear-gradient(135deg, var(--brand-dark), var(--brand-color));
-            background-attachment: fixed;
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #8B0000, #e31f25);
+            background-size: 200% 200%;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text-light);
-            padding-top: 80px; /* Space for fixed header */
         }
-        
-        .page-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1030;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 2rem;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--glass-border);
-        }
-        .page-header img { height: 40px; }
-        .user-info { display: flex; align-items: center; gap: 15px; }
-        .user-welcome { font-weight: 500; }
 
-        .main-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+   
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            padding: 20px 40px;
+            gap: 30px;
+        }
+
+        .formulario {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            overflow-y: auto;
+        }
+
+        .sidebar {
+            height: auto;
+            min-height: 700px;
+            width: 350px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
         }
 
-        .form-label { font-weight: 600; }
-        .form-control, .form-select {
+        .sidebar img {
+            display: block;
+            margin: 0 auto 20px auto;
+            max-width: 100%;
+        }
+
+        .sidebar h2 {
+            font-size: 1.4rem;
+            color: #fff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .btn-danger {
+            background-color: #e31f25;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-danger:hover {
+            background-color: #b71c1c;
+        }
+
+        .form-label {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .form-control,
+        .form-select {
             background: rgba(255, 255, 255, 0.8);
             border: 1px solid #ccc;
             border-radius: 10px;
-            color: var(--text-dark);
+            margin-bottom: 12px;
         }
-        .form-control::placeholder { color: #6c757d; }
 
         .select2-container--default .select2-selection--single {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
             height: 38px;
             padding: 5px;
-            border: 1px solid #ccc;
-        }
-        .select2-dropdown { border-radius: 10px; }
-
-        .btn-action {
-            background-color: var(--brand-color);
-            border-color: var(--brand-color);
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .btn-action:hover {
-            background-color: #b71c1c;
-            border-color: #b71c1c;
         }
 
-        .accordion-item {
-            background-color: transparent;
+        .input-group.mb-4 {
+            border-radius: 8px;
+        }
+
+        .btn-success {
+            background-color: #e31f25;
             border: none;
-        }
-        .accordion-button {
-            background-color: rgba(0,0,0,0.2);
-            color: var(--text-light);
+            border-radius: 0 8px 8px 0;
             font-weight: 600;
-            border-radius: 0.5rem !important;
+            font-size: 0.85rem;
+            padding: 0.375rem 0.6rem;
         }
-        .accordion-button:not(.collapsed) {
-            background-color: rgba(0,0,0,0.3);
-        }
-        .accordion-button:focus { box-shadow: 0 0 0 0.25rem rgba(227, 31, 37, 0.5); }
-        .accordion-button::after {
-            filter: invert(1) grayscale(100%) brightness(200%);
-        }
-        .accordion-body { padding-top: 1.5rem; }
 
-        .table-container {
+        .btn-success:hover {
+            background-color: #b71c1c;
+        }
+
+        .table {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 0 12px rgba(0,0,0,0.15);
         }
-        .table {
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--text-dark);
-        }
+
         .table th {
-            background-color: var(--brand-color);
+            background-color: #e31f25;
             color: #fff;
             font-weight: bold;
         }
+
         .table td, .table th {
             text-align: center;
             vertical-align: middle;
         }
-        .table-success { background-color: #d1e7dd !important; font-weight: 500; }
+
+        .table-success {
+            background-color: #d4edda !important;
+        }
+
+        .titulo-tabla {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+     
         
     </style>
 </head>
 <body>
-
-<header class="page-header">
-    <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo">
-    <div class="user-info">
-        <span class="user-welcome">Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?></span>
-        <a href="../Logica/logout.php" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a>
+<div class="main-container">
+    <div class="formulario">
+        <div id="contenedorFacturas"></div>
+        <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
     </div>
-</header>
+    <div class="sidebar">
+    <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo lateral">
 
-<main class="container-fluid mt-4">
-    <section class="main-panel">
-        <h5 class="mb-3">Recibir Factura</h5>
-        <div class="row g-3 align-items-end mb-4">
-            <div class="col-md-5">
-                <label for="listaTransportistas" class="form-label">1. Seleccione Transportista:</label>
-                <select id="listaTransportistas" class="form-control">
-                    <option value="" disabled selected>-- Elija una opción --</option>
-                    <?php foreach ($transportistas as $t): ?>
-                        <option value="<?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-5">
-                <label for="inputFactura" class="form-label">2. Escanee o digite Nº Factura (11 dígitos):</label>
-                <input type="text" id="inputFactura" class="form-control" placeholder="Número de factura" maxlength="11" />
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-action w-100" onclick="validarFactura()" title="Recibir factura">
-                    <i class="bi bi-box-arrow-in-down me-2"></i>Recibir
-                </button>
-            </div>
-        </div>
+    <label for="listaTransportistas" class="form-label">Transportista:</label>
+    <select id="listaTransportistas" class="form-select">
+        <option value="">-- Todos --</option>
+        <?php foreach ($transportistas as $t): ?>
+            <option value="<?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>">
+                <?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
 
-        <div class="accordion" id="accordionFilters">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilters">
-                        <i class="bi bi-funnel-fill me-2"></i> Filtros de Búsqueda Avanzada
-                    </button>
-                </h2>
-                <div id="collapseFilters" class="accordion-collapse collapse" data-bs-parent="#accordionFilters">
-                    <div class="accordion-body">
-                        <div class="row g-3">
-                            <div class="col-md-4 col-lg-3"><label for="buscarFactura" class="form-label">Buscar Factura:</label><input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" /></div>
-                            <div class="col-md-4 col-lg-3"><label for="fechaInicio" class="form-label">Desde:</label><input type="date" id="fechaInicio" class="form-control" /></div>
-                            <div class="col-md-4 col-lg-3"><label for="fechaFin" class="form-label">Hasta:</label><input type="date" id="fechaFin" class="form-control" /></div>
-                            <div class="col-md-4 col-lg-3"><label for="filtroEstatus" class="form-label">Estatus:</label><select id="filtroEstatus" class="form-select"><option value="">-- Todos --</option><option value="Completada">Completada</option><option value="RE">RE</option></select></div>
-                            <div class="col-md-4 col-lg-3"><label for="fechaRecibido" class="form-label">Fecha Recibido:</label><input type="date" id="fechaRecibido" class="form-control" /></div>
-                            <div class="col-md-4 col-lg-3"><label for="fechaRecepcion" class="form-label">Fecha Recepción:</label><input type="date" id="fechaRecepcion" class="form-control" /></div>
-                            <?php if (in_array($_SESSION['pantalla'], [0, 2, 5])): ?>
-                            <div class="col-md-4 col-lg-3"><label for="filtroUsuario" class="form-label">Usuario:</label><select id="filtroUsuario" class="form-select"><option value="">-- Todos --</option><?php foreach ($usuarios as $u): ?><option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    <label for="fechaInicio" class="form-label">Desde:</label>
+    <input type="date" id="fechaInicio" class="form-control" />
 
-    <section class="main-panel">
-        <div id="contenedorFacturas">
-            </div>
-    </section>
-</main>
+    <label for="fechaFin" class="form-label">Hasta:</label>
+    <input type="date" id="fechaFin" class="form-control" />
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <label for="fechaRecibido" class="form-label">Fecha recibido:</label>
+    <input type="date" id="fechaRecibido" class="form-control" />
+
+    <label for="fechaRecepcion" class="form-label">Fecha recepción:</label>
+    <input type="date" id="fechaRecepcion" class="form-control" />
+
+    <label for="filtroEstatus" class="form-label">Estatus:</label>
+    <select id="filtroEstatus" class="form-select">
+        <option value="">-- Todos --</option>
+        <option value="Completada">Completada</option>
+        <option value="RE">RE</option>
+    </select>
+
+    <label for="buscarFactura" class="form-label">Buscar Factura:</label>
+    <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
+
+    <?php if (in_array($_SESSION['pantalla'], [0, 2, 5])): ?>
+        <label for="filtroUsuario" class="form-label">Usuario:</label>
+        <select id="filtroUsuario" class="form-select">
+            <option value="">-- Todos --</option>
+            <?php foreach ($usuarios as $u): ?>
+                <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    <?php endif; ?>
+
+    <label for="inputFactura" class="form-label">Nº Factura:</label>
+    <div class="input-group mb-4">
+        <input type="text" id="inputFactura" class="form-control flex-grow-1" placeholder="11 dígitos" maxlength="11" />
+        <button class="btn btn-success" onclick="validarFactura()" title="Recibir factura">
+            <i class="bi bi-box-arrow-in-down"></i>
+        </button>
+    </div>
+    <div><a href="../Logica/logout.php" class="btn btn-danger">Cerrar Sesión</a></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-let paginaActual = 1;
-let inactivityTimer;
+    $('#filtroUsuario').on('change', () => cargarFacturas(1));
+</script>
 
-// --- INICIALIZACIÓN Y EVENTOS ---
+<script>
+let paginaActual = 1;
+
 $(document).ready(function () {
     $('#listaTransportistas').select2({
-        placeholder: "-- Elija una opción --",
-        allowClear: false,
+        placeholder: "Buscar transportista",
+        allowClear: true,
         width: '100%'
     });
-    
-    // Un solo manejador para todos los filtros
-    const filterInputs = '#listaTransportistas, #fechaInicio, #fechaFin, #fechaRecibido, #fechaRecepcion, #filtroEstatus, #filtroUsuario, #buscarFactura';
-    $(document).on('change input', filterInputs, () => cargarFacturas(1));
+
+    $('#listaTransportistas, #fechaInicio, #fechaFin, #fechaRecibido, #fechaRecepcion, #filtroEstatus, #filtroUsuario')
+        .on('change', () => cargarFacturas(1));
+    $('#buscarFactura').on('input', () => cargarFacturas(1));
 
     $('#inputFactura').on('input', function () {
-        if (this.value.trim().length === 11) {
+        const valor = this.value.trim();
+        if (valor.length === 11) {
             validarFactura();
         }
     });
 
     cargarFacturas();
-    setupInactivityTimer();
 });
 
+// Temporizador inactividad (cliente)
+const tiempoLimite = 5 * 60 * 1000; // 5 minutos en ms
+let temporizador;
 
-// --- LÓGICA DE LA APLICACIÓN ---
+function resetearTemporizador() {
+    clearTimeout(temporizador);
+    console.log("Temporizador reiniciado por actividad");
+    temporizador = setTimeout(() => {
+        alert("Su sesión ha expirado por inactividad. Será redirigido al login.");
+        window.location.href = "../Logica/logout.php";
+    }, tiempoLimite);
+}
+
+['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetearTemporizador, false);
+});
+resetearTemporizador();
+
 function cargarFacturas(pagina = 1) {
     paginaActual = pagina;
     const formData = new FormData();
-    const filters = {
-        transportista: $('#listaTransportistas').val(),
-        desde: $('#fechaInicio').val(),
-        hasta: $('#fechaFin').val(),
-        fechaRecibido: $('#fechaRecibido').val(),
-        fechaRecepcion: $('#fechaRecepcion').val(),
-        estatus: $('#filtroEstatus').val(),
-        usuario: $('#filtroUsuario').length ? $('#filtroUsuario').val() : '',
-        buscarFactura: $('#buscarFactura').val().trim(),
-        pagina: pagina
-    };
-    for(const key in filters) {
-        formData.append(key, filters[key]);
-    }
+    formData.append('transportista', document.getElementById('listaTransportistas').value);
+    formData.append('desde', document.getElementById('fechaInicio').value);
+    formData.append('hasta', document.getElementById('fechaFin').value);
+    formData.append('fechaRecibido', document.getElementById('fechaRecibido').value);
+    formData.append('fechaRecepcion', document.getElementById('fechaRecepcion').value);
+    formData.append('estatus', document.getElementById('filtroEstatus').value);
+    formData.append('usuario', document.getElementById('filtroUsuario') ? document.getElementById('filtroUsuario').value : '');
+    formData.append('buscarFactura', document.getElementById('buscarFactura').value.trim());
+    formData.append('pagina', pagina);
 
     fetch('../Logica/get_facturas.php', {
         method: 'POST',
@@ -296,19 +347,15 @@ function cargarFacturas(pagina = 1) {
     })
     .then(res => res.text())
     .then(html => {
-        $('#contenedorFacturas').html(html);
-    })
-    .catch(err => {
-        console.error("Error al cargar facturas:", err);
-        $('#contenedorFacturas').html("<div class='alert alert-danger'>No se pudieron cargar los datos. Verifique la conexión.</div>");
+        document.getElementById('contenedorFacturas').innerHTML = html;
     });
 }
 
 function validarFactura() {
-    const factura = $('#inputFactura').val().trim();
-    const transportista = $('#listaTransportistas').val();
+    const factura = document.getElementById('inputFactura').value.trim();
+    const transportista = document.getElementById('listaTransportistas').value;
     if (!factura || !transportista) {
-        alert("Debe seleccionar un transportista e ingresar una factura de 11 dígitos.");
+        alert("Debe seleccionar un transportista e ingresar una factura.");
         return;
     }
 
@@ -321,20 +368,30 @@ function validarFactura() {
         body: formData
     })
     .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        if (res.status === 401) {
+            alert("Sesión expirada. Por favor, inicie sesión nuevamente.");
+            window.location.href = "../View/index.php";
+            return;
+        }
         return res.json();
     })
     .then(respuesta => {
+        if (!respuesta) return;
         if (respuesta.encontrada) {
-            $('#inputFactura').val('').focus();
-            cargarFacturas(paginaActual); // Recargar la tabla para mostrar el cambio
+            const fila = document.getElementById('fila_' + factura);
+            if (fila) {
+                fila.classList.add('table-success');
+                const select = fila.querySelector('.estado-validar');
+                const fechaScanner = fila.querySelector('.fecha-scanner');
+                if (select) select.value = 'Completada';
+                if (fechaScanner) fechaScanner.textContent = respuesta.fecha_scanner || 'Ahora';
+            }
+            document.getElementById('inputFactura').value = '';
+            document.getElementById('inputFactura').focus();
+            cargarFacturas(paginaActual);
         } else {
-            alert("Factura no encontrada para el transportista seleccionado.");
+            alert("Factura no encontrada.");
         }
-    })
-    .catch(error => {
-        console.error("Error en validación:", error);
-        alert("Ocurrió un error al validar la factura.");
     });
 }
 
@@ -349,34 +406,17 @@ function actualizarEstado(factura, nuevoEstado) {
     })
     .then(res => res.json())
     .then(respuesta => {
-        if (!respuesta.success) {
+        if (respuesta.success) {
+            cargarFacturas(paginaActual);
+        } else {
             alert("No se pudo actualizar el estado.");
-            cargarFacturas(paginaActual); // Revertir visualmente
         }
     })
     .catch(error => {
-        console.error("Error al actualizar:", error);
-        alert("Error de conexión al actualizar estado.");
+        console.error("Error:", error);
+        alert("Error al actualizar estado.");
     });
 }
-
-// --- MANEJO DE INACTIVIDAD ---
-function setupInactivityTimer() {
-    const timeLimit = 200 * 1000; // 200 segundos
-    const resetTimer = () => {
-        clearTimeout(inactivityTimer);
-        inactivityTimer = setTimeout(() => {
-            alert("Su sesión ha expirado por inactividad.");
-            window.location.href = "../Logica/logout.php";
-        }, timeLimit);
-    };
-    window.onload = resetTimer;
-    document.onmousemove = resetTimer;
-    document.onkeydown = resetTimer;
-    document.onclick = resetTimer;
-    document.onscroll = resetTimer;
-}
-
 </script>
 </body>
 </html>
