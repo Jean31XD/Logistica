@@ -8,8 +8,8 @@ if ($conn === false) {
 }
 
 // Carpeta donde están las imágenes
-$imgDir = __DIR__ . "/IMG/"; // Ruta absoluta
-$imgUrl = "IMG/"; // Ruta relativa para mostrar en HTML
+$imgDir = __DIR__ . "IMG\Fotos MC-01"; // Ruta absoluta
+$imgUrl = "IMG/Fotos MC-01/"; // Ruta relativa para mostrar en HTML
 
 // Consulta de todos los productos
 $sql = "SELECT itemid, ProductName, Categoria, Subcategoria FROM dbo.inventtable";
