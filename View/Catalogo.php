@@ -1,18 +1,12 @@
 <?php
-// --- Conexión a SQL Server ---
 include '../conexionBD/conexion.php';
-
 $conn = sqlsrv_connect($serverName, $connectionOptions);
 if ($conn === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-// Carpeta donde están las imágenes
-$imgDir = __DIR__ . "IMG\Fotos MC-01"; // Ruta absoluta
-$imgUrl = "IMG/Fotos MC-01/"; // Ruta relativa para mostrar en HTML
-
-// Consulta de todos los productos
-$sql = "SELECT itemid, ProductName, Categoria, Subcategoria FROM dbo.inventtable";
+// Consulta de todos los productos con el ID de imagen (suponiendo que lo tengas en una columna)
+$sql = "SELECT itemid, ProductName, Categoria, Subcategoria, FotoID FROM dbo.inventtable";
 $stmt = sqlsrv_query($conn, $sql);
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
@@ -61,30 +55,27 @@ if ($stmt === false) {
                 <?php
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $itemid = $row['itemid'];
-                    $foundImg = null;
+                    $fotoID = $row['FotoID']; // Aquí guardas el ID de la imagen de 500px
 
-                    // Buscar imagen con extensiones comunes
-                    foreach (['jpg', 'jpeg', 'png', 'gif'] as $ext) {
-                        $filePath = $imgDir . $itemid . "." . $ext;
-                        if (file_exists($filePath)) {
-                            $foundImg = $imgUrl . $itemid . "." . $ext;
-                            break;
-                        }
-                    }
-
-                    echo "<tr>";
-                    echo "<td>{$itemid}</td>";
-                    echo "<td>{$row['ProductName']}</td>";
-                    echo "<td>{$row['Categoria']}</td>";
-                    echo "<td>{$row['Subcategoria']}</td>";
-
-                    if ($foundImg) {
-                        echo "<td><img src='{$foundImg}' alt='Imagen de {$itemid}' width='80'></td>";
+                    // Construir URL de la imagen
+                    if (!empty($fotoID)) {
+                        $imgUrl = "https://drscdn.500px.org/photo/{$fotoID}/q%3D75_m%3D600/v2";
+                        echo "<tr>
+                                <td>{$itemid}</td>
+                                <td>{$row['ProductName']}</td>
+                                <td>{$row['Categoria']}</td>
+                                <td>{$row['Subcategoria']}</td>
+                                <td><img src='{$imgUrl}' alt='Imagen de {$itemid}' width='80'></td>
+                              </tr>";
                     } else {
-                        echo "<td><div class='no-img'>No encontrada</div></td>";
+                        echo "<tr>
+                                <td>{$itemid}</td>
+                                <td>{$row['ProductName']}</td>
+                                <td>{$row['Categoria']}</td>
+                                <td>{$row['Subcategoria']}</td>
+                                <td><div class='no-img'>No encontrada</div></td>
+                              </tr>";
                     }
-
-                    echo "</tr>";
                 }
                 ?>
             </tbody>
@@ -95,6 +86,5 @@ if ($stmt === false) {
 </body>
 </html>
 <?php
-// Cerrar conexión
 sqlsrv_close($conn);
 ?>
