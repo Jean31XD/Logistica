@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 
 include '../conexionBD/conexion.php';
@@ -7,8 +7,13 @@ if ($conn === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
-// Consulta de todos los productos con el ID de imagen (suponiendo que lo tengas en una columna)
-$sql = "SELECT itemid, ProductName, Categoria, Subcategoria, FotoID FROM dbo.inventtable";
+// Consulta productos + URL de imagen desde ProductImages
+$sql = "
+SELECT i.itemid, i.ProductName, i.Categoria, i.Subcategoria, p.FotoURL
+FROM dbo.inventtable i
+LEFT JOIN dbo.ProductImages p
+    ON i.itemid = p.itemid
+";
 $stmt = sqlsrv_query($conn, $sql);
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
@@ -58,17 +63,15 @@ if ($stmt === false) {
                 <?php
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $itemid = $row['itemid'];
-                    $fotoID = $row['FotoID']; // Aquí guardas el ID de la imagen de 500px
+                    $fotoURL = $row['FotoURL'];
 
-                    // Construir URL de la imagen
-                    if (!empty($fotoID)) {
-                        $imgUrl = "https://drscdn.500px.org/photo/{$fotoID}/q%3D75_m%3D600/v2";
+                    if (!empty($fotoURL)) {
                         echo "<tr>
                                 <td>{$itemid}</td>
                                 <td>{$row['ProductName']}</td>
                                 <td>{$row['Categoria']}</td>
                                 <td>{$row['Subcategoria']}</td>
-                                <td><img src='{$imgUrl}' alt='Imagen de {$itemid}' width='80'></td>
+                                <td><img src='{$fotoURL}' alt='Imagen de {$itemid}' width='80'></td>
                               </tr>";
                     } else {
                         echo "<tr>
