@@ -6,27 +6,30 @@ ini_set('session.use_strict_mode', 1);
 session_start();
 date_default_timezone_set('America/Santo_Domingo');
 
-// Expirar sesión tras 200 segundos (5 minutos) de inactividad
+// Expirar sesión tras 200 segundos de inactividad
 $inactividadLimite = 200;
 if (isset($_SESSION['ultimo_acceso'])) {
     $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
     if ($tiempoInactivo > $inactividadLimite) {
         session_unset();
         session_destroy();
-        header("Location: ../index.php");
+        header("Location: ../View/index.php");
         exit();
     }
 }
 $_SESSION['ultimo_acceso'] = time();
 
+// Validar usuario autenticado
 if (!isset($_SESSION['usuario'])) {
     header("Location: ../View/index.php");
     exit();
 }
 
 session_regenerate_id(true);
+
 include '../conexionBD/conexion.php';
 
+// Logout manual
 if (isset($_GET['logout'])) {
     $_SESSION = [];
     session_unset();
@@ -35,8 +38,9 @@ if (isset($_GET['logout'])) {
     exit();
 }
 
+// Validar pantalla permitida
 if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 3, 5])) {
-    header("Location: ../index.php");
+    header("Location: ../View/index.php");
     exit();
 }
 
@@ -68,8 +72,6 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             background-size: 200% 200%;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-   
 
         .main-container {
             display: flex;
@@ -195,9 +197,6 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             text-align: center;
             margin-bottom: 1rem;
         }
-
-     
-        
     </style>
 </head>
 <body>
@@ -236,11 +235,9 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
             <option value="RE">RE</option>
         </select>
 
-        <!-- NUEVO FILTRO: Buscar por factura -->
         <label for="buscarFactura" class="form-label">Buscar Factura:</label>
         <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
 
-        <!-- Validación de factura -->
         <label for="inputFactura" class="form-label">Nº Factura:</label>
         <div class="input-group mb-4">
             <input type="text" id="inputFactura" class="form-control flex-grow-1" placeholder="11 dígitos" maxlength="11" />
@@ -297,9 +294,16 @@ function cargarFacturas(pagina = 1) {
         method: 'POST',
         body: formData
     })
-    .then(res => res.text())
+    .then(res => {
+        if (res.status === 401) {
+            alert("Su sesión ha expirado. Será redirigido al login.");
+            window.location.href = "../Logica/logout.php";
+            return;
+        }
+        return res.text();
+    })
     .then(html => {
-        document.getElementById('contenedorFacturas').innerHTML = html;
+        if(html) document.getElementById('contenedorFacturas').innerHTML = html;
     });
 }
 
@@ -318,8 +322,16 @@ function validarFactura() {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 401) {
+            alert("Su sesión ha expirado. Será redirigido al login.");
+            window.location.href = "../Logica/logout.php";
+            return;
+        }
+        return res.json();
+    })
     .then(respuesta => {
+        if (!respuesta) return;
         if (respuesta.encontrada) {
             const fila = document.getElementById('fila_' + factura);
             if (fila) {
@@ -336,7 +348,7 @@ function validarFactura() {
 }
 
 function iniciarInactividad() {
-    const tiempoLimite = 2 * 60 * 1000; // 5 minutos
+    const tiempoLimite = 2 * 60 * 1000; // 2 minutos
     function resetearTemporizador() {
         clearTimeout(temporizador);
         temporizador = setTimeout(() => {
