@@ -1,9 +1,6 @@
 <?php
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);
-ini_set('session.use_strict_mode', 1);
-
 session_start();
+
 include '../conexionBD/conexion.php';
 $conn = sqlsrv_connect($serverName, $connectionOptions);
 if ($conn === false) {
