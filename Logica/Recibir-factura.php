@@ -2,6 +2,15 @@
 session_start(); 
 date_default_timezone_set('America/Santo_Domingo');
 
+header('Content-Type: application/json');
+
+// Validación estricta de sesión
+if (!isset($_SESSION['usuario'])) {
+    http_response_code(401); // No autorizado
+    echo json_encode(['error' => 'Usuario no autenticado']);
+    exit();
+}
+
 include '../conexionBD/conexion.php';
 
 $factura = $_POST['factura'] ?? '';
@@ -18,7 +27,7 @@ if ($factura && $transportista) {
 
         if ($estatus === 'completada') {
             $fechaActual = date('Y-m-d');
-            $usuarioRecepcion = $_SESSION['usuario'] ?? null;
+            $usuarioRecepcion = $_SESSION['usuario'];
 
             $sqlUpdate = "UPDATE custinvoicejour SET recepcion = ?, Usuario_de_recepcion = ? WHERE Factura = ? AND Transportista = ?";
             $paramsUpdate = [$fechaActual, $usuarioRecepcion, $factura, $transportista];
@@ -38,5 +47,4 @@ if ($factura && $transportista) {
     }
 }
 
-header('Content-Type: application/json');
 echo json_encode($response);

@@ -1,7 +1,17 @@
 <?php
+session_start();
+
+// Validación estricta de sesión
+if (!isset($_SESSION['usuario'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Usuario no autenticado']);
+    exit();
+}
+
 date_default_timezone_set('America/Santo_Domingo');
 include '../conexionBD/conexion.php';
 
+// CSS
 echo <<<HTML
 <style>
     h4 {
@@ -15,11 +25,10 @@ echo <<<HTML
         padding: 10px;
         backdrop-filter: blur(10px);
     }
-
-
 </style>
 HTML;
 
+// Sincronizar facturas
 $sqlSync = "{CALL SyncCustinvoicejour}";
 $stmtSync = sqlsrv_query($conn, $sqlSync);
 if ($stmtSync === false) {
