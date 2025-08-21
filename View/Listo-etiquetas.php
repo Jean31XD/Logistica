@@ -182,7 +182,7 @@ header("Expires: 0");
 <body>
 
 <div class="container">
-    <img id="label" src="Logo Listo - Negro.png" alt="Logo" onerror="this.style.display='none'">
+    <img id="label" src="IMG\Logo Listo - Negro.png" alt="Logo" onerror="this.style.display='none'">
 
     <label for="product-search">Busca un Producto:</label>
     <select id="product-search" placeholder="Escribe para buscar..."></select>
