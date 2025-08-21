@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'crear':
             $usuario = trim($_POST['usuario'] ?? '');
             $password = trim($_POST['password'] ?? '');
-            $pantalla = filter_var($_POST['pantalla'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 6]]);
+            $pantalla = filter_var($_POST['pantalla'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 8]]);
 
             if (!$usuario || !$password || $pantalla === false) {
                 $mensajeCrear = "⚠️ Todos los campos son obligatorios y válidos.";
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $usuarioMod = trim($_POST['usuario_modificar'] ?? '');
             $nuevaClave = trim($_POST['password_nuevo'] ?? '');
             $pantallaNuevaInput = $_POST['pantalla_nuevo'] ?? '-1';
-            $pantallaNueva = ($pantallaNuevaInput !== '-1') ? filter_var($pantallaNuevaInput, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 6]]) : false;
+            $pantallaNueva = ($pantallaNuevaInput !== '-1') ? filter_var($pantallaNuevaInput, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 8]]) : false;
 
             if (!$usuarioMod) {
                 $mensajeModificar = "⚠️ Especifique el usuario a modificar.";
