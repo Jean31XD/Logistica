@@ -94,6 +94,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                     case 4: header("Location: View/Reporte.php"); break;
                     case 5: header("Location: View/Paneladmin.php"); break;
                     case 6: header("Location: View/BI.php"); break;
+                    case 8: header("Location: View/Listo-etiquetas.php"); break;
+
                     default: header("Location: View/Inicio.php"); break; // Redirección por defecto
                 }
                 exit(); // Termina el script después de la redirección
