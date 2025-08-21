@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
         load: function(query, callback) {
             if (!query.length) return callback(); 
 
-            fetch('../Logica/search.php?q=' + encodeURIComponent(query))
+            fetch('../Logica/search.php' + encodeURIComponent(query))
                 .then(response => response.json())
                 .then(json => {
                     callback(json);
