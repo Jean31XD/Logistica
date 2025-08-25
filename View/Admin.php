@@ -338,7 +338,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['title' => 'Reporte de Facturas', 'desc' => 'Reporte por Transportista.', 'link' => '../View/Reporte.php', 'icon' => 'fa-chart-pie'],
                     ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar'],
                     // --- TARJETA NUEVA AÑADIDA AQUÍ ---
+                    ['title' => 'Etiquetado', 'desc' => 'Crea, modifica y elimina etiquetas.', 'link' => '../View/Listo-etiquetas.php', 'icon' => 'fa-tags'],
                     ['title' => 'Gestión de Usuarios', 'desc' => 'Crea, modifica y elimina usuarios.', 'link' => '../View/Gestion_de_usuario.php', 'icon' => 'fa-users-cog']
+
                 ];
                 $delay = 0.2;
                 foreach ($cards as $card):

@@ -29,6 +29,12 @@ session_regenerate_id(true);
 
 include '../conexionBD/conexion.php';
 
+$sp = "{CALL spEliminarDuplicadosFactura}";
+$stmt = sqlsrv_query($conn, $sp);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+
 // Logout manual
 if (isset($_GET['logout'])) {
     $_SESSION = [];

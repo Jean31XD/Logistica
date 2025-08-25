@@ -9,7 +9,7 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 include '../conexionBD/conexion.php';
-if (!$conn) die("Error de conexión: " . print_r(sqlsrv_errors(), true));
+
 
 // Obtenemos los datos para los SELECT la primera vez que carga la página
 $transportistas = [];
