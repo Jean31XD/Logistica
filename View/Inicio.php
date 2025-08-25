@@ -386,17 +386,13 @@ $(document).ready(function () {
             return;
         }
 
- if (!facturas) {
-    return alert("Por favor ingrese al menos un número de factura.");
-}
-
-if (!facturas.split(';').every(f => f.startsWith("FT"))) {
-    return alert("Todas las facturas deben iniciar con 'FT'. Ejemplo: FT001122334");
-}
-
-myModal.hide();
-despacharTicket(tiket, facturas);
-
+        if (!facturas) {
+            return alert("Por favor ingrese al menos un número de factura.");
+        }
+        
+        myModal.hide();
+        despacharTicket(tiket, facturas);
+    });
 
     $(document).on('click', '.btn-retencion', function () {
         let tiket = $(this).data('tiket');
