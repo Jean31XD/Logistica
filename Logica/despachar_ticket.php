@@ -73,6 +73,19 @@ if (!$stmtUpdate) {
     exit();
 }
 
+$facturas = $_POST['factura'] ?? '';
+
+if ($facturas !== "Se fue") {
+    $listaFacturas = explode(";", $facturas);
+    foreach ($listaFacturas as $factura) {
+        $factura = trim($factura);
+        if ($factura !== "" && strpos($factura, "FT") !== 0) {
+            echo "Error: Todas las facturas deben iniciar con 'FT'.";
+            exit;
+        }
+    }
+}
+
 // Llamar al procedimiento almacenado
 $sqlSP = "{CALL SP_Insertar_Analisis2(?)}";
 $paramsSP = [$tiket];
