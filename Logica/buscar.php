@@ -7,7 +7,8 @@ error_reporting(E_ALL);
 
 // El resto de tu código continúa aquí abajo
 header("Content-Type: application/json; charset=UTF-8");
-require_once __DIR__ . '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
+
 
 // Array para almacenar la respuesta final
 $response = [
