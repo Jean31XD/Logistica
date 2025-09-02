@@ -83,41 +83,41 @@
 
     <script>
     $(document).ready(function(){
-        let timeout = null; // Variable para controlar el temporizador de búsqueda
+        let timeout = null;
 
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
             
-            // Limpia el temporizador anterior cada vez que se presiona una tecla
             clearTimeout(timeout);
 
-            // Oculta todo si el campo está casi vacío
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
                 $("#mensaje").fadeOut();
                 return;
             }
 
-            // Inicia un temporizador: la búsqueda se ejecutará después de 300ms de inactividad
             timeout = setTimeout(function(){
                 $.ajax({
                     url: "../Logica/buscar.php",
                     method: "GET",
                     data: { q: valor },
-                    dataType: 'json', // Especificamos que esperamos un JSON
+                    dataType: 'json',
                     beforeSend: function(){
-                        // Muestra el spinner y oculta resultados anteriores
                         $("#cargando").show();
                         $("#tablaResultados").hide();
                         $("#mensaje").hide();
                     },
-                    success: function(data){
+                    success: function(response){ // La variable ahora se llama 'response' para mayor claridad
                         let tbody = $("#tablaResultados tbody");
-                        tbody.empty(); // Limpia resultados anteriores
+                        tbody.empty();
 
-                        if (data && data.length > 0) {
-                            data.forEach(function(item){
-                                // Usamos plantillas literales para crear las filas
+                        // --- CAMBIO PRINCIPAL AQUÍ ---
+                        // Ahora verificamos el objeto 'response' que envía el PHP.
+                        // Este objeto tiene una propiedad 'success' y otra 'data' con los resultados.
+
+                        if (response.success && response.data && response.data.length > 0) {
+                            // La búsqueda fue exitosa Y se encontraron resultados
+                            response.data.forEach(function(item){
                                 const fila = `
                                     <tr>
                                         <td>${item.itemid}</td>
@@ -130,21 +130,25 @@
                                 tbody.append(fila);
                             });
                             $("#tablaResultados").fadeIn();
-                        } else {
-                            // No se encontraron resultados
+                        } else if (response.success && response.data.length === 0) {
+                            // La búsqueda fue exitosa PERO no hubo coincidencias
                             $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
+                        } else {
+                            // La búsqueda falló en el servidor (success = false)
+                            // Mostramos el mensaje de error que nos envió el PHP
+                            const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
+                            $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
                         }
                     },
                     error: function(){
-                        // Error en la petición AJAX
-                        $("#mensaje").html('⚠️ <strong>Error:</strong> No se pudo conectar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
+                        // Este error se dispara si hay un problema de red o el servidor no responde (ej. Error 500)
+                        $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
                     },
                     complete: function(){
-                        // Oculta el spinner al finalizar la petición (ya sea con éxito o error)
                         $("#cargando").hide();
                     }
                 });
-            }, 300); // Espera 300 milisegundos antes de buscar
+            }, 300);
         });
     });
     </script>
