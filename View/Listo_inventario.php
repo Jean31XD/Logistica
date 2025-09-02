@@ -2,153 +2,76 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Búsqueda Avanzada en Inventario</title>
-
+    <title>Búsqueda en Inventario</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <style>
-        /* Estilo para dar un aspecto más suave y profesional */
-        body {
-            background-color: #f8f9fa;
-        }
-        .search-container {
-            max-width: 800px;
-            margin: auto;
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        .input-group-text {
-            background-color: transparent;
-            border-right: 0;
-        }
-        #buscador {
-            border-left: 0;
-        }
-        #buscador:focus {
-            box-shadow: none;
-            border-color: #ced4da;
-        }
-        thead {
-            position: sticky; /* Encabezado fijo al hacer scroll */
-            top: 0;
-        }
-    </style>
 </head>
-<body class="py-5">
+<body class="container py-4">
 
-    <div class="container">
-        <div class="search-container">
-            <div class="text-center mb-4">
-                <h1 class="h2">📦 Búsqueda en Inventario</h1>
-                <p class="text-muted">Ingresa el ItemID o Barcode para encontrar un producto.</p>
-            </div>
+    <h2 class="mb-4">Buscar en Inventario</h2>
 
-            <div class="input-group mb-4 shadow-sm">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe para buscar...">
-            </div>
-
-            <div id="cargando" class="text-center my-4" style="display: none;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle" id="tablaResultados" style="display:none;">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>ItemID</th>
-                            <th>Descripción</th>
-                            <th>Barcode</th>
-                            <th>Unidad</th>
-                            <th class="text-center">Inventario</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
-
-            <div id="mensaje" class="alert alert-light text-center border-0" role="alert" style="display:none;"></div>
-
-        </div>
+    <div class="mb-3">
+        <input type="text" id="buscador" class="form-control" placeholder="Escribe ItemID o Barcode...">
     </div>
+
+    <table class="table table-bordered table-striped shadow" id="tablaResultados" style="display:none;">
+        <thead class="table-dark">
+            <tr>
+                <th>ItemID</th>
+                <th>Descripción</th>
+                <th>Barcode</th>
+                <th>Unidad</th>
+                <th>Inventario</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="mensaje" class="alert alert-info" style="display:none;"></div>
 
     <script>
     $(document).ready(function(){
-        let timeout = null;
-
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
             
-            clearTimeout(timeout);
-
-            if (valor.length < 2) {
-                $("#tablaResultados").fadeOut();
-                $("#mensaje").fadeOut();
+            if(valor.length < 2){
+                $("#tablaResultados").hide();
+                $("#mensaje").hide();
                 return;
             }
 
-            timeout = setTimeout(function(){
-                $.ajax({
-                    url: "../Logica/buscar.php",
-                    method: "GET",
-                    data: { q: valor },
-                    dataType: 'json',
-                    beforeSend: function(){
-                        $("#cargando").show();
-                        $("#tablaResultados").hide();
+            $.ajax({
+                url: "buscar.php",
+                method: "GET",
+                data: { q: valor },
+                success: function(data){
+                    let tbody = $("#tablaResultados tbody");
+                    tbody.empty();
+
+                    if(data.length > 0){
+                        data.forEach(function(item){
+                            tbody.append(`
+                                <tr>
+                                    <td>${item.itemid}</td>
+                                    <td>${item.description}</td>
+                                    <td>${item.itembarcode}</td>
+                                    <td>${item.unitid}</td>
+                                    <td>${item.Inventario_Listo}</td>
+                                </tr>
+                            `);
+                        });
+                        $("#tablaResultados").show();
                         $("#mensaje").hide();
-                    },
-                    success: function(response){ // La variable ahora se llama 'response' para mayor claridad
-                        let tbody = $("#tablaResultados tbody");
-                        tbody.empty();
-
-                        // --- CAMBIO PRINCIPAL AQUÍ ---
-                        // Ahora verificamos el objeto 'response' que envía el PHP.
-                        // Este objeto tiene una propiedad 'success' y otra 'data' con los resultados.
-
-                        if (response.success && response.data && response.data.length > 0) {
-                            // La búsqueda fue exitosa Y se encontraron resultados
-                            response.data.forEach(function(item){
-                                const fila = `
-                                    <tr>
-                                        <td>${item.itemid}</td>
-                                        <td>${item.description}</td>
-                                        <td>${item.itembarcode}</td>
-                                        <td>${item.unitid}</td>
-                                        <td class="text-center fw-bold">${item.Inventario_Listo}</td>
-                                    </tr>
-                                `;
-                                tbody.append(fila);
-                            });
-                            $("#tablaResultados").fadeIn();
-                        } else if (response.success && response.data.length === 0) {
-                            // La búsqueda fue exitosa PERO no hubo coincidencias
-                            $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
-                        } else {
-                            // La búsqueda falló en el servidor (success = false)
-                            // Mostramos el mensaje de error que nos envió el PHP
-                            const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
-                            $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
-                        }
-                    },
-                    error: function(){
-                        // Este error se dispara si hay un problema de red o el servidor no responde (ej. Error 500)
-                        $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
-                    },
-                    complete: function(){
-                        $("#cargando").hide();
+                    } else {
+                        $("#tablaResultados").hide();
+                        $("#mensaje").text("No se encontraron resultados.").show();
                     }
-                });
-            }, 300);
+                },
+                error: function(){
+                    $("#tablaResultados").hide();
+                    $("#mensaje").text("⚠️ Error al buscar en el servidor.").show();
+                }
+            });
         });
     });
     </script>
