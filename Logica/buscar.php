@@ -1,9 +1,13 @@
 <?php
-// 1. Encabezado para indicar que la respuesta será en formato JSON y con codificación UTF-8
-header("Content-Type: application/json; charset=UTF-8");
+// --- AÑADE ESTAS LÍNEAS JUSTO AL INICIO ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// --- FIN DEL CÓDIGO A AÑADIR ---
 
-// 2. Incluir el archivo de conexión a la base de datos
-require_once __DIR__ . '/../conexionBD/conexion.php';
+// El resto de tu código continúa aquí abajo
+header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '../conexionBD/conexion.php';
 
 // Array para almacenar la respuesta final
 $response = [
