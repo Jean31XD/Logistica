@@ -69,6 +69,6 @@ if (isset($conn)) {
 
 // 10. Imprimir la respuesta final en formato JSON
 // JSON_UNESCAPED_UNICODE asegura que caracteres como 'ñ' y 'á' se muestren correctamente
-echo json_encode($response['data']);
+echo json_encode($response);
 
 ?>

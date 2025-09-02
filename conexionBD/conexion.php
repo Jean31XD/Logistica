@@ -12,13 +12,14 @@ $connectionInfo = array(
     "CharacterSet" => "UTF-8"
 );
 
-
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn) {
-    
+    // Conexión exitosa (puedes borrar este echo en producción)
+    // echo "✅ Conexión establecida."; 
 } else {
     echo "❌ Error de conexión: ";
-    print_r(sqlsrv_errors());
+    // die() detiene la ejecución para que no continúe con errores.
+    die(print_r(sqlsrv_errors(), true));
 }
 ?>
