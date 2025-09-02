@@ -1,5 +1,5 @@
 <?php
-require_once "conexion.php";
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $termino = trim($_GET["q"] ?? "");
 
