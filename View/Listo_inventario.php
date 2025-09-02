@@ -11,7 +11,6 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <style>
-        /* Estilo para dar un aspecto más suave y profesional */
         body {
             background-color: #f8f9fa;
         }
@@ -35,7 +34,7 @@
             border-color: #ced4da;
         }
         thead {
-            position: sticky; /* Encabezado fijo al hacer scroll */
+            position: sticky; 
             top: 0;
         }
     </style>
@@ -49,9 +48,13 @@
                 <p class="text-muted">Ingresa el ItemID o Barcode para encontrar un producto.</p>
             </div>
 
+            <!-- Input con botón limpiar -->
             <div class="input-group mb-4 shadow-sm">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe para buscar...">
+                <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </button>
             </div>
 
             <div id="cargando" class="text-center my-4" style="display: none;">
@@ -71,8 +74,7 @@
                             <th class="text-center">Inventario</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -85,9 +87,9 @@
     $(document).ready(function(){
         let timeout = null;
 
+        // Función de búsqueda
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
-            
             clearTimeout(timeout);
 
             if (valor.length < 2) {
@@ -107,16 +109,11 @@
                         $("#tablaResultados").hide();
                         $("#mensaje").hide();
                     },
-                    success: function(response){ // La variable ahora se llama 'response' para mayor claridad
+                    success: function(response){
                         let tbody = $("#tablaResultados tbody");
                         tbody.empty();
 
-                        // --- CAMBIO PRINCIPAL AQUÍ ---
-                        // Ahora verificamos el objeto 'response' que envía el PHP.
-                        // Este objeto tiene una propiedad 'success' y otra 'data' con los resultados.
-
                         if (response.success && response.data && response.data.length > 0) {
-                            // La búsqueda fue exitosa Y se encontraron resultados
                             response.data.forEach(function(item){
                                 const fila = `
                                     <tr>
@@ -131,17 +128,13 @@
                             });
                             $("#tablaResultados").fadeIn();
                         } else if (response.success && response.data.length === 0) {
-                            // La búsqueda fue exitosa PERO no hubo coincidencias
                             $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
                         } else {
-                            // La búsqueda falló en el servidor (success = false)
-                            // Mostramos el mensaje de error que nos envió el PHP
                             const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
                             $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
                         }
                     },
                     error: function(){
-                        // Este error se dispara si hay un problema de red o el servidor no responde (ej. Error 500)
                         $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
                     },
                     complete: function(){
@@ -149,6 +142,15 @@
                     }
                 });
             }, 300);
+        });
+
+        // Botón Limpiar
+        $("#btnLimpiar").on("click", function(){
+            $("#buscador").val("");
+            $("#tablaResultados tbody").empty();
+            $("#tablaResultados").fadeOut();
+            $("#mensaje").fadeOut();
+            $("#buscador").focus();
         });
     });
     </script>
