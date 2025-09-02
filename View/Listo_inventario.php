@@ -41,7 +41,7 @@
             }
 
             $.ajax({
-                url: "buscar.php",
+                url: "../Logica/buscar.php",
                 method: "GET",
                 data: { q: valor },
                 success: function(data){
