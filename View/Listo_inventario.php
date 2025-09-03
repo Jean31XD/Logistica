@@ -44,8 +44,8 @@
     <div class="container">
         <div class="search-container">
             <div class="text-center mb-4">
-                <h1 class="h2">📦 Búsqueda en Inventario</h1>
-                <p class="text-muted">Ingresa el ItemID o Barcode para encontrar un producto.</p>
+                <img src="IMG/Logo Listo - Negro.png" alt="Logo">
+                <p class="text-muted">Ingresa el MC o el codigo de barras para encontrar un producto.</p>
             </div>
 
             <!-- Input con botón limpiar -->
