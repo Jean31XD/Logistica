@@ -40,11 +40,10 @@
     </style>
 </head>
 <body class="py-5">
-
     <div class="container">
         <div class="search-container">
             <div class="text-center mb-4">
-                <img src="IMG/Logo Listo - Negro.png" alt="Logo">
+             <img src="IMG\Logo Listo - Negro.png" class="img-fluid mb-3" alt="LOGO" style="max-width: 300px;">
                 <p class="text-muted">Ingresa el MC o el codigo de barras para encontrar un producto.</p>
             </div>
 
