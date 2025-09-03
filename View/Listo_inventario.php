@@ -121,6 +121,8 @@
                                         <td>${item.description}</td>
                                         <td>${item.itembarcode}</td>
                                         <td>${item.unitid}</td>
+                                        <td>${item.promedio_Ventas_3M}</td>
+                                        <td>${item.MI}</td>
                                         <td class="text-center fw-bold">${item.Inventario_Listo}</td>
                                     </tr>
                                 `;

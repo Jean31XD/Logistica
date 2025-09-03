@@ -10,7 +10,7 @@ $response = [
 ];
 
 if (!empty($termino)) {
-    $sql = "SELECT TOP 20 itemid, description, itembarcode, unitid, Inventario_Listo
+    $sql = "SELECT TOP 20 itemid, description, itembarcode, unitid, Inventario_Listo, promedio_Ventas_3M, MI
             FROM listo_inventario
             WHERE itemid LIKE ? OR itembarcode LIKE ?";
     $params = ["%$termino%", "%$termino%"];
