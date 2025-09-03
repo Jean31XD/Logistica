@@ -15,7 +15,7 @@
             background-color: #f8f9fa;
         }
         .search-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: auto;
             background: white;
             padding: 2rem;
@@ -71,6 +71,8 @@
                             <th>Descripción</th>
                             <th>Barcode</th>
                             <th>Unidad</th>
+                            <th>Prom. Ventas 3M</th>
+                            <th>MI</th>
                             <th class="text-center">Inventario</th>
                         </tr>
                     </thead>
@@ -88,62 +90,69 @@
         let timeout = null;
 
         // Función de búsqueda
-        $("#buscador").on("keyup", function(){
-            let valor = $(this).val().trim();
-            clearTimeout(timeout);
-
+        function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
                 $("#mensaje").fadeOut();
                 return;
             }
 
-            timeout = setTimeout(function(){
-                $.ajax({
-                    url: "../Logica/buscar.php",
-                    method: "GET",
-                    data: { q: valor },
-                    dataType: 'json',
-                    beforeSend: function(){
-                        $("#cargando").show();
-                        $("#tablaResultados").hide();
-                        $("#mensaje").hide();
-                    },
-                    success: function(response){
-                        let tbody = $("#tablaResultados tbody");
-                        tbody.empty();
+            $.ajax({
+                url: "../Logica/buscar.php",
+                method: "GET",
+                data: { q: valor },
+                dataType: 'json',
+                beforeSend: function(){
+                    $("#cargando").show();
+                    $("#tablaResultados").hide();
+                    $("#mensaje").hide();
+                },
+                success: function(response){
+                    let tbody = $("#tablaResultados tbody");
+                    tbody.empty();
 
-                        if (response.success && response.data && response.data.length > 0) {
-                            response.data.forEach(function(item){
-                                const fila = `
-                                    <tr>
-                                        <td>${item.itemid}</td>
-                                        <td>${item.description}</td>
-                                        <td>${item.itembarcode}</td>
-                                        <td>${item.unitid}</td>
-                                        <td>${item.promedio_Ventas_3M}</td>
-                                        <td>${item.MI}</td>
-                                        <td class="text-center fw-bold">${item.Inventario_Listo}</td>
-                                    </tr>
-                                `;
-                                tbody.append(fila);
-                            });
-                            $("#tablaResultados").fadeIn();
-                        } else if (response.success && response.data.length === 0) {
-                            $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
-                        } else {
-                            const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
-                            $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
-                        }
-                    },
-                    error: function(){
-                        $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
-                    },
-                    complete: function(){
-                        $("#cargando").hide();
+                    if (response.success && response.data && response.data.length > 0) {
+                        response.data.forEach(function(item){
+                            // Convertimos a número y lo mostramos con 1 decimal si existe
+                            let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
+                            let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
+                            let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
+
+                            const fila = `
+                                <tr>
+                                    <td>${item.itemid}</td>
+                                    <td>${item.description}</td>
+                                    <td>${item.itembarcode}</td>
+                                    <td>${item.unitid}</td>
+                                    <td class="text-end">${promedio}</td>
+                                    <td class="text-end">${mi}</td>
+                                    <td class="text-center fw-bold">${inventario}</td>
+                                </tr>
+                            `;
+                            tbody.append(fila);
+                        });
+                        $("#tablaResultados").fadeIn();
+                    } else if (response.success && response.data.length === 0) {
+                        $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
+                    } else {
+                        const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
+                        $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
                     }
-                });
-            }, 300);
+                },
+                error: function(){
+                    $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
+                },
+                complete: function(){
+                    $("#cargando").hide();
+                }
+            });
+        }
+
+        // Búsqueda al escribir
+        $("#buscador").on("keyup", function(){
+            let valor = $(this).val().trim();
+            clearTimeout(timeout);
+            timeout = setTimeout(function(){ buscar(valor); }, 300);
         });
 
         // Botón Limpiar
