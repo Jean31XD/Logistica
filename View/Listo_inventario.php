@@ -46,7 +46,7 @@
             
             <!-- Logo de la empresa -->
             <div class="text-center mb-4">
-                <img src="IMG/Logo Listo - Negro.png" 
+            <img src="../IMG/Logo Listo - Negro.png"
                      class="img-fluid mb-3" 
                      alt="Logo de la empresa" 
                      style="max-width: 280px; height: auto;">
