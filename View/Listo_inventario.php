@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -40,18 +40,20 @@
     </style>
 </head>
 <body class="py-5">
-<div class="text-center mb-4">
-    <!-- Logo centrado -->
-    <img src="IMG/Logo Listo - Negro.png" 
-         class="img-fluid mb-3" 
-         alt="LOGO MC" 
-         style="max-width: 250px; height: auto;">
-    
-    <p class="text-muted">
-        Ingresa el <strong>MC</strong> o el <strong>Código de Barras</strong> para encontrar un producto.
-    </p>
-</div>
 
+    <div class="container">
+        <div class="search-container">
+            
+            <!-- Logo de la empresa -->
+            <div class="text-center mb-4">
+                <img src="IMG/Logo Listo - Negro.png" 
+                     class="img-fluid mb-3" 
+                     alt="Logo de la empresa" 
+                     style="max-width: 280px; height: auto;">
+                <p class="text-muted">
+                    Ingresa el <strong>MC</strong> o el <strong>código de barras</strong> para encontrar un producto.
+                </p>
+            </div>
 
             <!-- Input con botón limpiar -->
             <div class="input-group mb-4 shadow-sm">
@@ -77,7 +79,6 @@
                             <th>Barcode</th>
                             <th>Unidad</th>
                             <th class="text-center">Inventario</th>
-
                             <th>Prom. Ventas 3M</th>
                             <th>MI</th>
                         </tr>
@@ -119,7 +120,7 @@
 
                     if (response.success && response.data && response.data.length > 0) {
                         response.data.forEach(function(item){
-                            // Convertimos a número y lo mostramos con 1 decimal si existe
+                            // Convertimos a número y lo mostramos con 1 decimal
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
@@ -131,7 +132,6 @@
                                     <td>${item.itembarcode}</td>
                                     <td>${item.unitid}</td>
                                     <td class="text-center fw-bold">${inventario}</td>
-
                                     <td class="text-end">${promedio}</td>
                                     <td class="text-end">${mi}</td>
                                 </tr>
