@@ -71,9 +71,10 @@
                             <th>Descripción</th>
                             <th>Barcode</th>
                             <th>Unidad</th>
+                            <th class="text-center">Inventario</th>
+
                             <th>Prom. Ventas 3M</th>
                             <th>MI</th>
-                            <th class="text-center">Inventario</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -124,9 +125,10 @@
                                     <td>${item.description}</td>
                                     <td>${item.itembarcode}</td>
                                     <td>${item.unitid}</td>
+                                    <td class="text-center fw-bold">${inventario}</td>
+
                                     <td class="text-end">${promedio}</td>
                                     <td class="text-end">${mi}</td>
-                                    <td class="text-center fw-bold">${inventario}</td>
                                 </tr>
                             `;
                             tbody.append(fila);
