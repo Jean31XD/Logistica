@@ -38,11 +38,9 @@
             position: sticky; 
             top: 0;
         }
-        /* Estilo para el video del escáner */
         #videoStream {
             width: 100%;
             border-radius: 8px;
-            transform: scaleX(-1); /* Espejo para que se vea natural */
         }
     </style>
 </head>
@@ -55,7 +53,7 @@
             <img src="../IMG/Logo Listo - Negro.png"
                          class="img-fluid mb-3" 
                          alt="Logo de la empresa" 
-                         style="max-width: 280px; height: auto;">
+                         style="max-width: 200px; height: auto;">
                 <p class="text-muted">
                     Ingresa el <strong>MC</strong>, el <strong>código de barras</strong> o usa el escáner.
                 </p>
@@ -126,7 +124,7 @@
     $(document).ready(function(){
         let timeout = null;
 
-        // Función de búsqueda (sin cambios)
+        // Función de búsqueda
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
@@ -168,14 +166,18 @@
                             tbody.append(fila);
                         });
                         $("#tablaResultados").fadeIn();
+                        $("#mensaje").fadeOut();
                     } else if (response.success && response.data.length === 0) {
+                        $("#tablaResultados").fadeOut();
                         $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
                     } else {
+                        $("#tablaResultados").fadeOut();
                         const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
                         $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
                     }
                 },
                 error: function(){
+                    $("#tablaResultados").fadeOut();
                     $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
                 },
                 complete: function(){
@@ -184,14 +186,14 @@
             });
         }
 
-        // Búsqueda al escribir (sin cambios)
+        // Búsqueda al escribir
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
             clearTimeout(timeout);
             timeout = setTimeout(function(){ buscar(valor); }, 300);
         });
 
-        // Botón Limpiar (sin cambios)
+        // Botón Limpiar
         $("#btnLimpiar").on("click", function(){
             $("#buscador").val("");
             $("#tablaResultados tbody").empty();
@@ -200,36 +202,34 @@
             $("#buscador").focus();
         });
 
-        // ✅ 4. LÓGICA PARA EL ESCÁNER DE CÓDIGO DE BARRAS
+        // Lógica para el Escáner de Código de Barras
         const codeReader = new ZXing.BrowserMultiFormatReader();
         const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
 
-        // Evento al hacer clic en el botón de escanear
         $('#btnEscanear').on('click', function () {
             escanerModal.show();
-            // Pedimos la cámara trasera ('environment')
+            // Inicia el escaneo usando la cámara trasera ('environment')
             codeReader.decodeFromVideoDevice(undefined, 'videoStream', (result, err) => {
                 if (result) {
-                    console.log('Código de barras detectado:', result.text);
-                    $('#buscador').val(result.text); // Poner el resultado en el input
-                    escanerModal.hide(); // Ocultar el modal
-                    buscar(result.text); // Ejecutar la búsqueda
+                    $('#buscador').val(result.text);
+                    escanerModal.hide();
+                    buscar(result.text);
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error(err);
-                    alert("Error al acceder a la cámara. Asegúrate de dar los permisos necesarios.");
+                    console.error("Error de escaneo:", err);
+                    alert("Error al intentar escanear. Asegúrate de dar permisos a la cámara.");
                     escanerModal.hide();
                 }
             }).catch(err => {
                  console.error("Error al iniciar la cámara:", err);
-                 alert("No se pudo iniciar la cámara. Puede que no esté disponible o no se hayan concedido los permisos.");
+                 alert("No se pudo iniciar la cámara. Puede que no esté disponible o no hayas concedido los permisos.");
                  escanerModal.hide();
             });
         });
 
-        // Detener la cámara cuando el modal se cierra
+        // Detiene la cámara cuando el modal se cierra para liberar recursos
         $('#escanerModal').on('hidden.bs.modal', function () {
-            codeReader.reset(); // Libera la cámara
+            codeReader.reset();
         });
     });
     </script>
