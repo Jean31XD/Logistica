@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/zxing.min.js"></script>
 
     <style>
         body {
@@ -38,10 +37,6 @@
             position: sticky; 
             top: 0;
         }
-        #videoStream {
-            width: 100%;
-            border-radius: 8px;
-        }
     </style>
 </head>
 <body class="py-5">
@@ -49,36 +44,33 @@
     <div class="container">
         <div class="search-container">
             
+            <!-- Logo de la empresa -->
             <div class="text-center mb-4">
-                <img src="../IMG/Logo Listo - Negro.png"
+            <img src="../IMG/Logo Listo - Negro.png"
                      class="img-fluid mb-3" 
                      alt="Logo de la empresa" 
-                     style="max-width: 280px; height: auto;">
+                     style="max-width: auto; height: auto;">
                 <p class="text-muted">
-                    Ingresa el <strong>MC</strong>, el <strong>código de barras</strong> o usa el escáner.
+                    Ingresa el <strong>MC</strong> o el <strong>código de barras</strong> para encontrar un producto.
                 </p>
             </div>
 
-            <div class="input-group mb-3 shadow-sm">
+            <!-- Input con botón limpiar -->
+            <div class="input-group mb-4 shadow-sm">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe para buscar...">
-            </div>
-
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-end">
-                <button class="btn btn-primary btn-lg" id="btnEscanear" type="button">
-                    <i class="bi bi-upc-scan"></i> Escanear Código
-                </button>
-                <button class="btn btn-outline-secondary btn-lg" id="btnLimpiar" type="button">
+                <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
                     <i class="bi bi-x-circle"></i> Limpiar
                 </button>
             </div>
+
             <div id="cargando" class="text-center my-4" style="display: none;">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Cargando...</span>
                 </div>
             </div>
 
-            <div class="table-responsive mt-4">
+            <div class="table-responsive">
                 <table class="table table-hover table-striped align-middle" id="tablaResultados" style="display:none;">
                     <thead class="table-dark">
                         <tr>
@@ -100,117 +92,83 @@
         </div>
     </div>
 
-    <!-- Modal del escáner -->
-    <div class="modal fade" id="escanerModal" tabindex="-1" aria-labelledby="escanerModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="escanerModalLabel">Escanear Código de Barras</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <p class="text-muted small">Apunta la cámara al código de barras.</p>
-                    <video id="videoStream" autoplay playsinline></video>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
     $(document).ready(function(){
         let timeout = null;
 
+        // Función de búsqueda
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
                 $("#mensaje").fadeOut();
                 return;
             }
+
             $.ajax({
                 url: "../Logica/buscar.php",
-                method: "GET", data: { q: valor }, dataType: 'json',
-                beforeSend: function(){ $("#cargando").show(); $("#tablaResultados").hide(); $("#mensaje").hide(); },
+                method: "GET",
+                data: { q: valor },
+                dataType: 'json',
+                beforeSend: function(){
+                    $("#cargando").show();
+                    $("#tablaResultados").hide();
+                    $("#mensaje").hide();
+                },
                 success: function(response){
                     let tbody = $("#tablaResultados tbody");
                     tbody.empty();
+
                     if (response.success && response.data && response.data.length > 0) {
                         response.data.forEach(function(item){
+                            // Convertimos a número y lo mostramos con 1 decimal
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
-                            const fila = `<tr><td>${item.itemid}</td><td>${item.description}</td><td>${item.itembarcode}</td><td>${item.unitid}</td><td class="text-center fw-bold">${inventario}</td><td class="text-end">${promedio}</td><td class="text-end">${mi}</td></tr>`;
+
+                            const fila = `
+                                <tr>
+                                    <td>${item.itemid}</td>
+                                    <td>${item.description}</td>
+                                    <td>${item.itembarcode}</td>
+                                    <td>${item.unitid}</td>
+                                    <td class="text-center fw-bold">${inventario}</td>
+                                    <td class="text-end">${promedio}</td>
+                                    <td class="text-end">${mi}</td>
+                                </tr>
+                            `;
                             tbody.append(fila);
                         });
                         $("#tablaResultados").fadeIn();
-                        $("#mensaje").fadeOut();
                     } else if (response.success && response.data.length === 0) {
-                        $("#tablaResultados").fadeOut();
                         $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
                     } else {
-                        $("#tablaResultados").fadeOut();
-                        const mensajeError = response.message || 'Ocurrió un error desconocido.';
+                        const mensajeError = response.message || 'Ocurrió un error desconocido en el servidor.';
                         $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
                     }
                 },
                 error: function(){
-                    $("#tablaResultados").fadeOut();
                     $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
                 },
-                complete: function(){ $("#cargando").hide(); }
+                complete: function(){
+                    $("#cargando").hide();
+                }
             });
         }
 
+        // Búsqueda al escribir
         $("#buscador").on("keyup", function(){
+            let valor = $(this).val().trim();
             clearTimeout(timeout);
-            timeout = setTimeout(() => buscar($(this).val().trim()), 300);
+            timeout = setTimeout(function(){ buscar(valor); }, 300);
         });
 
+        // Botón Limpiar
         $("#btnLimpiar").on("click", function(){
-            $("#buscador").val("").focus();
-            $("#tablaResultados").fadeOut().find("tbody").empty();
+            $("#buscador").val("");
+            $("#tablaResultados tbody").empty();
+            $("#tablaResultados").fadeOut();
             $("#mensaje").fadeOut();
-        });
-
-        // --- ESCÁNER CON CÁMARA TRASERA ---
-        const codeReader = new ZXing.BrowserMultiFormatReader();
-        const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
-
-        $('#btnEscanear').on('click', async function () {
-            try {
-                escanerModal.show();
-                const constraints = {
-                    video: { facingMode: { exact: "environment" } }
-                };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                document.getElementById('videoStream').srcObject = stream;
-
-                codeReader.decodeFromVideoDevice(null, 'videoStream', (result, err) => {
-                    if (result) {
-                        $('#buscador').val(result.text);
-                        escanerModal.hide();
-                        buscar(result.text);
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error("Error escaneo:", err);
-                    }
-                });
-            } catch (err) {
-                console.error("Error al abrir la cámara:", err);
-                alert("⚠️ No se pudo acceder a la cámara. Revisa permisos y que estés en HTTPS.");
-            }
-        });
-
-        $('#escanerModal').on('hidden.bs.modal', function () {
-            codeReader.reset();
-            let video = document.getElementById('videoStream');
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-            }
+            $("#buscador").focus();
         });
     });
     </script>
