@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         body {
@@ -38,11 +37,6 @@
             position: sticky; 
             top: 0;
         }
-        #reader {
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-        }
     </style>
 </head>
 <body class="py-5">
@@ -52,22 +46,19 @@
             
             <!-- Logo de la empresa -->
             <div class="text-center mb-4">
-                <img src="../IMG/Logo Listo - Negro.png"
+            <img src="../IMG/Logo Listo - Negro.png"
                      class="img-fluid mb-3" 
                      alt="Logo de la empresa" 
                      style="max-width: 280px; height: auto;">
                 <p class="text-muted">
-                    Ingresa el <strong>MC</strong> o escanea el <strong>código de barras</strong> con la cámara.
+                    Ingresa el <strong>MC</strong> o el <strong>código de barras</strong> para encontrar un producto.
                 </p>
             </div>
-
-            <!-- Escáner con cámara -->
-            <div id="reader"></div>
 
             <!-- Input con botón limpiar -->
             <div class="input-group mb-4 shadow-sm">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe o escanea para buscar...">
+                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe para buscar...">
                 <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
                     <i class="bi bi-x-circle"></i> Limpiar
                 </button>
@@ -105,7 +96,7 @@
     $(document).ready(function(){
         let timeout = null;
 
-        // Función de búsqueda AJAX
+        // Función de búsqueda
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
@@ -129,6 +120,7 @@
 
                     if (response.success && response.data && response.data.length > 0) {
                         response.data.forEach(function(item){
+                            // Convertimos a número y lo mostramos con 1 decimal
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
@@ -163,7 +155,7 @@
             });
         }
 
-        // Búsqueda al escribir manualmente
+        // Búsqueda al escribir
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
             clearTimeout(timeout);
@@ -178,29 +170,6 @@
             $("#mensaje").fadeOut();
             $("#buscador").focus();
         });
-
-        // --- Inicializar escáner de la cámara trasera ---
-        function onScanSuccess(decodedText) {
-            $("#buscador").val(decodedText);
-            buscar(decodedText);
-        }
-
-        const html5QrCode = new Html5Qrcode("reader");
-
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) {
-                let backCamera = devices.find(device => device.label.toLowerCase().includes("back"))
-                                 || devices[0]; // fallback a la primera
-                html5QrCode.start(
-                    { deviceId: { exact: backCamera.id } },
-                    { fps: 10, qrbox: 250 },
-                    onScanSuccess
-                );
-            }
-        }).catch(err => {
-            console.error("Error al acceder a la cámara:", err);
-        });
-
     });
     </script>
 
