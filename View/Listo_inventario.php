@@ -194,7 +194,7 @@
             $("#mensaje").fadeOut();
         });
 
-        // --- LÓGICA DEL ESCÁNER (forzar cámara trasera) ---
+        // Configuración del escáner
         const codeReader = new ZXing.BrowserMultiFormatReader();
         const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
 
