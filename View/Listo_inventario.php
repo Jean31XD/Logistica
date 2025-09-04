@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Librería para escaneo de códigos -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         body {
@@ -37,6 +39,12 @@
             position: sticky; 
             top: 0;
         }
+        #reader {
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="py-5">
@@ -46,7 +54,7 @@
             
             <!-- Logo de la empresa -->
             <div class="text-center mb-4">
-            <img src="../IMG/Logo Listo - Negro.png"
+                <img src="../IMG/Logo Listo - Negro.png"
                      class="img-fluid mb-3" 
                      alt="Logo de la empresa" 
                      style="max-width: auto; height: auto;">
@@ -54,6 +62,16 @@
                     Ingresa el <strong>MC</strong> o el <strong>código de barras</strong> para encontrar un producto.
                 </p>
             </div>
+
+            <!-- Botón para activar escáner -->
+            <div class="mb-3 text-center">
+                <button id="btnEscanear" class="btn btn-primary">
+                    <i class="bi bi-camera-video"></i> Escanear código de barras
+                </button>
+            </div>
+
+            <!-- Contenedor para la cámara -->
+            <div id="reader" style="width: 100%; max-width: 600px; margin: auto; display:none;"></div>
 
             <!-- Input con botón limpiar -->
             <div class="input-group mb-4 shadow-sm">
@@ -169,6 +187,71 @@
             $("#tablaResultados").fadeOut();
             $("#mensaje").fadeOut();
             $("#buscador").focus();
+        });
+
+        // Escáner de código de barras con html5-qrcode
+        let html5QrcodeScanner;
+        const $reader = $("#reader");
+        const $btnEscanear = $("#btnEscanear");
+        const $buscador = $("#buscador");
+
+        $btnEscanear.on("click", function(){
+            if ($reader.is(":visible")) {
+                // Detener escaneo y ocultar lector
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.stop().then(() => {
+                        $reader.hide();
+                        $btnEscanear.html('<i class="bi bi-camera-video"></i> Escanear código de barras');
+                    }).catch(err => {
+                        console.error("Error al detener el escáner:", err);
+                    });
+                }
+            } else {
+                // Mostrar lector y comenzar escaneo
+                $reader.show();
+                $btnEscanear.html('<i class="bi bi-camera-video-off"></i> Detener escaneo');
+
+                html5QrcodeScanner = new Html5Qrcode("reader");
+
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 100 },
+                    // Usar cámara trasera en móviles
+                    facingMode: { exact: "environment" }
+                };
+
+                html5QrcodeScanner.start(
+                    config,
+                    {
+                        fps: 10,
+                        qrbox: 250
+                    },
+                    (decodedText, decodedResult) => {
+                        // Código escaneado
+                        console.log(`Código escaneado: ${decodedText}`);
+
+                        // Poner el valor en el input y disparar búsqueda
+                        $buscador.val(decodedText).trigger('keyup');
+
+                        // Detener escaneo y ocultar lector
+                        html5QrcodeScanner.stop().then(() => {
+                            $reader.hide();
+                            $btnEscanear.html('<i class="bi bi-camera-video"></i> Escanear código de barras');
+                        }).catch(err => {
+                            console.error("Error al detener el escáner:", err);
+                        });
+                    },
+                    (errorMessage) => {
+                        // Opcional: manejar errores de escaneo
+                        // console.warn(`Error de escaneo: ${errorMessage}`);
+                    }
+                ).catch(err => {
+                    console.error("Error al iniciar el escáner:", err);
+                    alert("No se pudo acceder a la cámara. Por favor, verifica los permisos.");
+                    $reader.hide();
+                    $btnEscanear.html('<i class="bi bi-camera-video"></i> Escanear código de barras');
+                });
+            }
         });
     });
     </script>
