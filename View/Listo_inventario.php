@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/zxing.min.js"></script>
 
     <style>
         body {
@@ -37,6 +38,12 @@
             position: sticky; 
             top: 0;
         }
+        /* Estilo para el video del escáner */
+        #videoStream {
+            width: 100%;
+            border-radius: 8px;
+            transform: scaleX(-1); /* Espejo para que se vea natural */
+        }
     </style>
 </head>
 <body class="py-5">
@@ -44,21 +51,24 @@
     <div class="container">
         <div class="search-container">
             
-            <!-- Logo de la empresa -->
             <div class="text-center mb-4">
             <img src="../IMG/Logo Listo - Negro.png"
-                     class="img-fluid mb-3" 
-                     alt="Logo de la empresa" 
-                     style="max-width: 280px; height: auto;">
+                         class="img-fluid mb-3" 
+                         alt="Logo de la empresa" 
+                         style="max-width: 280px; height: auto;">
                 <p class="text-muted">
-                    Ingresa el <strong>MC</strong> o el <strong>código de barras</strong> para encontrar un producto.
+                    Ingresa el <strong>MC</strong>, el <strong>código de barras</strong> o usa el escáner.
                 </p>
             </div>
 
-            <!-- Input con botón limpiar -->
             <div class="input-group mb-4 shadow-sm">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe para buscar...">
+                
+                <button class="btn btn-outline-primary" id="btnEscanear" type="button" title="Escanear Código de Barras">
+                    <i class="bi bi-upc-scan"></i>
+                </button>
+
                 <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
                     <i class="bi bi-x-circle"></i> Limpiar
                 </button>
@@ -92,11 +102,31 @@
         </div>
     </div>
 
+    <div class="modal fade" id="escanerModal" tabindex="-1" aria-labelledby="escanerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="escanerModalLabel">Escanear Código de Barras</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-muted small">Apunta la cámara al código de barras.</p>
+                    <video id="videoStream" width="100%"></video>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
     $(document).ready(function(){
         let timeout = null;
 
-        // Función de búsqueda
+        // Función de búsqueda (sin cambios)
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
@@ -120,7 +150,6 @@
 
                     if (response.success && response.data && response.data.length > 0) {
                         response.data.forEach(function(item){
-                            // Convertimos a número y lo mostramos con 1 decimal
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
@@ -155,20 +184,52 @@
             });
         }
 
-        // Búsqueda al escribir
+        // Búsqueda al escribir (sin cambios)
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
             clearTimeout(timeout);
             timeout = setTimeout(function(){ buscar(valor); }, 300);
         });
 
-        // Botón Limpiar
+        // Botón Limpiar (sin cambios)
         $("#btnLimpiar").on("click", function(){
             $("#buscador").val("");
             $("#tablaResultados tbody").empty();
             $("#tablaResultados").fadeOut();
             $("#mensaje").fadeOut();
             $("#buscador").focus();
+        });
+
+        // ✅ 4. LÓGICA PARA EL ESCÁNER DE CÓDIGO DE BARRAS
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
+
+        // Evento al hacer clic en el botón de escanear
+        $('#btnEscanear').on('click', function () {
+            escanerModal.show();
+            // Pedimos la cámara trasera ('environment')
+            codeReader.decodeFromVideoDevice(undefined, 'videoStream', (result, err) => {
+                if (result) {
+                    console.log('Código de barras detectado:', result.text);
+                    $('#buscador').val(result.text); // Poner el resultado en el input
+                    escanerModal.hide(); // Ocultar el modal
+                    buscar(result.text); // Ejecutar la búsqueda
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                    alert("Error al acceder a la cámara. Asegúrate de dar los permisos necesarios.");
+                    escanerModal.hide();
+                }
+            }).catch(err => {
+                 console.error("Error al iniciar la cámara:", err);
+                 alert("No se pudo iniciar la cámara. Puede que no esté disponible o no se hayan concedido los permisos.");
+                 escanerModal.hide();
+            });
+        });
+
+        // Detener la cámara cuando el modal se cierra
+        $('#escanerModal').on('hidden.bs.modal', function () {
+            codeReader.reset(); // Libera la cámara
         });
     });
     </script>
