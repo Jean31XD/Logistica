@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -100,6 +100,7 @@
         </div>
     </div>
 
+    <!-- Modal del escáner -->
     <div class="modal fade" id="escanerModal" tabindex="-1" aria-labelledby="escanerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -124,7 +125,7 @@
     $(document).ready(function(){
         let timeout = null;
 
-        // Función de búsqueda (sin cambios)
+        // Función de búsqueda
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
@@ -133,8 +134,14 @@
             }
             $.ajax({
                 url: "../Logica/buscar.php",
-                method: "GET", data: { q: valor }, dataType: 'json',
-                beforeSend: function(){ $("#cargando").show(); $("#tablaResultados").hide(); $("#mensaje").hide(); },
+                method: "GET", 
+                data: { q: valor }, 
+                dataType: 'json',
+                beforeSend: function(){ 
+                    $("#cargando").show(); 
+                    $("#tablaResultados").hide(); 
+                    $("#mensaje").hide(); 
+                },
                 success: function(response){
                     let tbody = $("#tablaResultados tbody");
                     tbody.empty();
@@ -143,23 +150,34 @@
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
-                            const fila = `<tr><td>${item.itemid}</td><td>${item.description}</td><td>${item.itembarcode}</td><td>${item.unitid}</td><td class="text-center fw-bold">${inventario}</td><td class="text-end">${promedio}</td><td class="text-end">${mi}</td></tr>`;
+                            const fila = `<tr>
+                                <td>${item.itemid}</td>
+                                <td>${item.description}</td>
+                                <td>${item.itembarcode}</td>
+                                <td>${item.unitid}</td>
+                                <td class="text-center fw-bold">${inventario}</td>
+                                <td class="text-end">${promedio}</td>
+                                <td class="text-end">${mi}</td>
+                            </tr>`;
                             tbody.append(fila);
                         });
                         $("#tablaResultados").fadeIn();
                         $("#mensaje").fadeOut();
                     } else if (response.success && response.data.length === 0) {
                         $("#tablaResultados").fadeOut();
-                        $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.').removeClass('alert-danger').addClass('alert-info').fadeIn();
+                        $("#mensaje").html('<i class="bi bi-emoji-frown"></i> No se encontraron resultados para <strong>"' + valor + '"</strong>.')
+                            .removeClass('alert-danger').addClass('alert-info').fadeIn();
                     } else {
                         $("#tablaResultados").fadeOut();
                         const mensajeError = response.message || 'Ocurrió un error desconocido.';
-                        $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError).removeClass('alert-info').addClass('alert-danger').fadeIn();
+                        $("#mensaje").html('⚠️ <strong>Error:</strong> ' + mensajeError)
+                            .removeClass('alert-info').addClass('alert-danger').fadeIn();
                     }
                 },
                 error: function(){
                     $("#tablaResultados").fadeOut();
-                    $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.').removeClass('alert-info').addClass('alert-danger').fadeIn();
+                    $("#mensaje").html('⚠️ <strong>Error de Conexión:</strong> No se pudo comunicar con el servidor.')
+                        .removeClass('alert-info').addClass('alert-danger').fadeIn();
                 },
                 complete: function(){ $("#cargando").hide(); }
             });
@@ -176,45 +194,44 @@
             $("#mensaje").fadeOut();
         });
 
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
+        // --- LÓGICA DEL ESCÁNER (forzar cámara trasera) ---
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
 
-$('#btnEscanear').on('click', function () {
-    escanerModal.show();
+        $('#btnEscanear').on('click', async function () {
+            try {
+                const devices = await codeReader.listVideoInputDevices();
+                let backCamera = devices.find(d => d.label.toLowerCase().includes('back')) ||
+                                 devices.find(d => d.label.toLowerCase().includes('rear')) ||
+                                 devices[devices.length - 1];
 
-    // Buscar cámaras disponibles
-    codeReader.listVideoInputDevices()
-    .then(videoInputDevices => {
-        if (videoInputDevices.length === 0) {
-            alert("No se detectaron cámaras en el dispositivo.");
-            return;
-        }
+                if (!backCamera) {
+                    alert("No se encontró cámara trasera. Usando cámara por defecto.");
+                    backCamera = devices[0];
+                }
 
-        // Buscar cámara trasera (back)
-        let backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back'))
-                          || videoInputDevices[videoInputDevices.length - 1]; // fallback a última cámara
+                escanerModal.show();
 
-        // Iniciar con la cámara trasera
-        codeReader.decodeFromVideoDevice(backCamera.deviceId, 'videoStream', (result, err) => {
-            if (result) {
-                $('#buscador').val(result.text);
-                escanerModal.hide();
-                buscar(result.text);
-            }
-            if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error("Error durante el escaneo:", err);
+                await codeReader.decodeFromVideoDevice(backCamera.deviceId, 'videoStream', (result, err) => {
+                    if (result) {
+                        $('#buscador').val(result.text);
+                        escanerModal.hide();
+                        buscar(result.text);
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error("Error durante el escaneo:", err);
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error al iniciar escáner:", err);
+                alert("No se pudo iniciar la cámara. Revisa permisos en tu navegador.");
             }
         });
-    })
-    .catch(err => {
-        console.error("Error al obtener las cámaras:", err);
-        alert("No se pudo acceder a las cámaras. Verifica permisos y HTTPS.");
-    });
-});
 
-$('#escanerModal').on('hidden.bs.modal', function () {
-    codeReader.reset(); // Detiene la cámara al cerrar modal
-});
+        $('#escanerModal').on('hidden.bs.modal', function () {
+            codeReader.reset();
+        });
     });
     </script>
 
