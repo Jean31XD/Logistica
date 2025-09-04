@@ -176,40 +176,45 @@
             $("#mensaje").fadeOut();
         });
 
-        // --- LÓGICA DEL ESCÁNER MEJORADA ---
-        const codeReader = new ZXing.BrowserMultiFormatReader();
-        const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+const escanerModal = new bootstrap.Modal(document.getElementById('escanerModal'));
 
-        $('#btnEscanear').on('click', function () {
-            escanerModal.show();
-            // Intenta iniciar la cámara
-            codeReader.decodeFromVideoDevice(undefined, 'videoStream', (result, err) => {
-                if (result) {
-                    $('#buscador').val(result.text);
-                    escanerModal.hide();
-                    buscar(result.text);
-                }
-                if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error("Error durante el escaneo:", err);
-                    escanerModal.hide();
-                }
-            }).catch(err => {
-                 // CAMBIO 2: ALERTAS MÁS CLARAS PARA EL USUARIO
-                 console.error("Error al iniciar la cámara:", err);
-                 escanerModal.hide();
-                 if (err.name === 'NotAllowedError') {
-                    alert('Acceso a la cámara denegado. Por favor, permite el acceso en la configuración de tu navegador.');
-                 } else if (err.name === 'NotFoundError') {
-                    alert('No se encontró ninguna cámara en este dispositivo.');
-                 } else {
-                    alert('No se pudo iniciar la cámara. Asegúrate de que estás en un sitio seguro (HTTPS) y has concedido los permisos.');
-                 }
-            });
-        });
+$('#btnEscanear').on('click', function () {
+    escanerModal.show();
 
-        $('#escanerModal').on('hidden.bs.modal', function () {
-            codeReader.reset(); // Detiene la cámara cuando se cierra el modal
+    // Buscar cámaras disponibles
+    codeReader.listVideoInputDevices()
+    .then(videoInputDevices => {
+        if (videoInputDevices.length === 0) {
+            alert("No se detectaron cámaras en el dispositivo.");
+            return;
+        }
+
+        // Buscar cámara trasera (back)
+        let backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back'))
+                          || videoInputDevices[videoInputDevices.length - 1]; // fallback a última cámara
+
+        // Iniciar con la cámara trasera
+        codeReader.decodeFromVideoDevice(backCamera.deviceId, 'videoStream', (result, err) => {
+            if (result) {
+                $('#buscador').val(result.text);
+                escanerModal.hide();
+                buscar(result.text);
+            }
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+                console.error("Error durante el escaneo:", err);
+            }
         });
+    })
+    .catch(err => {
+        console.error("Error al obtener las cámaras:", err);
+        alert("No se pudo acceder a las cámaras. Verifica permisos y HTTPS.");
+    });
+});
+
+$('#escanerModal').on('hidden.bs.modal', function () {
+    codeReader.reset(); // Detiene la cámara al cerrar modal
+});
     });
     </script>
 
