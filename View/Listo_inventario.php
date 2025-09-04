@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Librería para escaneo con cámara -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         body {
@@ -37,6 +39,12 @@
             position: sticky; 
             top: 0;
         }
+        /* Contenedor del escáner */
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+        }
     </style>
 </head>
 <body class="py-5">
@@ -46,7 +54,7 @@
             
             <!-- Logo de la empresa -->
             <div class="text-center mb-4">
-            <img src="../IMG/Logo Listo - Negro.png"
+                <img src="../IMG/Logo Listo - Negro.png"
                      class="img-fluid mb-3" 
                      alt="Logo de la empresa" 
                      style="max-width: 280px; height: auto;">
@@ -58,11 +66,14 @@
             <!-- Input con botón limpiar -->
             <div class="input-group mb-4 shadow-sm">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe para buscar...">
+                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe o escanea un código...">
                 <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
                     <i class="bi bi-x-circle"></i> Limpiar
                 </button>
             </div>
+
+            <!-- Escáner con cámara -->
+            <div id="reader"></div>
 
             <div id="cargando" class="text-center my-4" style="display: none;">
                 <div class="spinner-border text-primary" role="status">
@@ -96,7 +107,7 @@
     $(document).ready(function(){
         let timeout = null;
 
-        // Función de búsqueda
+        // --- Función de búsqueda ---
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
@@ -120,7 +131,6 @@
 
                     if (response.success && response.data && response.data.length > 0) {
                         response.data.forEach(function(item){
-                            // Convertimos a número y lo mostramos con 1 decimal
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
@@ -170,6 +180,18 @@
             $("#mensaje").fadeOut();
             $("#buscador").focus();
         });
+
+        // --- Inicializar escáner ---
+        function onScanSuccess(decodedText) {
+            $("#buscador").val(decodedText);
+            buscar(decodedText);
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { fps: 10, qrbox: 250 }
+        );
+        html5QrcodeScanner.render(onScanSuccess);
     });
     </script>
 
