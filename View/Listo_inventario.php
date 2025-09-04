@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Librería para escaneo con cámara -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
@@ -39,7 +38,6 @@
             position: sticky; 
             top: 0;
         }
-        /* Contenedor del escáner */
         #reader {
             width: 100%;
             max-width: 400px;
@@ -59,21 +57,21 @@
                      alt="Logo de la empresa" 
                      style="max-width: 280px; height: auto;">
                 <p class="text-muted">
-                    Ingresa el <strong>MC</strong> o el <strong>código de barras</strong> para encontrar un producto.
+                    Ingresa el <strong>MC</strong> o escanea el <strong>código de barras</strong> con la cámara.
                 </p>
-            </div>
-
-            <!-- Input con botón limpiar -->
-            <div class="input-group mb-4 shadow-sm">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe o escanea un código...">
-                <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
-                    <i class="bi bi-x-circle"></i> Limpiar
-                </button>
             </div>
 
             <!-- Escáner con cámara -->
             <div id="reader"></div>
+
+            <!-- Input con botón limpiar -->
+            <div class="input-group mb-4 shadow-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="buscador" class="form-control form-control-lg" placeholder="Escribe o escanea para buscar...">
+                <button class="btn btn-outline-secondary" id="btnLimpiar" type="button">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </button>
+            </div>
 
             <div id="cargando" class="text-center my-4" style="display: none;">
                 <div class="spinner-border text-primary" role="status">
@@ -107,7 +105,7 @@
     $(document).ready(function(){
         let timeout = null;
 
-        // --- Función de búsqueda ---
+        // Función de búsqueda AJAX
         function buscar(valor){
             if (valor.length < 2) {
                 $("#tablaResultados").fadeOut();
@@ -165,7 +163,7 @@
             });
         }
 
-        // Búsqueda al escribir
+        // Búsqueda al escribir manualmente
         $("#buscador").on("keyup", function(){
             let valor = $(this).val().trim();
             clearTimeout(timeout);
@@ -181,17 +179,28 @@
             $("#buscador").focus();
         });
 
-        // --- Inicializar escáner ---
+        // --- Inicializar escáner de la cámara trasera ---
         function onScanSuccess(decodedText) {
             $("#buscador").val(decodedText);
             buscar(decodedText);
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            { fps: 10, qrbox: 250 }
-        );
-        html5QrcodeScanner.render(onScanSuccess);
+        const html5QrCode = new Html5Qrcode("reader");
+
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                let backCamera = devices.find(device => device.label.toLowerCase().includes("back"))
+                                 || devices[0]; // fallback a la primera
+                html5QrCode.start(
+                    { deviceId: { exact: backCamera.id } },
+                    { fps: 10, qrbox: 250 },
+                    onScanSuccess
+                );
+            }
+        }).catch(err => {
+            console.error("Error al acceder a la cámara:", err);
+        });
+
     });
     </script>
 
