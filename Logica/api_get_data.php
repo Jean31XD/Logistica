@@ -1,5 +1,5 @@
 <?php
-require 'conexionBD/conexion.php'; // Tu conexión a la base de datos en $conn
+require '../conexionBD/conexion.php'; // Tu conexión a la base de datos en $conn
 
 header('Content-Type: application/json; charset=utf-8');
 
