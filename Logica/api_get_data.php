@@ -3,7 +3,7 @@ require '../conexionBD/conexion.php'; // Tu conexión a la base de datos en $con
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Obtener fechas y la nueva 'vista' del GET
+    // Obtener parámetros del GET
 $fecha_inicio = $_GET['fecha_inicio'] ?? '';
 $fecha_fin = $_GET['fecha_fin'] ?? '';
 $view = $_GET['view'] ?? 'overview'; // El valor por defecto es 'overview'
