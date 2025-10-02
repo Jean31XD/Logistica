@@ -68,7 +68,7 @@
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="logo">
-                <img src="LOGO MC - COLOR.png" alt="Logo">
+                <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
             </div>
             <div class="sidebar-section">
                 <h3>Análisis</h3>
