@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Estilos CSS (sin cambios importantes) */
+        /* Estilos CSS (sin cambios) */
         :root {
             --sidebar-bg: #1a202c; --main-bg: #f7fafc; --card-bg: #ffffff;
             --text-primary: #2d3748; --text-secondary: #718096; --accent-color: #e53e3e;
@@ -30,8 +30,18 @@
         .filter-group { position: relative; background-color: #2d3748; border-radius: 8px; border: 2px solid #4a5568; transition: border-color 0.2s; }
         .filter-group:focus-within { border-color: var(--accent-color); }
         .filter-group label { position: absolute; top: 8px; left: 12px; font-size: 0.75rem; color: #a0aec0; }
-        .filter-group input { width: 100%; padding: 1.75rem 0.75rem 0.75rem 0.75rem; border: none; background: transparent; color: #fff; font-family: inherit; font-size: 1rem; }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+.filter-group input, .filter-group select {
+    width: 100%;
+    padding: 1.75rem 0.75rem 0.75rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    appearance: none;
+    font-weight: 700; /* <-- AÑADE ESTA LÍNEA */
+}        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        .filter-group select { background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; cursor: pointer; background-color: #1a202c;}
         .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         header h1 { font-size: 2.25rem; font-weight: 800; }
@@ -58,7 +68,7 @@
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="logo">
-                <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
+                <img src="LOGO MC - COLOR.png" alt="Logo">
             </div>
             <div class="sidebar-section">
                 <h3>Análisis</h3>
@@ -68,7 +78,7 @@
                 </ul>
             </div>
             <div class="sidebar-section">
-                <h3>Filtros de Fecha</h3>
+                <h3>Filtros</h3>
                 <div class="filter-form">
                     <div class="filter-group">
                         <label for="fecha_inicio">Desde:</label>
@@ -77,6 +87,12 @@
                     <div class="filter-group">
                         <label for="fecha_fin">Hasta:</label>
                         <input type="date" id="fecha_fin" name="fecha_fin">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filtro_almacen">Almacén:</label>
+                        <select id="filtro_almacen" name="filtro_almacen">
+                            <option value="">Todos los Almacenes</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -103,19 +119,9 @@
                     <h2>Distribución por Estado</h2>
                     <div class="chart-container"><canvas id="statusChart"></canvas></div>
                     <table class="status-table">
-                        <thead>
-                            <tr>
-                                <th>Estado</th>
-                                <th>Total de Facturas</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Estado</th><th>Total de Facturas</th></tr></thead>
                         <tbody id="statusTableBody"></tbody>
-                        <tfoot>
-                            <tr>
-                                <td>TOTAL GENERAL</td>
-                                <td id="statusTableTotal">--</td>
-                            </tr>
-                        </tfoot>
+                        <tfoot><tr><td>TOTAL GENERAL</td><td id="statusTableTotal">--</td></tr></tfoot>
                     </table>
                 </div>
             </div>
@@ -131,31 +137,16 @@
                 <div class="card">
                     <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
                         <h2 id="details-title" style="margin: 0;">Detalles</h2>
-                        <button id="back-to-overview" style="background-color: #2d3748; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: 700;">
-                            &larr; Volver al Resumen
-                        </button>
+                        <button id="back-to-overview" style="background-color: #2d3748; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: 700;">&larr; Volver al Resumen</button>
                     </header>
-                    <p id="details-period" style="margin-top:0; color: var(--text-secondary);">
-                        Mostrando resultados para el período seleccionado.
-                    </p>
+                    <p id="details-period" style="margin-top:0; color: var(--text-secondary);">Mostrando resultados para el período seleccionado.</p>
                     <table class="status-table">
                         <thead>
                             <tr>
-                                <th>No. Factura</th>
-                                <th>Fecha Registro</th>
-                                <th>Registrado Por</th>
-                                <th>Camión</th>
-                                <th>Fecha Despacho</th>
-                                <th>Despachado Por</th>
-                                <th>Fecha Entregado</th>
-                                <th>Entregado Por</th>
-                                <th>Estado</th>
-                                <th>Fecha Reversada</th>
-                                <th>Reversado Por</th>
-                                <th>Fecha NC</th>
-                                <th>NC Realizado Por</th>
-                                <th>Motivo NC</th>
-                                <th>Camión 2</th>
+                                <th>No. Factura</th><th>Fecha Registro</th><th>Registrado Por</th><th>Camión</th>
+                                <th>Fecha Despacho</th><th>Despachado Por</th><th>Fecha Entregado</th><th>Entregado Por</th>
+                                <th>Estado</th><th>Fecha Reversada</th><th>Reversado Por</th><th>Fecha NC</th>
+                                <th>NC Realizado Por</th><th>Motivo NC</th><th>Camión 2</th>
                             </tr>
                         </thead>
                         <tbody id="detailsTableBody"></tbody>
@@ -163,10 +154,8 @@
 
                     <div id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
                         <select id="details-limit" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <option value="10">10 por página</option>
-                            <option value="25">25 por página</option>
-                            <option value="50" selected>50 por página</option>
-                            <option value="100">100 por página</option>
+                            <option value="10">10 por página</option><option value="25">25 por página</option>
+                            <option value="50" selected>50 por página</option><option value="100">100 por página</option>
                         </select>
                         <div>
                             <span id="page-info" style="margin-right: 1rem; color: var(--text-secondary);">Página 1 de 1 (Total: 0)</span>
@@ -178,61 +167,67 @@
             </div>
         </main>
     </div>
-
-    <script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
         // --- VARIABLES GLOBALES ---
         let statusChart, trendsChart;
         let currentView = 'overview';
         const fechaInicioInput = document.getElementById('fecha_inicio');
         const fechaFinInput = document.getElementById('fecha_fin');
+        const almacenFilterInput = document.getElementById('filtro_almacen');
         const loaderEl = document.getElementById('loader');
         const mainTitle = document.getElementById('main-title');
 
-        // --- Variables de Paginación para Detalles (NUEVAS) ---
         let detailsCurrentState = ''; 
         let detailsCurrentPage = 1;
         let detailsLimit = parseInt(document.getElementById('details-limit').value);
         let detailsTotalPages = 1;
         
         // --- FUNCIONES DE GRÁFICOS ---
-        function initializeCharts() {
-            const chartOptions = {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            };
-            const ctxStatus = document.getElementById('statusChart').getContext('2d');
-            statusChart = new Chart(ctxStatus, { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] }, options: chartOptions });
+        const initializeCharts = () => {
+            const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
+            statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] }, options: chartOptions });
+            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: 'rgba(229, 62, 62, 1)', tension: 0.1, fill: false }] }, options: chartOptions });
+        };
+        
+        // --- FUNCIONES DE DATOS Y UI ---
+        const populateAlmacenFilter = async () => {
+            try {
+                const response = await fetch('../Logica/api_get_data.php?view=almacenes');
+                if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
+                const almacenes = await response.json();
+                
+                almacenes.forEach(almacen => {
+                    const option = document.createElement('option');
+                    option.value = almacen.inventlocationid;
+                    option.textContent = almacen.inventlocationid;
+                    almacenFilterInput.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Error cargando almacenes:", error);
+            }
+        };
 
-            const ctxTrends = document.getElementById('trendsChart').getContext('2d');
-            trendsChart = new Chart(ctxTrends, { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: 'rgba(229, 62, 62, 1)', tension: 0.1, fill: false }] }, options: chartOptions });
-        }
-
-        // --- LÓGICA DE DATOS Y UI GENERAL ---
-        async function fetchData(inicio, fin, view) {
+        const fetchData = async (inicio, fin, almacen, view) => {
             loaderEl.classList.add('loading');
             try {
-                const response = await fetch(`../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&view=${view}`);
+                // CORRECCIÓN: Asegurar que el parámetro 'almacen' se usa en la URL
+                const url = `../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 const data = await response.json();
-                
                 if (data.error) throw new Error(data.error);
 
-                if (view !== 'details') {
-                    updateDashboard(data, view);
-                }
+                if (view !== 'details') updateDashboard(data, view);
             } catch (error) {
-                console.error("No se pudieron cargar los datos:", error);
-                // Si la vista es "details", no se necesita este error aquí
-                if (view !== 'details') {
-                    alert('Error al cargar datos del dashboard: ' + error.message);
-                }
+                console.error(`Error al cargar datos para la vista ${view}:`, error);
+                if (view !== 'details') alert('Error al cargar datos del dashboard: ' + error.message);
             } finally {
                 loaderEl.classList.remove('loading');
             }
-        }
+        };
 
-        function updateDashboard(data, view) {
+        const updateDashboard = (data, view) => {
             const formatter = new Intl.NumberFormat();
             if (view === 'overview') {
                 document.getElementById('total-emitidas').textContent = formatter.format(data.totalEmitidas || 0);
@@ -245,59 +240,47 @@
                 const statusTableBody = document.getElementById('statusTableBody');
                 statusTableBody.innerHTML = '';
                 let totalFacturas = 0;
-                const fechaInicio = fechaInicioInput.value;
-                const fechaFin = fechaFinInput.value;
-
+                
                 data.estadosData.forEach(item => {
                     const row = statusTableBody.insertRow();
                     row.style.cursor = 'pointer';
                     row.title = `Haz clic para ver los detalles de "${item.Estado}"`;
-                    row.onclick = () => showDetailsView(item.Estado, fechaInicio, fechaFin);
+                    row.onclick = () => showDetailsView(item.Estado);
                     
                     row.insertCell().textContent = item.Estado;
                     row.insertCell().textContent = formatter.format(item.Total);
                     totalFacturas += item.Total;
                 });
                 document.getElementById('statusTableTotal').textContent = formatter.format(totalFacturas);
-} else if (view === 'trends') {
-    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
-    trendsChart.data.labels = data.tendenciaRegistros.map(d => {
-        const fecha = new Date(d.Dia); // Convertir la fecha string a objeto Date
-        const nombreDia = diasSemana[fecha.getDay()]; // Obtener el nombre del día en español
-        return `${nombreDia} (${d.Dia})`; // Combinar día de la semana + fecha
-    });
-
-    trendsChart.data.datasets[0].data = data.tendenciaRegistros.map(d => d.Total);
-    trendsChart.update();
-}
-
-
-        }
-
-        // --- LÓGICA DE DETALLES Y PAGINACIÓN (MODIFICADA) ---
-        
-        // Función auxiliar para formatear fechas de forma segura
-        const formatDate = (dateObj) => {
-            // Manejo de valores nulos o no objeto
-            if (!dateObj || typeof dateObj !== 'object') return 'N/A';
             
-            // Si el objeto es una fecha de JS (desde 'Sin estado'), usarla directamente
-            let date = dateObj;
-            
-            // Si viene del backend (SQLSRV), intentamos usar el formato ISO 8601
-            if (dateObj.date) {
-                date = new Date(dateObj.date);
+            } else if (view === 'trends' && data.tendenciaRegistros) {
+                const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+                trendsChart.data.labels = data.tendenciaRegistros.map(d => {
+                    // Se agrega 'T00:00:00' para asegurar que el navegador interprete la fecha en la zona horaria local y no en UTC
+                    const fecha = new Date(d.Dia + 'T00:00:00'); 
+                    const nombreDia = diasSemana[fecha.getDay()];
+                    return `${nombreDia} (${d.Dia})`;
+                });
+
+                trendsChart.data.datasets[0].data = data.tendenciaRegistros.map(d => d.Total);
+                trendsChart.update();
             }
-            
-            // Comprobación final si es una fecha válida
-            if (isNaN(date.getTime())) return 'N/A';
+        };
 
-            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-            return date.toLocaleString('es-DO', options);
+        const formatDate = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            try {
+                // CORRECCIÓN: Intentar usar el constructor Date directamente para manejar mejor los formatos de fecha y hora de SQL Server
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return 'N/A';
+                return date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return 'N/A';
+            }
         };
         
-        function populateDetailsTable(facturas) {
+        const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
             tableBody.innerHTML = '';
 
@@ -306,178 +289,154 @@
                 return;
             }
 
-            facturas.forEach(factura => {
+            facturas.forEach(f => {
                 const row = tableBody.insertRow();
-                
-                // Asegurar el orden de las 15 columnas
-                row.insertCell().textContent = factura.No_Factura || 'N/A';
-                row.insertCell().textContent = formatDate(factura.Fecha_de_Registro);
-                row.insertCell().textContent = factura.Registrado_por || 'N/A';
-                row.insertCell().textContent = factura.Camion || 'N/A';
-                row.insertCell().textContent = formatDate(factura.Fecha_de_Despacho);
-                row.insertCell().textContent = factura.Despachado_por || 'N/A';
-                row.insertCell().textContent = formatDate(factura.Fecha_de_Entregado);
-                row.insertCell().textContent = factura.Entregado_por || 'N/A';
-                row.insertCell().textContent = factura.Estado || 'N/A';
-                row.insertCell().textContent = formatDate(factura.Fecha_Reversada);
-                row.insertCell().textContent = factura.Reversado_Por || 'N/A';
-                row.insertCell().textContent = formatDate(factura.Fecha_de_NC);
-                row.insertCell().textContent = factura.NC_Realizado_Por || 'N/A';
-                row.insertCell().textContent = factura.Motivo_NC || 'N/A';
-                row.insertCell().textContent = factura.Camion2 || 'N/A';
+                row.insertCell().textContent = f.No_Factura || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_Registro);
+                row.insertCell().textContent = f.Registrado_por || 'N/A';
+                row.insertCell().textContent = f.Camion || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_Despacho);
+                row.insertCell().textContent = f.Despachado_por || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_Entregado);
+                row.insertCell().textContent = f.Entregado_por || 'N/A';
+                row.insertCell().textContent = f.Estado || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_Reversada);
+                row.insertCell().textContent = f.Reversado_Por || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_NC);
+                row.insertCell().textContent = f.NC_Realizado_Por || 'N/A';
+                row.insertCell().textContent = f.Motivo_NC || 'N/A';
+                row.insertCell().textContent = f.Camion2 || 'N/A';
             });
-        }
-        
-        function updatePaginationControls(paginationData) {
-            const { currentPage, totalPages, totalRecords } = paginationData;
-            
+        };
+    
+        const updatePaginationControls = ({ currentPage, totalPages, totalRecords }) => {
             document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (Total: ${totalRecords})`;
-            
-            const prevButton = document.getElementById('prev-page');
-            const nextButton = document.getElementById('next-page');
-            
-            prevButton.disabled = currentPage <= 1;
-            nextButton.disabled = currentPage >= totalPages;
-        }
+            document.getElementById('prev-page').disabled = currentPage <= 1;
+            document.getElementById('next-page').disabled = currentPage >= totalPages;
+        };
 
-        async function fetchDetails(estado, inicio, fin, page, limit) {
-            detailsCurrentState = estado; // Guardar el estado actual
-            
+        const fetchDetails = async (estado, inicio, fin, almacen, page, limit) => {
+            detailsCurrentState = estado;
             loaderEl.classList.add('loading');
             const detailsTableBody = document.getElementById('detailsTableBody');
             detailsTableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;">Cargando...</td></tr>';
             
             try {
-                const estadoCodificado = encodeURIComponent(estado);
-                const response = await fetch(`../Logica/api_get_data.php?view=details&estado=${estadoCodificado}&fecha_inicio=${inicio}&fecha_fin=${fin}&page=${page}&limit=${limit}`);
-                
+                // CORRECCIÓN: Asegurar que el parámetro 'almacen' se usa en la URL
+                const url = `api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 
                 const result = await response.json();
-                
-                if (result.error) {
-                     throw new Error(result.error);
-                }
+                if (result.error) throw new Error(result.error);
 
-                // Actualizar variables de paginación
                 detailsCurrentPage = result.currentPage;
                 detailsLimit = result.limit;
                 detailsTotalPages = result.totalPages;
                 
-                // Actualizar tabla y controles de paginación
                 populateDetailsTable(result.data);
                 updatePaginationControls(result);
                 
             } catch (error) {
-                console.error("No se pudieron cargar los detalles:", error);
-                detailsTableBody.innerHTML = '<tr><td colspan="15" style="text-align:center; color: red;">Error al cargar los datos: ' + error.message + '</td></tr>';
+                console.error("Error al cargar los detalles:", error);
+                detailsTableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; color: red;">Error: ${error.message}</td></tr>`;
                 updatePaginationControls({ currentPage: 1, totalPages: 1, totalRecords: 0 });
             } finally {
                 loaderEl.classList.remove('loading');
             }
-        }
+        };
 
-        async function showDetailsView(estado, inicio, fin) {
+        const showDetailsView = (estado) => {
             document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-            document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
             document.getElementById('view-details').classList.add('active');
             
-            currentView = 'details'; // Importante para que handleDateChange sepa qué hacer
+            currentView = 'details';
+            const inicio = fechaInicioInput.value;
+            const fin = fechaFinInput.value;
+            const almacen = almacenFilterInput.value; // <-- CORRECCIÓN: Leer el valor del almacén
             
             document.getElementById('details-title').textContent = `Detalle de Facturas: ${estado}`;
             document.getElementById('details-period').innerHTML = `Mostrando resultados del <strong>${inicio}</strong> al <strong>${fin}</strong>.`;
             
-            // Al mostrar la vista, siempre ir a la primera página con el límite actual
             detailsCurrentPage = 1; 
-            await fetchDetails(estado, inicio, fin, detailsCurrentPage, detailsLimit);
-        }
+            fetchDetails(estado, inicio, fin, almacen, detailsCurrentPage, detailsLimit); // <-- CORRECCIÓN: Pasar la variable 'almacen'
+        };
+        
+        const applyFiltersAndFetchData = () => {
+            const inicio = fechaInicioInput.value;
+            const fin = fechaFinInput.value;
+            const almacen = almacenFilterInput.value; // <-- CORRECCIÓN: Obtener el valor de 'almacen'
+            
+            if (inicio && fin) {
+                if (currentView === 'details' && detailsCurrentState) {
+                    detailsCurrentPage = 1;
+                    fetchDetails(detailsCurrentState, inicio, fin, almacen, detailsCurrentPage, detailsLimit); // <-- CORRECCIÓN: Pasar la variable 'almacen'
+                } else if (currentView !== 'details') {
+                    fetchData(inicio, fin, almacen, currentView); // <-- CORRECCIÓN: Pasar la variable 'almacen'
+                }
+            }
+        };
 
         // --- INICIALIZACIÓN Y EVENTOS ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeCharts();
-            
-            // Establecer fechas por defecto (primer día del mes actual al último)
-            const today = new Date();
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
-            fechaInicioInput.value = firstDay;
-            fechaFinInput.value = lastDay;
-            fetchData(firstDay, lastDay, currentView);
+        initializeCharts();
+        
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+        fechaInicioInput.value = firstDay;
+        fechaFinInput.value = lastDay;
+        
+        fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
+        fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
+        almacenFilterInput.addEventListener('change', applyFiltersAndFetchData); // <-- Evento de cambio para el filtro de almacén
 
-            // Manejador central para cambios de fecha
-            const handleDateChange = () => {
-                if (fechaInicioInput.value && fechaFinInput.value) {
-                    // Si la vista actual es detalles, recargar los detalles con los nuevos filtros de fecha
-                    if (currentView === 'details' && detailsCurrentState) {
-                        detailsCurrentPage = 1; // **Reiniciar a la página 1 al cambiar la fecha**
-                        fetchDetails(detailsCurrentState, fechaInicioInput.value, fechaFinInput.value, detailsCurrentPage, detailsLimit);
-                    } else {
-                        // Si es 'overview' o 'trends', cargar los datos normales
-                        fetchData(fechaInicioInput.value, fechaFinInput.value, currentView);
-                    }
-                }
-            };
-            fechaInicioInput.addEventListener('change', handleDateChange);
-            fechaFinInput.addEventListener('change', handleDateChange);
-
-            // Manejo de navegación de vistas
-            document.querySelectorAll('.sidebar-nav a').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    
-                    document.querySelector('.sidebar-nav a.active').classList.remove('active');
-                    link.classList.add('active');
-                    
-                    currentView = link.dataset.view;
-                    mainTitle.textContent = link.textContent;
-                    
-                    document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
-                    document.getElementById(`view-${currentView}`).classList.add('active');
-                    
-                    // Solo cargar datos si la vista no es 'details'
-                    if (currentView !== 'details') {
-                        handleDateChange();
-                    }
-                });
-            });
-
-            // Botón de Volver al Resumen
-            document.getElementById('back-to-overview').addEventListener('click', () => {
-                document.getElementById('view-details').classList.remove('active');
-                document.getElementById('view-overview').classList.add('active');
-                currentView = 'overview';
-                mainTitle.textContent = 'Resumen de Facturas';
-                // Activar el enlace de resumen en el sidebar
-                document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-                document.querySelector('[data-view="overview"]').classList.add('active');
-                handleDateChange(); // Opcional: Recargar el resumen por si acaso
-            });
-
-            // --- Eventos de Paginación para Detalles ---
-            const currentPageFn = () => detailsCurrentPage;
-            const limitFn = () => detailsLimit;
-            const stateFn = () => detailsCurrentState;
-            const startFn = () => fechaInicioInput.value;
-            const endFn = () => fechaFinInput.value;
-
-            document.getElementById('prev-page').addEventListener('click', async () => {
-                if (currentPageFn() > 1) {
-                    await fetchDetails(stateFn(), startFn(), endFn(), currentPageFn() - 1, limitFn());
-                }
-            });
-
-            document.getElementById('next-page').addEventListener('click', async () => {
-                if (currentPageFn() < detailsTotalPages) {
-                    await fetchDetails(stateFn(), startFn(), endFn(), currentPageFn() + 1, limitFn());
-                }
-            });
-
-            document.getElementById('details-limit').addEventListener('change', async (e) => {
-                detailsLimit = parseInt(e.target.value);
-                detailsCurrentPage = 1; // Reiniciar a la primera página con el nuevo límite
-                await fetchDetails(stateFn(), startFn(), endFn(), detailsCurrentPage, detailsLimit);
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                if(link.classList.contains('active')) return;
+                document.querySelector('.sidebar-nav a.active').classList.remove('active');
+                link.classList.add('active');
+                currentView = link.dataset.view;
+                mainTitle.textContent = link.textContent;
+                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${currentView}`).classList.add('active');
+                if (currentView !== 'details') applyFiltersAndFetchData();
             });
         });
-    </script>
+
+        document.getElementById('back-to-overview').addEventListener('click', () => {
+            document.getElementById('view-details').classList.remove('active');
+            document.getElementById('view-overview').classList.add('active');
+            currentView = 'overview';
+            mainTitle.textContent = 'Resumen de Facturas';
+            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+            document.querySelector('[data-view="overview"]').classList.add('active');
+            applyFiltersAndFetchData();
+        });
+
+        const fetchDetailsForCurrentPage = (newPage) => {
+            // CORRECCIÓN: Asegurar que el filtro de almacén se pasa aquí también
+            fetchDetails(detailsCurrentState, fechaInicioInput.value, fechaFinInput.value, almacenFilterInput.value, newPage, detailsLimit);
+        };
+
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (detailsCurrentPage > 1) fetchDetailsForCurrentPage(detailsCurrentPage - 1);
+        });
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (detailsCurrentPage < detailsTotalPages) fetchDetailsForCurrentPage(detailsCurrentPage + 1);
+        });
+        document.getElementById('details-limit').addEventListener('change', (e) => {
+            detailsLimit = parseInt(e.target.value);
+            detailsCurrentPage = 1;
+            fetchDetailsForCurrentPage(detailsCurrentPage);
+        });
+
+        populateAlmacenFilter().then(() => {
+            // Iniciar la carga de datos con los filtros predeterminados
+            applyFiltersAndFetchData();
+        });
+    });
+</script>
 </body>
 </html>

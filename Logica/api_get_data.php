@@ -1,249 +1,251 @@
 <?php
-require '../conexionBD/conexion.php'; // Tu conexión a la base de datos en $conn
+// Configuración para evitar que los errores de PHP corrompan la salida JSON
+// Es mejor manejar los errores explícitamente que suprimirlos globalmente.
+// error_reporting(0);
+// ini_set('display_errors', 'Off');
 
+// Requerir la conexión a la base de datos
+require '../conexionBD/conexion.php'; 
+// Establecer el encabezado de respuesta como JSON
 header('Content-Type: application/json; charset=utf-8');
 
-    // Obtener parámetros del GET
-$fecha_inicio = $_GET['fecha_inicio'] ?? '';
-$fecha_fin = $_GET['fecha_fin'] ?? '';
-$view = $_GET['view'] ?? 'overview';
-
-$response = [];
+// --- Inicialización de variables ---
+$response = []; 
+$http_code = 200; 
 
 try {
-    switch ($view) {
-case 'details':
-    // Normalizar fechas a 'YYYY-MM-DD' para evitar problemas con formatos
+    // --- 1. VERIFICACIÓN DE CONEXIÓN ---
+    if (!isset($conn) || $conn === false) {
+        throw new Exception('No se pudo establecer la conexión a la base de datos.', 503);
+    }
+
+    // --- Obtención y normalización de parámetros ---
+    $fecha_inicio = $_GET['fecha_inicio'] ?? '';
+    $fecha_fin = $_GET['fecha_fin'] ?? '';
+    $view = $_GET['view'] ?? 'overview';
+    $almacen = $_GET['almacen'] ?? '';
+
     if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
-    if (!empty($fecha_fin))    $fecha_fin    = date('Y-m-d', strtotime($fecha_fin));
+    if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
-    $page = intval($_GET['page'] ?? 1);
-    $limit = intval($_GET['limit'] ?? 50);
-    $offset = ($page - 1) * $limit;
-
-    $estado = isset($_GET['estado']) ? trim(urldecode($_GET['estado'])) : '';
-    $detailsData = [];
-
-    if (empty($estado) || empty($fecha_inicio) || empty($fecha_fin)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Faltan parámetros para obtener los detalles.']);
-        exit;
+    // --- 2. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
+    $almacenParams = [];
+    $almacenSqlAnd = '';
+    
+    if (!empty($almacen)) {
+        $almacenSqlAnd = " AND f.inventlocationid = ? "; 
+        $almacenParams[] = $almacen;
     }
 
-    if ($estado === 'Sin estado') {
-        // Conteo usando CAST sobre c.Fecha
-        $sqlCount = "
-            SELECT COUNT(c.FACTURA) AS Total
-            FROM custinvoicejour c
-            LEFT JOIN Factura_Programa_Despacho_MACOR d ON c.FACTURA = d.No_Factura
-            WHERE d.No_Factura IS NULL 
-              AND CAST(c.Fecha AS DATE) BETWEEN ? AND ?
-        ";
-        $countParams = [$fecha_inicio, $fecha_fin];
+    // --- 3. PROCESAMIENTO DE LA VISTA SOLICITADA ---
+    switch ($view) {
+        case 'almacenes':
+            $sqlAlmacenes = "
+                SELECT DISTINCT inventlocationid 
+                FROM Facturas_ALM 
+                WHERE inventlocationid IS NOT NULL AND inventlocationid <> ''
+                ORDER BY inventlocationid ASC
+            ";
+            $stmtAlmacenes = sqlsrv_query($conn, $sqlAlmacenes);
+            if ($stmtAlmacenes === false) {
+                throw new Exception('Error al obtener la lista de almacenes.');
+            }
+            while ($row = sqlsrv_fetch_array($stmtAlmacenes, SQLSRV_FETCH_ASSOC)) {
+                $response[] = $row;
+            }
+            break;
 
-        // Datos (mismas columnas fijas), usando CAST(c.Fecha AS DATE)
-        $sqlDetails = "
-            SELECT 
-                NULL AS ID,
-                c.FACTURA AS No_Factura,
-                c.Fecha AS Fecha_de_Registro,
-                NULL AS Registrado_por,
-                NULL AS Camion,
-                NULL AS Fecha_de_Despacho,
-                NULL AS Despachado_por,
-                NULL AS Fecha_de_Entregado,
-                NULL AS Entregado_por,
-                'Sin estado' AS Estado,
-                NULL AS Fecha_Reversada,
-                NULL AS Reversado_Por,
-                NULL AS Fecha_de_NC,
-                NULL AS NC_Realizado_Por,
-                NULL AS Motivo_NC,
-                NULL AS Camion2
-            FROM custinvoicejour c
-            LEFT JOIN Factura_Programa_Despacho_MACOR d ON c.FACTURA = d.No_Factura
-            WHERE d.No_Factura IS NULL 
-              AND CAST(c.Fecha AS DATE) BETWEEN ? AND ?
-            ORDER BY c.Fecha DESC
-            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-        ";
-        $detailsParams = [$fecha_inicio, $fecha_fin, $offset, $limit];
+        case 'trends':
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para consultar tendencias.', 400);
+            }
 
-    } else {
-        // Conteo usando CAST sobre Fecha_de_Registro
-        $sqlCount = "
-            SELECT COUNT(*) AS Total
-            FROM Factura_Programa_Despacho_MACOR
-            WHERE Estado = ? 
-              AND CAST(Fecha_de_Registro AS DATE) BETWEEN ? AND ?
-        ";
-        $countParams = [$estado, $fecha_inicio, $fecha_fin];
-
-        // Datos usando CAST sobre Fecha_de_Registro
-        $sqlDetails = "
-            SELECT 
-                ID,
-                No_Factura,
-                Fecha_de_Registro,
-                Registrado_por,
-                Camion,
-                Fecha_de_Despacho,
-                Despachado_por,
-                Fecha_de_Entregado,
-                Entregado_por,
-                Estado,
-                Fecha_Reversada,
-                Reversado_Por,
-                Fecha_de_NC,
-                NC_Realizado_Por,
-                Motivo_NC,
-                Camion2
-            FROM Factura_Programa_Despacho_MACOR
-            WHERE Estado = ? 
-              AND CAST(Fecha_de_Registro AS DATE) BETWEEN ? AND ?
-            ORDER BY Fecha_de_Registro DESC
-            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-        ";
-        $detailsParams = [$estado, $fecha_inicio, $fecha_fin, $offset, $limit];
-    }
-
-    // Ejecutar conteo
-    $stmtCount = sqlsrv_query($conn, $sqlCount, $countParams);
-    $totalRecords = 0;
-    if ($stmtCount && $row = sqlsrv_fetch_array($stmtCount, SQLSRV_FETCH_ASSOC)) {
-        $totalRecords = $row['Total'] ?? 0;
-    }
-
-    // Ejecutar consulta de detalles
-    $stmtDetails = sqlsrv_query($conn, $sqlDetails, $detailsParams);
-    if ($stmtDetails) {
-        while ($row = sqlsrv_fetch_array($stmtDetails, SQLSRV_FETCH_ASSOC)) {
-            $detailsData[] = array_merge([
-                "ID" => null,
-                "No_Factura" => null,
-                "Fecha_de_Registro" => null,
-                "Registrado_por" => null,
-                "Camion" => null,
-                "Fecha_de_Despacho" => null,
-                "Despachado_por" => null,
-                "Fecha_de_Entregado" => null,
-                "Entregado_por" => null,
-                "Estado" => null,
-                "Fecha_Reversada" => null,
-                "Reversado_Por" => null,
-                "Fecha_de_NC" => null,
-                "NC_Realizado_Por" => null,
-                "Motivo_NC" => null,
-                "Camion2" => null
-            ], $row);
-        }
-    }
-
-    $response = [
-        'data' => $detailsData,
-        'totalRecords' => $totalRecords,
-        'currentPage' => $page,
-        'limit' => $limit,
-        'totalPages' => ($limit>0) ? ceil($totalRecords / $limit) : 0
-    ];
-    break;
-
-case 'trends':
-    $response['tendenciaRegistros'] = [];
-
-    if (!empty($fecha_inicio) && !empty($fecha_fin)) {
-        $sqlTendencia = "
-            SELECT 
-                CAST(Fecha_de_Registro AS DATE) AS Dia,
-                DATENAME(weekday, Fecha_de_Registro) AS DiaSemana,
-                COUNT(No_Factura) AS Total
-            FROM Factura_Programa_Despacho_MACOR
-            WHERE Fecha_de_Registro IS NOT NULL
-              AND CAST(Fecha_de_Registro AS DATE) BETWEEN ? AND ?
-            GROUP BY CAST(Fecha_de_Registro AS DATE), DATENAME(weekday, Fecha_de_Registro)
-            ORDER BY Dia ASC
-        ";
-        $paramsTendencia = [$fecha_inicio, $fecha_fin];
-    } else {
-        $sqlTendencia = "
-            SELECT 
-                CAST(Fecha_de_Registro AS DATE) AS Dia,
-                DATENAME(weekday, Fecha_de_Registro) AS DiaSemana,
-                COUNT(No_Factura) AS Total
-            FROM Factura_Programa_Despacho_MACOR
-            WHERE Fecha_de_Registro IS NOT NULL
-            GROUP BY CAST(Fecha_de_Registro AS DATE), DATENAME(weekday, Fecha_de_Registro)
-            ORDER BY Dia ASC
-        ";
-        $paramsTendencia = [];
-    }
-
-    $stmtTendencia = sqlsrv_query($conn, $sqlTendencia, $paramsTendencia);
-    if ($stmtTendencia) {
-        while ($row = sqlsrv_fetch_array($stmtTendencia, SQLSRV_FETCH_ASSOC)) {
-            $response['tendenciaRegistros'][] = [
-                'Dia' => $row['Dia']->format('Y-m-d'),      // Fecha exacta
-                'DiaSemana' => $row['DiaSemana'],           // Nombre del día de la semana
-                'Total' => $row['Total']
-            ];
-        }
-    }
-    break;
-
+            $response['tendenciaRegistros'] = [];
+            $sqlTrends = "
+                SELECT 
+                    CAST(f.invoicedate AS DATE) as Dia, 
+                    COUNT(f.invoiceid) as Total
+                FROM Facturas_ALM f
+                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                $almacenSqlAnd
+                GROUP BY CAST(f.invoicedate AS DATE)
+                ORDER BY Dia ASC
+            ";
             
-    case 'overview':
-default:
-    $params = [];
-    $whereClause = "";
- if (!empty($fecha_inicio) && !empty($fecha_fin)) {
-    $whereClause = " WHERE CAST(c.Fecha AS DATE) BETWEEN ? AND ?";
-    $params = [$fecha_inicio, $fecha_fin];
-}
+            $trendsParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtTrends = sqlsrv_query($conn, $sqlTrends, $trendsParams);
+            
+            if ($stmtTrends === false) {
+                throw new Exception('Error al consultar tendencias.');
+            }
+            while($row = sqlsrv_fetch_array($stmtTrends, SQLSRV_FETCH_ASSOC)) {
+                if ($row['Dia'] instanceof DateTime) {
+                    $row['Dia'] = $row['Dia']->format('Y-m-d');
+                }
+                $response['tendenciaRegistros'][] = $row;
+            }
+            break;
 
+        // ✅ SECCIÓN 'DETAILS' COMPLETAMENTE CORREGIDA Y MEJORADA
+        case 'details':
+            $estado = isset($_GET['estado']) ? trim(urldecode($_GET['estado'])) : '';
+            if (empty($estado) || empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros (estado, fecha_inicio, fecha_fin) para obtener los detalles.', 400);
+            }
+            
+            $page = intval($_GET['page'] ?? 1);
+            $limit = intval($_GET['limit'] ?? 50);
+            $offset = ($page - 1) * $limit;
 
-    // 1. Total de facturas emitidas (todas en custinvoicejour)
-    $sqlTotal = "SELECT COUNT(*) AS TotalEmitidas FROM custinvoicejour c" . $whereClause;
-    $stmtTotal = sqlsrv_query($conn, $sqlTotal, $params);
-    $rowTotal = sqlsrv_fetch_array($stmtTotal, SQLSRV_FETCH_ASSOC);
-    $response['totalEmitidas'] = $rowTotal['TotalEmitidas'] ?? 0;
+            if ($estado === 'Sin estado') {
+                // --- CONSULTA PARA FACTURAS SIN ESTADO ---
+                $sqlCount = "
+                    SELECT COUNT(f.invoiceid) AS Total
+                    FROM Facturas_ALM f
+                    LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                    WHERE m.No_Factura IS NULL 
+                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                    $almacenSqlAnd
+                ";
+                $countParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
 
-   // 2. Facturas agrupadas por estado (solo en la tabla MACOR)
-$sqlEstados = "
-    SELECT Estado, COUNT(*) AS Total
-    FROM Factura_Programa_Despacho_MACOR
-    WHERE CAST(Fecha_de_Registro AS DATE) BETWEEN ? AND ?
-    GROUP BY Estado
-    ORDER BY Total DESC
-";
-$stmtEstados = sqlsrv_query($conn, $sqlEstados, $params);
-$response['estadosData'] = [];
-if ($stmtEstados) {
-    while ($row = sqlsrv_fetch_array($stmtEstados, SQLSRV_FETCH_ASSOC)) {
-        $response['estadosData'][] = $row;
-    }
-}
+                $sqlDetails = "
+                    SELECT 
+                        f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, NULL AS Registrado_por, 
+                        NULL AS Camion, NULL AS Fecha_de_Despacho, NULL AS Despachado_por, NULL AS Fecha_de_Entregado,
+                        NULL AS Entregado_por, 'Sin estado' AS Estado, NULL AS Fecha_Reversada, NULL AS Reversado_Por,
+                        NULL AS Fecha_de_NC, NULL AS NC_Realizado_Por, NULL AS Motivo_NC, NULL AS Camion2
+                    FROM Facturas_ALM f
+                    LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                    WHERE m.No_Factura IS NULL 
+                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                    $almacenSqlAnd
+                    ORDER BY f.invoicedate DESC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                ";
+                $detailsParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams, [$offset, $limit]);
+            } else {
+                // --- CONSULTA PARA FACTURAS CON ESTADO ---
+                $sqlCount = "
+                    SELECT COUNT(m.No_Factura) AS Total
+                    FROM Factura_Programa_Despacho_MACOR m
+                    INNER JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
+                    WHERE m.Estado = ? AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                    $almacenSqlAnd
+                ";
+                $countParams = array_merge([$estado, $fecha_inicio, $fecha_fin], $almacenParams);
 
+                $sqlDetails = "
+                    SELECT 
+                        m.ID, m.No_Factura, m.Fecha_de_Registro, m.Registrado_por, m.Camion, 
+                        m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, m.Entregado_por, 
+                        m.Estado, m.Fecha_Reversada, m.Reversado_Por, m.Fecha_de_NC, 
+                        m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
+                    FROM Factura_Programa_Despacho_MACOR m
+                    INNER JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
+                    WHERE m.Estado = ? AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                    $almacenSqlAnd
+                    ORDER BY m.Fecha_de_Registro DESC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                ";
+                $detailsParams = array_merge([$estado, $fecha_inicio, $fecha_fin], $almacenParams, [$offset, $limit]);
+            }
 
-    // 3. Facturas emitidas SIN estado (facturas en custinvoicejour que no están en MACOR)
-    $whereClauseSinEstado = empty($whereClause) ? '' : ' AND' . substr($whereClause, 6);
-    $sqlSinEstado = "
-        SELECT COUNT(*) AS SinEstado
-        FROM custinvoicejour c
-        LEFT JOIN Factura_Programa_Despacho_MACOR d ON c.FACTURA = d.No_Factura
-        WHERE d.No_Factura IS NULL " . $whereClauseSinEstado;
-    $stmtSinEstado = sqlsrv_query($conn, $sqlSinEstado, $params);
-    $rowSinEstado = sqlsrv_fetch_array($stmtSinEstado, SQLSRV_FETCH_ASSOC);
-    $response['sinEstado'] = $rowSinEstado['SinEstado'] ?? 0;
+            // --- Ejecución de consultas ---
+            $stmtCount = sqlsrv_query($conn, $sqlCount, $countParams);
+            if ($stmtCount === false) {
+                throw new Exception('Error en la consulta de conteo de detalles.');
+            }
+            $totalRecords = sqlsrv_fetch_array($stmtCount, SQLSRV_FETCH_ASSOC)['Total'] ?? 0;
+            
+            $detailsData = [];
+            if ($totalRecords > 0) {
+                $stmtDetails = sqlsrv_query($conn, $sqlDetails, $detailsParams);
+                if ($stmtDetails === false) {
+                    throw new Exception('Error en la consulta de obtención de detalles.');
+                }
+                while ($row = sqlsrv_fetch_array($stmtDetails, SQLSRV_FETCH_ASSOC)) {
+                    foreach ($row as $k => $v) {
+                        if ($v instanceof DateTime) $row[$k] = $v->format('Y-m-d H:i:s');
+                    }
+                    $detailsData[] = $row;
+                }
+            }
+            
+            $response = [
+                'data' => $detailsData,
+                'totalRecords' => (int)$totalRecords,
+                'currentPage' => $page,
+                'limit' => $limit,
+                'totalPages' => ($limit > 0) ? ceil($totalRecords / $limit) : 0
+            ];
+            break;
 
-    // 🔹 No lo mezclamos con estadosData para no afectar los demás conteos
-    break;
+        case 'overview':
+        default:
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para consultar el resumen.', 400);
+            }
 
+            $sqlOverview = "
+                SELECT 
+                    ISNULL(m.Estado, 'Sin estado') AS Estado,
+                    COUNT(f.invoiceid) AS Total
+                FROM Facturas_ALM f
+                LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                $almacenSqlAnd
+                GROUP BY ISNULL(m.Estado, 'Sin estado')
+            ";
+            
+            $overviewParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtOverview = sqlsrv_query($conn, $sqlOverview, $overviewParams);
+
+            if ($stmtOverview === false) {
+                throw new Exception('Error al consultar el resumen de estados.');
+            }
+
+            $response['totalEmitidas'] = 0;
+            $response['sinEstado'] = 0;
+            $response['estadosData'] = [];
+            
+            while ($row = sqlsrv_fetch_array($stmtOverview, SQLSRV_FETCH_ASSOC)) {
+                $total = (int)$row['Total'];
+                $response['totalEmitidas'] += $total;
+                if ($row['Estado'] === 'Sin estado') {
+                    $response['sinEstado'] = $total;
+                } else {
+                    $response['estadosData'][] = ['Estado' => $row['Estado'], 'Total' => $total];
+                }
+            }
+            break;
     }
 } catch (Exception $e) {
-    http_response_code(500);
+    // --- 4. MANEJO CENTRALIZADO DE ERRORES ---
+    // Si el código de la excepción es un código HTTP válido (como 400), úsalo. Si no, usa 500.
+    $http_code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+    
+    // Prepara la respuesta de error
     $response = ['error' => $e->getMessage()];
+
+    // ✅ AÑADE LOS DETALLES DE SQL SERVER AL ERROR SI EXISTEN
+    // Esto es crucial para la depuración
+    $sqlsrv_errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
+    if ($sqlsrv_errors !== null) {
+        $response['sqlsrv_details'] = $sqlsrv_errors;
+        // Opcional: Registrar en el log del servidor para no exponerlo en producción
+        error_log(print_r($sqlsrv_errors, true));
+    }
+
 } finally {
-    if (isset($conn)) sqlsrv_close($conn);
+    // Cierra la conexión si existe
+    if (isset($conn) && $conn !== false) {
+        sqlsrv_close($conn);
+    }
 }
 
-    echo json_encode($response);
+// --- 5. SALIDA FINAL ---
+http_response_code($http_code);
+echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+?>
