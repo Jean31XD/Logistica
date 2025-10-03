@@ -1,9 +1,4 @@
 <?php
-// Configuración para evitar que los errores de PHP corrompan la salida JSON
-// Es mejor manejar los errores explícitamente que suprimirlos globalmente.
-// error_reporting(0);
-// ini_set('display_errors', 'Off');
-
 // Requerir la conexión a la base de datos
 require '../conexionBD/conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
@@ -86,7 +81,6 @@ try {
             }
             break;
 
-        // ✅ SECCIÓN 'DETAILS' COMPLETAMENTE CORREGIDA Y MEJORADA
         case 'details':
             $estado = isset($_GET['estado']) ? trim(urldecode($_GET['estado'])) : '';
             if (empty($estado) || empty($fecha_inicio) || empty($fecha_fin)) {
@@ -97,61 +91,58 @@ try {
             $limit = intval($_GET['limit'] ?? 50);
             $offset = ($page - 1) * $limit;
 
-            if ($estado === 'Sin estado') {
-                // --- CONSULTA PARA FACTURAS SIN ESTADO ---
-                $sqlCount = "
-                    SELECT COUNT(f.invoiceid) AS Total
-                    FROM Facturas_ALM f
-                    LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
-                    WHERE m.No_Factura IS NULL 
-                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
-                    $almacenSqlAnd
-                ";
-                $countParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $whereSql = "";
+            $countParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $detailsParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $orderBy = "f.invoicedate DESC"; // Orden por defecto
 
-                $sqlDetails = "
-                    SELECT 
-                        f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, NULL AS Registrado_por, 
-                        NULL AS Camion, NULL AS Fecha_de_Despacho, NULL AS Despachado_por, NULL AS Fecha_de_Entregado,
-                        NULL AS Entregado_por, 'Sin estado' AS Estado, NULL AS Fecha_Reversada, NULL AS Reversado_Por,
-                        NULL AS Fecha_de_NC, NULL AS NC_Realizado_Por, NULL AS Motivo_NC, NULL AS Camion2
-                    FROM Facturas_ALM f
-                    LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+            if ($estado === 'ALL') {
+                // --- CONSULTA PARA TODAS LAS FACTURAS EMITIDAS (KPI: Total Emitidas) ---
+                $whereSql = " WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ? $almacenSqlAnd ";
+                // Los parámetros ya están listos en $countParams y $detailsParams
+            } elseif ($estado === 'Sin estado') {
+                // --- CONSULTA PARA FACTURAS SIN ESTADO (KPI: Sin Estado Asignado) ---
+                $whereSql = " 
                     WHERE m.No_Factura IS NULL 
-                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ? 
                     $almacenSqlAnd
-                    ORDER BY f.invoicedate DESC
-                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
                 ";
-                $detailsParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams, [$offset, $limit]);
+                // Los parámetros ya están listos
             } else {
-                // --- CONSULTA PARA FACTURAS CON ESTADO ---
-                $sqlCount = "
-                    SELECT COUNT(m.No_Factura) AS Total
-                    FROM Factura_Programa_Despacho_MACOR m
-                    INNER JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
-                    WHERE m.Estado = ? AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                // --- CONSULTA PARA FACTURAS CON UN ESTADO ESPECÍFICO (Tabla/Gráfico) ---
+                $whereSql = " 
+                    WHERE m.Estado = ? 
+                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ? 
                     $almacenSqlAnd
                 ";
-                $countParams = array_merge([$estado, $fecha_inicio, $fecha_fin], $almacenParams);
-
-                $sqlDetails = "
-                    SELECT 
-                        m.ID, m.No_Factura, m.Fecha_de_Registro, m.Registrado_por, m.Camion, 
-                        m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, m.Entregado_por, 
-                        m.Estado, m.Fecha_Reversada, m.Reversado_Por, m.Fecha_de_NC, 
-                        m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
-                    FROM Factura_Programa_Despacho_MACOR m
-                    INNER JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
-                    WHERE m.Estado = ? AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
-                    $almacenSqlAnd
-                    ORDER BY m.Fecha_de_Registro DESC
-                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-                ";
-                $detailsParams = array_merge([$estado, $fecha_inicio, $fecha_fin], $almacenParams, [$offset, $limit]);
+                array_unshift($countParams, $estado); // Añadir el estado al principio
+                array_unshift($detailsParams, $estado);
+                $orderBy = "m.Fecha_de_Registro DESC";
             }
 
-            // --- Ejecución de consultas ---
+            // --- 1. Consulta de Conteo (Total de registros) ---
+            $sqlCount = "
+                SELECT COUNT(f.invoiceid) AS Total
+                FROM Facturas_ALM f
+                LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                $whereSql
+            ";
+
+            // --- 2. Consulta de Detalle (Paginación) ---
+            $sqlDetails = "
+                SELECT 
+                    f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, m.Registrado_por, m.Camion, 
+                    m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, m.Entregado_por, 
+                    ISNULL(m.Estado, 'Sin estado') AS Estado, m.Fecha_Reversada, m.Reversado_Por, m.Fecha_de_NC, 
+                    m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
+                FROM Facturas_ALM f
+                LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                $whereSql
+                ORDER BY $orderBy
+                OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+            ";
+
+            // --- 3. Ejecución y Resultados ---
             $stmtCount = sqlsrv_query($conn, $sqlCount, $countParams);
             if ($stmtCount === false) {
                 throw new Exception('Error en la consulta de conteo de detalles.');
@@ -160,6 +151,7 @@ try {
             
             $detailsData = [];
             if ($totalRecords > 0) {
+                $detailsParams = array_merge($detailsParams, [$offset, $limit]);
                 $stmtDetails = sqlsrv_query($conn, $sqlDetails, $detailsParams);
                 if ($stmtDetails === false) {
                     throw new Exception('Error en la consulta de obtención de detalles.');
@@ -222,18 +214,14 @@ try {
     }
 } catch (Exception $e) {
     // --- 4. MANEJO CENTRALIZADO DE ERRORES ---
-    // Si el código de la excepción es un código HTTP válido (como 400), úsalo. Si no, usa 500.
     $http_code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
     
     // Prepara la respuesta de error
     $response = ['error' => $e->getMessage()];
 
-    // ✅ AÑADE LOS DETALLES DE SQL SERVER AL ERROR SI EXISTEN
-    // Esto es crucial para la depuración
     $sqlsrv_errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
     if ($sqlsrv_errors !== null) {
         $response['sqlsrv_details'] = $sqlsrv_errors;
-        // Opcional: Registrar en el log del servidor para no exponerlo en producción
         error_log(print_r($sqlsrv_errors, true));
     }
 
@@ -247,5 +235,4 @@ try {
 // --- 5. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-
 ?>

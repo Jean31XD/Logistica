@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Estilos CSS (sin cambios) */
         :root {
             --sidebar-bg: #1a202c; --main-bg: #f7fafc; --card-bg: #ffffff;
             --text-primary: #2d3748; --text-secondary: #718096; --accent-color: #e53e3e;
@@ -30,17 +29,18 @@
         .filter-group { position: relative; background-color: #2d3748; border-radius: 8px; border: 2px solid #4a5568; transition: border-color 0.2s; }
         .filter-group:focus-within { border-color: var(--accent-color); }
         .filter-group label { position: absolute; top: 8px; left: 12px; font-size: 0.75rem; color: #a0aec0; }
-.filter-group input, .filter-group select {
-    width: 100%;
-    padding: 1.75rem 0.75rem 0.75rem 0.75rem;
-    border: none;
-    background: transparent;
-    color: #fff;
-    font-family: inherit;
-    font-size: 1rem;
-    appearance: none;
-    font-weight: 700; /* <-- AÑADE ESTA LÍNEA */
-}        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 1.75rem 0.75rem 0.75rem 0.75rem;
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            appearance: none;
+            font-weight: 700;
+        }        
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .filter-group select { background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; cursor: pointer; background-color: #1a202c;}
         .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
@@ -53,7 +53,9 @@
         .card { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: var(--shadow); }
         .card h2 { margin-top: 0; }
         .chart-container { position: relative; height: 400px; width: 100%; }
-        .kpi-card { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 5px solid var(--accent-color); }
+        /* AÑADIR CURSOR POINTER A KPI-CARD */
+        .kpi-card { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 5px solid var(--accent-color); cursor: pointer; transition: transform 0.2s; }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px -3px rgba(0,0,0,0.15), 0 4px 8px -2px rgba(0,0,0,0.08); }
         .kpi-card h2 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--text-secondary); font-weight: 500;}
         .kpi-card p { margin: 0; font-size: 2.5rem; font-weight: 800; }
         .status-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem; }
@@ -106,11 +108,11 @@
 
             <div id="view-overview" class="view-container active">
                 <div class="grid-layout">
-                    <div class="kpi-card">
+                    <div class="kpi-card" id="kpi-total-emitidas">
                         <h2>Total Emitidas</h2>
                         <p id="total-emitidas">--</p>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card" id="kpi-sin-estado">
                         <h2>Sin Estado Asignado</h2>
                         <p id="sin-estado">--</p>
                     </div>
@@ -140,17 +142,19 @@
                         <button id="back-to-overview" style="background-color: #2d3748; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: 700;">&larr; Volver al Resumen</button>
                     </header>
                     <p id="details-period" style="margin-top:0; color: var(--text-secondary);">Mostrando resultados para el período seleccionado.</p>
-                    <table class="status-table">
-                        <thead>
-                            <tr>
-                                <th>No. Factura</th><th>Fecha Registro</th><th>Registrado Por</th><th>Camión</th>
-                                <th>Fecha Despacho</th><th>Despachado Por</th><th>Fecha Entregado</th><th>Entregado Por</th>
-                                <th>Estado</th><th>Fecha Reversada</th><th>Reversado Por</th><th>Fecha NC</th>
-                                <th>NC Realizado Por</th><th>Motivo NC</th><th>Camión 2</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detailsTableBody"></tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table class="status-table">
+                            <thead>
+                                <tr>
+                                    <th>No. Factura</th><th>Fecha Registro</th><th>Registrado Por</th><th>Camión</th>
+                                    <th>Fecha Despacho</th><th>Despachado Por</th><th>Fecha Entregado</th><th>Entregado Por</th>
+                                    <th>Estado</th><th>Fecha Reversada</th><th>Reversado Por</th><th>Fecha NC</th>
+                                    <th>NC Realizado Por</th><th>Motivo NC</th><th>Camión 2</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailsTableBody"></tbody>
+                        </table>
+                    </div>
 
                     <div id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
                         <select id="details-limit" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -211,7 +215,6 @@
         const fetchData = async (inicio, fin, almacen, view) => {
             loaderEl.classList.add('loading');
             try {
-                // CORRECCIÓN: Asegurar que el parámetro 'almacen' se usa en la URL
                 const url = `../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
@@ -241,7 +244,11 @@
                 statusTableBody.innerHTML = '';
                 let totalFacturas = 0;
                 
-                data.estadosData.forEach(item => {
+                // Mapear los datos de la tabla (incluye 'Sin estado' para la suma total)
+                const allStatusData = data.estadosData.slice();
+                allStatusData.push({ Estado: 'Sin estado', Total: data.sinEstado });
+                
+                allStatusData.forEach(item => {
                     const row = statusTableBody.insertRow();
                     row.style.cursor = 'pointer';
                     row.title = `Haz clic para ver los detalles de "${item.Estado}"`;
@@ -251,13 +258,12 @@
                     row.insertCell().textContent = formatter.format(item.Total);
                     totalFacturas += item.Total;
                 });
-                document.getElementById('statusTableTotal').textContent = formatter.format(totalFacturas);
+                document.getElementById('statusTableTotal').textContent = formatter.format(data.totalEmitidas);
             
             } else if (view === 'trends' && data.tendenciaRegistros) {
                 const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
                 trendsChart.data.labels = data.tendenciaRegistros.map(d => {
-                    // Se agrega 'T00:00:00' para asegurar que el navegador interprete la fecha en la zona horaria local y no en UTC
                     const fecha = new Date(d.Dia + 'T00:00:00'); 
                     const nombreDia = diasSemana[fecha.getDay()];
                     return `${nombreDia} (${d.Dia})`;
@@ -271,7 +277,6 @@
         const formatDate = (dateStr) => {
             if (!dateStr) return 'N/A';
             try {
-                // CORRECCIÓN: Intentar usar el constructor Date directamente para manejar mejor los formatos de fecha y hora de SQL Server
                 const date = new Date(dateStr);
                 if (isNaN(date.getTime())) return 'N/A';
                 return date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -322,7 +327,6 @@
             detailsTableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;">Cargando...</td></tr>';
             
             try {
-                // CORRECCIÓN: Asegurar que el parámetro 'almacen' se usa en la URL
                 const url = `../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
@@ -354,26 +358,29 @@
             currentView = 'details';
             const inicio = fechaInicioInput.value;
             const fin = fechaFinInput.value;
-            const almacen = almacenFilterInput.value; // <-- CORRECCIÓN: Leer el valor del almacén
+            const almacen = almacenFilterInput.value; 
             
-            document.getElementById('details-title').textContent = `Detalle de Facturas: ${estado}`;
+            // Definir el título de la vista de detalles
+            const displayTitle = (estado === 'ALL') ? 'TOTAL DE FACTURAS EMITIDAS' : `Detalle de Facturas: ${estado}`;
+            document.getElementById('details-title').textContent = displayTitle;
+
             document.getElementById('details-period').innerHTML = `Mostrando resultados del <strong>${inicio}</strong> al <strong>${fin}</strong>.`;
             
             detailsCurrentPage = 1; 
-            fetchDetails(estado, inicio, fin, almacen, detailsCurrentPage, detailsLimit); // <-- CORRECCIÓN: Pasar la variable 'almacen'
+            fetchDetails(estado, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
         };
         
         const applyFiltersAndFetchData = () => {
             const inicio = fechaInicioInput.value;
             const fin = fechaFinInput.value;
-            const almacen = almacenFilterInput.value; // <-- CORRECCIÓN: Obtener el valor de 'almacen'
+            const almacen = almacenFilterInput.value;
             
             if (inicio && fin) {
                 if (currentView === 'details' && detailsCurrentState) {
                     detailsCurrentPage = 1;
-                    fetchDetails(detailsCurrentState, inicio, fin, almacen, detailsCurrentPage, detailsLimit); // <-- CORRECCIÓN: Pasar la variable 'almacen'
+                    fetchDetails(detailsCurrentState, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
                 } else if (currentView !== 'details') {
-                    fetchData(inicio, fin, almacen, currentView); // <-- CORRECCIÓN: Pasar la variable 'almacen'
+                    fetchData(inicio, fin, almacen, currentView);
                 }
             }
         };
@@ -389,7 +396,19 @@
         
         fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
         fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
-        almacenFilterInput.addEventListener('change', applyFiltersAndFetchData); // <-- Evento de cambio para el filtro de almacén
+        almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
+
+        // --- MANEJO DE CLIC EN KPI CARDS ---
+        const setupKpiClickEvents = () => {
+            const kpiTotal = document.getElementById('kpi-total-emitidas');
+            const kpiSinEstado = document.getElementById('kpi-sin-estado');
+
+            // Total Emitidas: Usar la clave especial 'ALL'
+            kpiTotal.onclick = () => showDetailsView('ALL');
+
+            // Sin Estado Asignado: Usar la clave 'Sin estado'
+            kpiSinEstado.onclick = () => showDetailsView('Sin estado');
+        };
 
         document.querySelectorAll('.sidebar-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
@@ -416,7 +435,6 @@
         });
 
         const fetchDetailsForCurrentPage = (newPage) => {
-            // CORRECCIÓN: Asegurar que el filtro de almacén se pasa aquí también
             fetchDetails(detailsCurrentState, fechaInicioInput.value, fechaFinInput.value, almacenFilterInput.value, newPage, detailsLimit);
         };
 
@@ -433,7 +451,7 @@
         });
 
         populateAlmacenFilter().then(() => {
-            // Iniciar la carga de datos con los filtros predeterminados
+            setupKpiClickEvents(); 
             applyFiltersAndFetchData();
         });
     });
