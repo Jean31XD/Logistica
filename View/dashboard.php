@@ -53,7 +53,6 @@
         .card { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: var(--shadow); }
         .card h2 { margin-top: 0; }
         .chart-container { position: relative; height: 400px; width: 100%; }
-        /* AÑADIR CURSOR POINTER A KPI-CARD */
         .kpi-card { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 5px solid var(--accent-color); cursor: pointer; transition: transform 0.2s; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px -3px rgba(0,0,0,0.15), 0 4px 8px -2px rgba(0,0,0,0.08); }
         .kpi-card h2 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--text-secondary); font-weight: 500;}
@@ -77,6 +76,7 @@
                 <ul class="sidebar-nav">
                     <li class="nav-item"><a href="#" class="active" data-view="overview">Resumen General</a></li>
                     <li class="nav-item"><a href="#" data-view="trends">Tendencias Diarias</a></li>
+                    <li class="nav-item"><a href="#" data-view="performance">Rendimiento y Calidad</a></li>
                 </ul>
             </div>
             <div class="sidebar-section">
@@ -155,7 +155,6 @@
                             <tbody id="detailsTableBody"></tbody>
                         </table>
                     </div>
-
                     <div id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
                         <select id="details-limit" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
                             <option value="10">10 por página</option><option value="25">25 por página</option>
@@ -169,47 +168,83 @@
                     </div>
                 </div>
             </div>
+            
+            <div id="view-performance" class="view-container">
+                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
+                    <div class="kpi-card" style="border-left-color: #3182ce; cursor: default;">
+                        <h2>Registro &rarr; Despacho</h2>
+                        <p id="perf-kpi-time-to-dispatch">-- horas</p>
+                    </div>
+                    <div class="kpi-card" style="border-left-color: #38a169; cursor: default;">
+                        <h2>Despacho &rarr; Entrega</h2>
+                        <p id="perf-kpi-dispatch-to-deliver">-- horas</p>
+                    </div>
+                    <div class="kpi-card" style="border-left-color: #dd6b20; cursor: default;">
+                        <h2>Ciclo Total (Registro &rarr; Entrega)</h2>
+                        <p id="perf-kpi-total-cycle">-- horas</p>
+                    </div>
+                </div>
+                <div class="grid-layout">
+                    <div class="card">
+                        <h2>Motivos de Notas de Crédito</h2>
+                        <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">¿Por qué se anulan las facturas?</p>
+                        <div class="chart-container" style="height: 350px;"><canvas id="ncReasonsChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h2>Top 5 Camiones por Entregas</h2>
+                        <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Rendimiento de la flota en el período.</p>
+                        <div class="chart-container" style="height: 350px;"><canvas id="truckPerformanceChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- VARIABLES GLOBALES ---
-        let statusChart, trendsChart;
+        let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart;
         let currentView = 'overview';
         const fechaInicioInput = document.getElementById('fecha_inicio');
         const fechaFinInput = document.getElementById('fecha_fin');
         const almacenFilterInput = document.getElementById('filtro_almacen');
         const loaderEl = document.getElementById('loader');
         const mainTitle = document.getElementById('main-title');
-
         let detailsCurrentState = ''; 
         let detailsCurrentPage = 1;
         let detailsLimit = parseInt(document.getElementById('details-limit').value);
         let detailsTotalPages = 1;
         
-        // --- FUNCIONES DE GRÁFICOS ---
         const initializeCharts = () => {
             const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
             statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] }, options: chartOptions });
             trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: 'rgba(229, 62, 62, 1)', tension: 0.1, fill: false }] }, options: chartOptions });
+            
+            const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
+            ncReasonsChart = new Chart(document.getElementById('ncReasonsChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5'] }] },
+                options: doughnutOptions
+            });
+            
+            const barOptions = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } };
+            truckPerformanceChart = new Chart(document.getElementById('truckPerformanceChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Total Entregas', data: [], backgroundColor: 'rgba(54, 162, 235, 0.7)' }] },
+                options: barOptions
+            });
         };
         
-        // --- FUNCIONES DE DATOS Y UI ---
         const populateAlmacenFilter = async () => {
             try {
                 const response = await fetch('../Logica/api_get_data.php?view=almacenes');
                 if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
                 const almacenes = await response.json();
-                
                 almacenes.forEach(almacen => {
                     const option = document.createElement('option');
                     option.value = almacen.inventlocationid;
                     option.textContent = almacen.inventlocationid;
                     almacenFilterInput.appendChild(option);
                 });
-            } catch (error) {
-                console.error("Error cargando almacenes:", error);
-            }
+            } catch (error) { console.error("Error cargando almacenes:", error); }
         };
 
         const fetchData = async (inicio, fin, almacen, view) => {
@@ -221,12 +256,51 @@
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
-                if (view !== 'details') updateDashboard(data, view);
+                if (view === 'performance') {
+                    updatePerformanceView(data);
+                } else if (view !== 'details') {
+                    updateDashboard(data, view);
+                }
             } catch (error) {
                 console.error(`Error al cargar datos para la vista ${view}:`, error);
                 if (view !== 'details') alert('Error al cargar datos del dashboard: ' + error.message);
             } finally {
                 loaderEl.classList.remove('loading');
+            }
+        };
+        
+        const updatePerformanceView = (data) => {
+            const formatter = new Intl.NumberFormat('es-DO', { maximumFractionDigits: 1 });
+            document.getElementById('perf-kpi-time-to-dispatch').textContent = `${formatter.format(data.kpis.AvgTimeToDispatch || 0)} horas`;
+            document.getElementById('perf-kpi-dispatch-to-deliver').textContent = `${formatter.format(data.kpis.AvgDispatchToDeliver || 0)} horas`;
+            document.getElementById('perf-kpi-total-cycle').textContent = `${formatter.format(data.kpis.AvgTotalCycle || 0)} horas`;
+
+            if (ncReasonsChart) {
+                ncReasonsChart.data.labels = data.ncReasons.map(d => d.Motivo);
+                ncReasonsChart.data.datasets[0].data = data.ncReasons.map(d => d.Total);
+                ncReasonsChart.update();
+            }
+
+            if (truckPerformanceChart) {
+                truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.Camion);
+                truckPerformanceChart.data.datasets[0].data = data.truckPerformance.map(d => d.TotalEntregas);
+                truckPerformanceChart.options.plugins.tooltip = {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.x !== null) {
+                                label += context.parsed.x;
+                                const truckData = data.truckPerformance[context.dataIndex];
+                                if (truckData) {
+                                    label += ` (Avg: ${formatter.format(truckData.AvgDeliveryTime)} hrs)`;
+                                }
+                            }
+                            return label;
+                        }
+                    }
+                };
+                truckPerformanceChart.update();
             }
         };
 
@@ -242,33 +316,26 @@
 
                 const statusTableBody = document.getElementById('statusTableBody');
                 statusTableBody.innerHTML = '';
-                let totalFacturas = 0;
-                
-                // Mapear los datos de la tabla (incluye 'Sin estado' para la suma total)
-                const allStatusData = data.estadosData.slice();
-                allStatusData.push({ Estado: 'Sin estado', Total: data.sinEstado });
+                const allStatusData = [...data.estadosData, { Estado: 'Sin estado', Total: data.sinEstado }];
                 
                 allStatusData.forEach(item => {
-                    const row = statusTableBody.insertRow();
-                    row.style.cursor = 'pointer';
-                    row.title = `Haz clic para ver los detalles de "${item.Estado}"`;
-                    row.onclick = () => showDetailsView(item.Estado);
-                    
-                    row.insertCell().textContent = item.Estado;
-                    row.insertCell().textContent = formatter.format(item.Total);
-                    totalFacturas += item.Total;
+                    if (item.Total > 0) {
+                        const row = statusTableBody.insertRow();
+                        row.style.cursor = 'pointer';
+                        row.title = `Haz clic para ver los detalles de "${item.Estado}"`;
+                        row.onclick = () => showDetailsView(item.Estado);
+                        row.insertCell().textContent = item.Estado;
+                        row.insertCell().textContent = formatter.format(item.Total);
+                    }
                 });
                 document.getElementById('statusTableTotal').textContent = formatter.format(data.totalEmitidas);
             
             } else if (view === 'trends' && data.tendenciaRegistros) {
-                const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-
+                const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
                 trendsChart.data.labels = data.tendenciaRegistros.map(d => {
                     const fecha = new Date(d.Dia + 'T00:00:00'); 
-                    const nombreDia = diasSemana[fecha.getDay()];
-                    return `${nombreDia} (${d.Dia})`;
+                    return `${diasSemana[fecha.getDay()]} (${d.Dia.substring(5)})`;
                 });
-
                 trendsChart.data.datasets[0].data = data.tendenciaRegistros.map(d => d.Total);
                 trendsChart.update();
             }
@@ -278,22 +345,14 @@
             if (!dateStr) return 'N/A';
             try {
                 const date = new Date(dateStr);
-                if (isNaN(date.getTime())) return 'N/A';
-                return date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-            } catch (e) {
-                return 'N/A';
-            }
+                return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return 'N/A'; }
         };
         
         const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
-            tableBody.innerHTML = '';
-
-            if (!facturas || facturas.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;">No se encontraron facturas con estos criterios.</td></tr>';
-                return;
-            }
-
+            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="15" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
+            if(!facturas || facturas.length === 0) return;
             facturas.forEach(f => {
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = f.No_Factura || 'N/A';
@@ -325,24 +384,19 @@
             loaderEl.classList.add('loading');
             const detailsTableBody = document.getElementById('detailsTableBody');
             detailsTableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;">Cargando...</td></tr>';
-            
             try {
                 const url = `../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-                
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
-
                 detailsCurrentPage = result.currentPage;
                 detailsLimit = result.limit;
                 detailsTotalPages = result.totalPages;
-                
                 populateDetailsTable(result.data);
                 updatePaginationControls(result);
-                
             } catch (error) {
-                console.error("Error al cargar los detalles:", error);
+                console.error("Error al cargar detalles:", error);
                 detailsTableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; color: red;">Error: ${error.message}</td></tr>`;
                 updatePaginationControls({ currentPage: 1, totalPages: 1, totalRecords: 0 });
             } finally {
@@ -354,18 +408,13 @@
             document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
             document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
             document.getElementById('view-details').classList.add('active');
-            
             currentView = 'details';
             const inicio = fechaInicioInput.value;
             const fin = fechaFinInput.value;
             const almacen = almacenFilterInput.value; 
-            
-            // Definir el título de la vista de detalles
             const displayTitle = (estado === 'ALL') ? 'TOTAL DE FACTURAS EMITIDAS' : `Detalle de Facturas: ${estado}`;
             document.getElementById('details-title').textContent = displayTitle;
-
             document.getElementById('details-period').innerHTML = `Mostrando resultados del <strong>${inicio}</strong> al <strong>${fin}</strong>.`;
-            
             detailsCurrentPage = 1; 
             fetchDetails(estado, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
         };
@@ -374,7 +423,6 @@
             const inicio = fechaInicioInput.value;
             const fin = fechaFinInput.value;
             const almacen = almacenFilterInput.value;
-            
             if (inicio && fin) {
                 if (currentView === 'details' && detailsCurrentState) {
                     detailsCurrentPage = 1;
@@ -385,30 +433,25 @@
             }
         };
 
-        // --- INICIALIZACIÓN Y EVENTOS ---
+        const setupKpiClickEvents = () => {
+            document.getElementById('kpi-total-emitidas').onclick = () => showDetailsView('ALL');
+            document.getElementById('kpi-sin-estado').onclick = () => showDetailsView('Sin estado');
+        };
+
+        const setDateDefaults = () => {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+            fechaInicioInput.value = firstDay;
+            fechaFinInput.value = lastDay;
+        };
+
         initializeCharts();
-        
-        const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
-        fechaInicioInput.value = firstDay;
-        fechaFinInput.value = lastDay;
+        setDateDefaults();
         
         fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
         fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
         almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
-
-        // --- MANEJO DE CLIC EN KPI CARDS ---
-        const setupKpiClickEvents = () => {
-            const kpiTotal = document.getElementById('kpi-total-emitidas');
-            const kpiSinEstado = document.getElementById('kpi-sin-estado');
-
-            // Total Emitidas: Usar la clave especial 'ALL'
-            kpiTotal.onclick = () => showDetailsView('ALL');
-
-            // Sin Estado Asignado: Usar la clave 'Sin estado'
-            kpiSinEstado.onclick = () => showDetailsView('Sin estado');
-        };
 
         document.querySelectorAll('.sidebar-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
@@ -425,25 +468,13 @@
         });
 
         document.getElementById('back-to-overview').addEventListener('click', () => {
-            document.getElementById('view-details').classList.remove('active');
-            document.getElementById('view-overview').classList.add('active');
-            currentView = 'overview';
-            mainTitle.textContent = 'Resumen de Facturas';
-            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-            document.querySelector('[data-view="overview"]').classList.add('active');
-            applyFiltersAndFetchData();
+            const overviewLink = document.querySelector('[data-view="overview"]');
+            overviewLink.click();
         });
 
-        const fetchDetailsForCurrentPage = (newPage) => {
-            fetchDetails(detailsCurrentState, fechaInicioInput.value, fechaFinInput.value, almacenFilterInput.value, newPage, detailsLimit);
-        };
-
-        document.getElementById('prev-page').addEventListener('click', () => {
-            if (detailsCurrentPage > 1) fetchDetailsForCurrentPage(detailsCurrentPage - 1);
-        });
-        document.getElementById('next-page').addEventListener('click', () => {
-            if (detailsCurrentPage < detailsTotalPages) fetchDetailsForCurrentPage(detailsCurrentPage + 1);
-        });
+        const fetchDetailsForCurrentPage = (newPage) => fetchDetails(detailsCurrentState, fechaInicioInput.value, fechaFinInput.value, almacenFilterInput.value, newPage, detailsLimit);
+        document.getElementById('prev-page').addEventListener('click', () => { if (detailsCurrentPage > 1) fetchDetailsForCurrentPage(detailsCurrentPage - 1); });
+        document.getElementById('next-page').addEventListener('click', () => { if (detailsCurrentPage < detailsTotalPages) fetchDetailsForCurrentPage(detailsCurrentPage + 1); });
         document.getElementById('details-limit').addEventListener('change', (e) => {
             detailsLimit = parseInt(e.target.value);
             detailsCurrentPage = 1;

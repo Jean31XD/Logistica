@@ -97,38 +97,30 @@ try {
             $orderBy = "f.invoicedate DESC"; // Orden por defecto
 
             if ($estado === 'ALL') {
-                // --- CONSULTA PARA TODAS LAS FACTURAS EMITIDAS (KPI: Total Emitidas) ---
                 $whereSql = " WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ? $almacenSqlAnd ";
-                // Los parámetros ya están listos en $countParams y $detailsParams
             } elseif ($estado === 'Sin estado') {
-                // --- CONSULTA PARA FACTURAS SIN ESTADO (KPI: Sin Estado Asignado) ---
                 $whereSql = " 
                     WHERE m.No_Factura IS NULL 
                     AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ? 
                     $almacenSqlAnd
                 ";
-                // Los parámetros ya están listos
             } else {
-                // --- CONSULTA PARA FACTURAS CON UN ESTADO ESPECÍFICO (Tabla/Gráfico) ---
                 $whereSql = " 
                     WHERE m.Estado = ? 
                     AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ? 
                     $almacenSqlAnd
                 ";
-                array_unshift($countParams, $estado); // Añadir el estado al principio
+                array_unshift($countParams, $estado);
                 array_unshift($detailsParams, $estado);
                 $orderBy = "m.Fecha_de_Registro DESC";
             }
 
-            // --- 1. Consulta de Conteo (Total de registros) ---
             $sqlCount = "
                 SELECT COUNT(f.invoiceid) AS Total
                 FROM Facturas_ALM f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
             ";
-
-            // --- 2. Consulta de Detalle (Paginación) ---
             $sqlDetails = "
                 SELECT 
                     f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, m.Registrado_por, m.Camion, 
@@ -142,20 +134,15 @@ try {
                 OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
             ";
 
-            // --- 3. Ejecución y Resultados ---
             $stmtCount = sqlsrv_query($conn, $sqlCount, $countParams);
-            if ($stmtCount === false) {
-                throw new Exception('Error en la consulta de conteo de detalles.');
-            }
+            if ($stmtCount === false) throw new Exception('Error en la consulta de conteo de detalles.');
             $totalRecords = sqlsrv_fetch_array($stmtCount, SQLSRV_FETCH_ASSOC)['Total'] ?? 0;
             
             $detailsData = [];
             if ($totalRecords > 0) {
                 $detailsParams = array_merge($detailsParams, [$offset, $limit]);
                 $stmtDetails = sqlsrv_query($conn, $sqlDetails, $detailsParams);
-                if ($stmtDetails === false) {
-                    throw new Exception('Error en la consulta de obtención de detalles.');
-                }
+                if ($stmtDetails === false) throw new Exception('Error en la consulta de obtención de detalles.');
                 while ($row = sqlsrv_fetch_array($stmtDetails, SQLSRV_FETCH_ASSOC)) {
                     foreach ($row as $k => $v) {
                         if ($v instanceof DateTime) $row[$k] = $v->format('Y-m-d H:i:s');
@@ -171,6 +158,79 @@ try {
                 'limit' => $limit,
                 'totalPages' => ($limit > 0) ? ceil($totalRecords / $limit) : 0
             ];
+            break;
+
+        case 'performance':
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para el análisis de rendimiento.', 400);
+            }
+
+            $response = [
+                'kpis' => [],
+                'ncReasons' => [],
+                'truckPerformance' => []
+            ];
+            
+            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+
+            // 1. KPIs de Tiempos Promedio
+            $sqlKpis = "
+                SELECT 
+                    AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Despacho) AS FLOAT)) AS AvgTimeToDispatch,
+                    AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDispatchToDeliver,
+                    AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Entregado) AS FLOAT)) AS AvgTotalCycle
+                FROM Facturas_ALM f
+                JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                  AND m.Fecha_de_Despacho IS NOT NULL
+                  AND m.Fecha_de_Entregado IS NOT NULL
+                  $almacenSqlAnd
+            ";
+            $stmtKpis = sqlsrv_query($conn, $sqlKpis, $baseParams);
+            if ($stmtKpis === false) throw new Exception('Error al calcular KPIs de rendimiento.');
+            $response['kpis'] = sqlsrv_fetch_array($stmtKpis, SQLSRV_FETCH_ASSOC) ?: [
+                'AvgTimeToDispatch' => 0, 'AvgDispatchToDeliver' => 0, 'AvgTotalCycle' => 0
+            ];
+
+            // 2. Análisis de Motivos de Nota de Crédito (NC)
+            $sqlNc = "
+                SELECT 
+                    ISNULL(m.Motivo_NC, 'No especificado') as Motivo,
+                    COUNT(m.No_Factura) as Total
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
+                WHERE m.Estado = 'NC' 
+                  AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                  $almacenSqlAnd
+                GROUP BY ISNULL(m.Motivo_NC, 'No especificado')
+                ORDER BY Total DESC
+            ";
+            $stmtNc = sqlsrv_query($conn, $sqlNc, $baseParams);
+            if ($stmtNc === false) throw new Exception('Error al analizar motivos de NC.');
+            while($row = sqlsrv_fetch_array($stmtNc, SQLSRV_FETCH_ASSOC)) {
+                $response['ncReasons'][] = $row;
+            }
+
+            // 3. Rendimiento de Camiones (Top 5 con más entregas)
+            $sqlTrucks = "
+                SELECT TOP 5
+                    m.Camion,
+                    COUNT(m.No_Factura) as TotalEntregas,
+                    AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDeliveryTime
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
+                WHERE m.Estado = 'ENTREGADO' 
+                  AND m.Camion IS NOT NULL AND m.Camion <> ''
+                  AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                  $almacenSqlAnd
+                GROUP BY m.Camion
+                ORDER BY TotalEntregas DESC
+            ";
+            $stmtTrucks = sqlsrv_query($conn, $sqlTrucks, $baseParams);
+            if ($stmtTrucks === false) throw new Exception('Error al analizar rendimiento de camiones.');
+            while($row = sqlsrv_fetch_array($stmtTrucks, SQLSRV_FETCH_ASSOC)) {
+                $response['truckPerformance'][] = $row;
+            }
             break;
 
         case 'overview':
@@ -215,21 +275,13 @@ try {
 } catch (Exception $e) {
     // --- 4. MANEJO CENTRALIZADO DE ERRORES ---
     $http_code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
-    
-    // Prepara la respuesta de error
     $response = ['error' => $e->getMessage()];
-
-    $sqlsrv_errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
-    if ($sqlsrv_errors !== null) {
+    if ($sqlsrv_errors = sqlsrv_errors(SQLSRV_ERR_ERRORS)) {
         $response['sqlsrv_details'] = $sqlsrv_errors;
         error_log(print_r($sqlsrv_errors, true));
     }
-
 } finally {
-    // Cierra la conexión si existe
-    if (isset($conn) && $conn !== false) {
-        sqlsrv_close($conn);
-    }
+    if (isset($conn) && $conn !== false) sqlsrv_close($conn);
 }
 
 // --- 5. SALIDA FINAL ---
