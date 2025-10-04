@@ -1,6 +1,6 @@
 <?php
 // Requerir la conexión a la base de datos
-require '../conexionBD/conexion.php'; 
+require 'conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
 header('Content-Type: application/json; charset=utf-8');
 
@@ -199,7 +199,7 @@ try {
                     COUNT(m.No_Factura) as Total
                 FROM Factura_Programa_Despacho_MACOR m
                 JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
-                WHERE m.Estado = 'NC' 
+                WHERE m.Estado = 'Nota de Credito' 
                   AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                   $almacenSqlAnd
                 GROUP BY ISNULL(m.Motivo_NC, 'No especificado')
@@ -287,4 +287,3 @@ try {
 // --- 5. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-?>
