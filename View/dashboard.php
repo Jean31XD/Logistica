@@ -445,46 +445,54 @@
             fechaInicioInput.value = firstDay;
             fechaFinInput.value = lastDay;
         };
+setDateDefaults();
+initializeCharts();
+populateAlmacenFilter();
+applyFiltersAndFetchData();
+setupKpiClickEvents();
 
-        initializeCharts();
-        setDateDefaults();
-        
-        fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
-        fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
-        almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
+// Eventos
+document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+        link.classList.add('active');
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+        document.getElementById(`view-${link.dataset.view}`).classList.add('active');
+        currentView = link.dataset.view;
+        applyFiltersAndFetchData();
+    });
+});
 
-        document.querySelectorAll('.sidebar-nav a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                if(link.classList.contains('active')) return;
-                document.querySelector('.sidebar-nav a.active').classList.remove('active');
-                link.classList.add('active');
-                currentView = link.dataset.view;
-                mainTitle.textContent = link.textContent;
-                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-                document.getElementById(`view-${currentView}`).classList.add('active');
-                if (currentView !== 'details') applyFiltersAndFetchData();
-            });
-        });
+document.getElementById('back-to-overview').addEventListener('click', () => {
+    document.getElementById('view-details').classList.remove('active');
+    document.getElementById('view-overview').classList.add('active');
+    currentView = 'overview';
+    applyFiltersAndFetchData();
+});
 
-        document.getElementById('back-to-overview').addEventListener('click', () => {
-            const overviewLink = document.querySelector('[data-view="overview"]');
-            overviewLink.click();
-        });
+fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
+fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
+almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
 
-        const fetchDetailsForCurrentPage = (newPage) => fetchDetails(detailsCurrentState, fechaInicioInput.value, fechaFinInput.value, almacenFilterInput.value, newPage, detailsLimit);
-        document.getElementById('prev-page').addEventListener('click', () => { if (detailsCurrentPage > 1) fetchDetailsForCurrentPage(detailsCurrentPage - 1); });
-        document.getElementById('next-page').addEventListener('click', () => { if (detailsCurrentPage < detailsTotalPages) fetchDetailsForCurrentPage(detailsCurrentPage + 1); });
-        document.getElementById('details-limit').addEventListener('change', (e) => {
-            detailsLimit = parseInt(e.target.value);
-            detailsCurrentPage = 1;
-            fetchDetailsForCurrentPage(detailsCurrentPage);
-        });
-
-        populateAlmacenFilter().then(() => {
-            setupKpiClickEvents(); 
-            applyFiltersAndFetchData();
-        });
+// Paginación
+document.getElementById('prev-page').addEventListener('click', () => {
+    if (detailsCurrentPage > 1) {
+        detailsCurrentPage--;
+        applyFiltersAndFetchData();
+    }
+});
+document.getElementById('next-page').addEventListener('click', () => {
+    if (detailsCurrentPage < detailsTotalPages) {
+        detailsCurrentPage++;
+        applyFiltersAndFetchData();
+    }
+});
+document.getElementById('details-limit').addEventListener('change', e => {
+    detailsLimit = parseInt(e.target.value);
+    detailsCurrentPage = 1;
+    applyFiltersAndFetchData();
+});
     });
 </script>
 </body>
