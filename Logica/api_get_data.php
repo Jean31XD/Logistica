@@ -121,8 +121,6 @@ try {
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
             ";
-            
-            // MODIFICACIÓN: Se añaden f.invoicingname y f.invoiceamountmst a la consulta.
             $sqlDetails = "
                 SELECT 
                     f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, f.invoicingname, f.invoiceamountmst,
@@ -160,6 +158,70 @@ try {
                 'limit' => $limit,
                 'totalPages' => ($limit > 0) ? ceil($totalRecords / $limit) : 0
             ];
+            break;
+
+        case 'financial':
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para el análisis financiero.', 400);
+            }
+
+            $response = [
+                'kpis' => [],
+                'topClients' => [],
+                'topWarehouses' => []
+            ];
+            
+            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+
+            // 1. KPIs de Montos Totales
+            $sqlKpis = "
+                SELECT 
+                    ISNULL(SUM(f.invoiceamountmst), 0) AS totalAmount,
+                    ISNULL(SUM(CASE WHEN m.No_Factura IS NULL THEN f.invoiceamountmst ELSE 0 END), 0) AS sinEstadoAmount,
+                    ISNULL(SUM(CASE WHEN m.Estado = 'NC' THEN f.invoiceamountmst ELSE 0 END), 0) AS ncAmount
+                FROM Facturas_ALM f
+                LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                $almacenSqlAnd
+            ";
+            $stmtKpis = sqlsrv_query($conn, $sqlKpis, $baseParams);
+            if ($stmtKpis === false) throw new Exception('Error al calcular KPIs financieros.');
+            $response['kpis'] = sqlsrv_fetch_array($stmtKpis, SQLSRV_FETCH_ASSOC);
+
+            // 2. Top 10 Clientes por Monto
+            $sqlClients = "
+                SELECT TOP 10
+                    f.invoicingname AS Cliente,
+                    SUM(f.invoiceamountmst) AS TotalAmount
+                FROM Facturas_ALM f
+                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                $almacenSqlAnd
+                GROUP BY f.invoicingname
+                ORDER BY TotalAmount DESC
+            ";
+            $stmtClients = sqlsrv_query($conn, $sqlClients, $baseParams);
+            if ($stmtClients === false) throw new Exception('Error al obtener top clientes.');
+            while($row = sqlsrv_fetch_array($stmtClients, SQLSRV_FETCH_ASSOC)) {
+                $response['topClients'][] = $row;
+            }
+
+            // 3. Top 10 Almacenes por Monto
+            $sqlWarehouses = "
+                SELECT TOP 10
+                    f.inventlocationid AS Almacen,
+                    SUM(f.invoiceamountmst) AS TotalAmount
+                FROM Facturas_ALM f
+                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                  AND f.inventlocationid IS NOT NULL AND f.inventlocationid <> ''
+                $almacenSqlAnd
+                GROUP BY f.inventlocationid
+                ORDER BY TotalAmount DESC
+            ";
+            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, $baseParams);
+            if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
+            while($row = sqlsrv_fetch_array($stmtWarehouses, SQLSRV_FETCH_ASSOC)) {
+                $response['topWarehouses'][] = $row;
+            }
             break;
 
         case 'performance':
@@ -289,3 +351,4 @@ try {
 // --- 5. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+?>

@@ -77,6 +77,7 @@
                     <li class="nav-item"><a href="#" class="active" data-view="overview">Resumen General</a></li>
                     <li class="nav-item"><a href="#" data-view="trends">Tendencias Diarias</a></li>
                     <li class="nav-item"><a href="#" data-view="performance">Rendimiento y Calidad</a></li>
+                    <li class="nav-item"><a href="#" data-view="financial">Análisis Financiero</a></li>
                 </ul>
             </div>
             <div class="sidebar-section">
@@ -197,11 +198,38 @@
                     </div>
                 </div>
             </div>
+            
+            <div id="view-financial" class="view-container">
+                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
+                    <div class="kpi-card" style="border-left-color: #3182ce; cursor:default;">
+                        <h2>Monto Total Emitido</h2>
+                        <p id="financial-kpi-total-amount">--</p>
+                    </div>
+                    <div class="kpi-card" style="border-left-color: #d69e2e; cursor:default;">
+                        <h2>Monto Sin Estado</h2>
+                        <p id="financial-kpi-sin-estado-amount">--</p>
+                    </div>
+                    <div class="kpi-card" style="border-left-color: #e53e3e; cursor:default;">
+                        <h2>Monto Total NC</h2>
+                        <p id="financial-kpi-nc-amount">--</p>
+                    </div>
+                </div>
+                <div class="grid-layout">
+                    <div class="card">
+                        <h2>Top 10 Clientes por Monto</h2>
+                        <div class="chart-container" style="height: 450px;"><canvas id="topClientsChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h2>Top 10 Almacenes por Monto</h2>
+                        <div class="chart-container" style="height: 450px;"><canvas id="topWarehousesChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart;
+        let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart;
         let currentView = 'overview';
         const fechaInicioInput = document.getElementById('fecha_inicio');
         const fechaFinInput = document.getElementById('fecha_fin');
@@ -220,16 +248,24 @@
             
             const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
             ncReasonsChart = new Chart(document.getElementById('ncReasonsChart').getContext('2d'), {
-                type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5'] }] },
-                options: doughnutOptions
+                type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5'] }] }, options: doughnutOptions
             });
             
             const barOptions = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } };
             truckPerformanceChart = new Chart(document.getElementById('truckPerformanceChart').getContext('2d'), {
+                type: 'bar', data: { labels: [], datasets: [{ label: 'Total Entregas', data: [], backgroundColor: 'rgba(54, 162, 235, 0.7)' }] }, options: barOptions
+            });
+
+            const barOptionsHorizontal = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } };
+            topClientsChart = new Chart(document.getElementById('topClientsChart').getContext('2d'), {
                 type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Total Entregas', data: [], backgroundColor: 'rgba(54, 162, 235, 0.7)' }] },
-                options: barOptions
+                data: { labels: [], datasets: [{ label: 'Monto Total', data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] },
+                options: barOptionsHorizontal
+            });
+            topWarehousesChart = new Chart(document.getElementById('topWarehousesChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Monto Total', data: [], backgroundColor: 'rgba(49, 130, 206, 0.7)' }] },
+                options: barOptionsHorizontal
             });
         };
         
@@ -258,6 +294,8 @@
 
                 if (view === 'performance') {
                     updatePerformanceView(data);
+                } else if (view === 'financial') {
+                    updateFinancialView(data);
                 } else if (view !== 'details') {
                     updateDashboard(data, view);
                 }
@@ -266,6 +304,30 @@
                 if (view !== 'details') alert('Error al cargar datos del dashboard: ' + error.message);
             } finally {
                 loaderEl.classList.remove('loading');
+            }
+        };
+
+        const updateFinancialView = (data) => {
+            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+
+            document.getElementById('financial-kpi-total-amount').textContent = currencyFormatter.format(data.kpis.totalAmount || 0);
+            document.getElementById('financial-kpi-sin-estado-amount').textContent = currencyFormatter.format(data.kpis.sinEstadoAmount || 0);
+            document.getElementById('financial-kpi-nc-amount').textContent = currencyFormatter.format(data.kpis.ncAmount || 0);
+
+            if (topClientsChart) {
+                const clientLabels = data.topClients.map(c => {
+                    const name = c.Cliente || 'N/A';
+                    return name.length > 30 ? name.substring(0, 27) + '...' : name;
+                });
+                topClientsChart.data.labels = clientLabels;
+                topClientsChart.data.datasets[0].data = data.topClients.map(c => c.TotalAmount);
+                topClientsChart.update();
+            }
+
+            if (topWarehousesChart) {
+                topWarehousesChart.data.labels = data.topWarehouses.map(w => w.Almacen);
+                topWarehousesChart.data.datasets[0].data = data.topWarehouses.map(w => w.TotalAmount);
+                topWarehousesChart.update();
             }
         };
         
@@ -349,7 +411,6 @@
             } catch (e) { return 'N/A'; }
         };
         
-        // MODIFICACIÓN: Se actualiza la función para renderizar los nuevos datos y se ajusta el colspan.
         const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
             tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="17" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
@@ -389,7 +450,6 @@
             document.getElementById('next-page').disabled = currentPage >= totalPages;
         };
 
-        // MODIFICACIÓN: Se ajusta el colspan para los mensajes de carga y error.
         const fetchDetails = async (estado, inicio, fin, almacen, page, limit) => {
             detailsCurrentState = estado;
             loaderEl.classList.add('loading');
@@ -456,55 +516,70 @@
             fechaInicioInput.value = firstDay;
             fechaFinInput.value = lastDay;
         };
-setDateDefaults();
-initializeCharts();
-populateAlmacenFilter();
-applyFiltersAndFetchData();
-setupKpiClickEvents();
 
-// Eventos
-document.querySelectorAll('.sidebar-nav a').forEach(link => {
-    link.addEventListener('click', e => {
-        e.preventDefault();
-        document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-        link.classList.add('active');
-        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-        document.getElementById(`view-${link.dataset.view}`).classList.add('active');
-        currentView = link.dataset.view;
+        setDateDefaults();
+        initializeCharts();
+        populateAlmacenFilter();
         applyFiltersAndFetchData();
-    });
-});
+        setupKpiClickEvents();
 
-document.getElementById('back-to-overview').addEventListener('click', () => {
-    document.getElementById('view-details').classList.remove('active');
-    document.getElementById('view-overview').classList.add('active');
-    currentView = 'overview';
-    applyFiltersAndFetchData();
-});
+        // --- Eventos ---
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+                link.classList.add('active');
+                
+                const targetView = link.dataset.view;
+                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${targetView}`).classList.add('active');
+                
+                const viewTitles = {
+                    overview: 'Resumen de Facturas',
+                    trends: 'Tendencias Diarias de Registros',
+                    performance: 'Análisis de Rendimiento y Calidad',
+                    financial: 'Análisis Financiero',
+                    details: 'Detalle de Facturas'
+                };
+                mainTitle.textContent = viewTitles[targetView] || 'Dashboard';
+                
+                currentView = targetView;
+                applyFiltersAndFetchData();
+            });
+        });
 
-fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
-fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
-almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
+        document.getElementById('back-to-overview').addEventListener('click', () => {
+            document.getElementById('view-details').classList.remove('active');
+            document.getElementById('view-overview').classList.add('active');
+            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+            document.querySelector('.sidebar-nav a[data-view="overview"]').classList.add('active');
+            mainTitle.textContent = 'Resumen de Facturas';
+            currentView = 'overview';
+            applyFiltersAndFetchData();
+        });
 
-// Paginación
-document.getElementById('prev-page').addEventListener('click', () => {
-    if (detailsCurrentPage > 1) {
-        detailsCurrentPage--;
-        applyFiltersAndFetchData();
-    }
-});
-document.getElementById('next-page').addEventListener('click', () => {
-    if (detailsCurrentPage < detailsTotalPages) {
-        detailsCurrentPage++;
-        applyFiltersAndFetchData();
-    }
-});
-document.getElementById('details-limit').addEventListener('change', e => {
-    detailsLimit = parseInt(e.target.value);
-    detailsCurrentPage = 1;
-    applyFiltersAndFetchData();
-});
+        fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
+        fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
+        almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
 
+        // --- Paginación ---
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (detailsCurrentPage > 1) {
+                detailsCurrentPage--;
+                applyFiltersAndFetchData();
+            }
+        });
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (detailsCurrentPage < detailsTotalPages) {
+                detailsCurrentPage++;
+                applyFiltersAndFetchData();
+            }
+        });
+        document.getElementById('details-limit').addEventListener('change', e => {
+            detailsLimit = parseInt(e.target.value);
+            detailsCurrentPage = 1;
+            applyFiltersAndFetchData();
+        });
     });
 </script>
 </body>
