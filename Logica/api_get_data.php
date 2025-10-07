@@ -8,9 +8,12 @@ header('Content-Type: application/json; charset=utf-8');
 $response = []; 
 $http_code = 200; 
 
+// Constante para el ITBIS (18%)
+const ITBIS_RATE = 0.18;
+
 try {
-   // --- 1. VERIFICACIÓN DE CONEXIÓN ---
-  if (!isset($conn) || $conn === false) {
+    // --- 1. VERIFICACIÓN DE CONEXIÓN ---
+    if (!isset($conn) || $conn === false) {
         throw new Exception('No se pudo establecer la conexión a la base de datos.', 503);
     }
 
@@ -24,15 +27,15 @@ try {
     if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
     // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS (REEMPLAZO DE Facturas_ALM) ---
-    // Agrupamos Facturas_lineas por invoiceid para obtener los montos y fechas a nivel de cabecera.
+    // Se suma el 18% (ITBIS) al monto base de la línea.
     $cte_facturas = "
         WITH Facturas_CTE AS (
             SELECT
                 fl.invoiceid,
                 MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate, 
-                SUM(fl.lineamount) AS invoiceamountmst, -- Sumamos el monto de las líneas
-                MAX(fl.invoicingname) AS invoicingname,  -- Tomamos un nombre de cliente
-                MAX(fl.inventlocationid) AS inventlocationid -- Tomamos un almacén (puede ser ambiguo, se usará el filtro EXISTS)
+                SUM(fl.lineamount * (1 + " . ITBIS_RATE . ")) AS invoiceamountmst, -- MONTO TOTAL DE LA FACTURA (Base + ITBIS 18%)
+                MAX(fl.invoicingname) AS invoicingname,  
+                MAX(fl.inventlocationid) AS inventlocationid 
             FROM Facturas_lineas fl
             GROUP BY fl.invoiceid
         )
@@ -43,7 +46,6 @@ try {
     $almacenSqlAnd = '';
     
     if (!empty($almacen)) {
-        // El filtro de almacén sigue usando la tabla Facturas_lineas directamente.
         $almacenSqlAnd = " AND EXISTS (SELECT 1 FROM Facturas_lineas fl WHERE fl.invoiceid = f.invoiceid AND fl.inventlocationid = ?) "; 
         $almacenParams[] = $almacen;
     }
@@ -51,7 +53,7 @@ try {
     // --- 4. PROCESAMIENTO DE LA VISTA SOLICITADA ---
     switch ($view) {
         case 'almacenes':
-            // Esta vista ya estaba bien, consulta la tabla de líneas.
+            // Esta consulta no necesita la CTE
             $sqlAlmacenes = "
                 SELECT DISTINCT inventlocationid 
                 FROM Facturas_lineas 
@@ -99,6 +101,7 @@ try {
             break;
 
         case 'details':
+            // Lógica de detalles (Paginación)
             $estado = isset($_GET['estado']) ? trim(urldecode($_GET['estado'])) : '';
             if (empty($estado) || empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros (estado, fecha_inicio, fecha_fin) para obtener los detalles.', 400);
@@ -111,7 +114,7 @@ try {
             $whereSql = "";
             $countParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
             $detailsParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
-            $orderBy = "f.invoicedate DESC"; // Orden por defecto
+            $orderBy = "f.invoicedate DESC"; 
 
             if ($estado === 'ALL') {
                 $whereSql = " WHERE f.invoicedate BETWEEN ? AND ? $almacenSqlAnd ";
@@ -195,7 +198,7 @@ try {
                 SELECT 
                     ISNULL(SUM(f.invoiceamountmst), 0) AS totalAmount,
                     ISNULL(SUM(CASE WHEN m.No_Factura IS NULL THEN f.invoiceamountmst ELSE 0 END), 0) AS sinEstadoAmount,
-                    ISNULL(SUM(CASE WHEN m.Estado = 'NC' THEN f.invoiceamountmst ELSE 0 END), 0) AS ncAmount
+                    ISNULL(SUM(CASE WHEN m.Estado = 'NC' OR LEFT(f.invoiceid, 2) = 'NC' THEN f.invoiceamountmst ELSE 0 END), 0) AS ncAmount
                 FROM Facturas_CTE f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 WHERE f.invoicedate BETWEEN ? AND ?
@@ -222,20 +225,18 @@ try {
                 $response['topClients'][] = $row;
             }
 
-            // 3. Top 10 Almacenes por Monto
-            // Usamos Facturas_lineas para el almacén para mayor precisión en el top 10
+            // 3. Top 10 Almacenes por Monto (usa Facturas_lineas para precisión)
             $sqlWarehouses = "
                 SELECT TOP 10
                     fl.inventlocationid AS Almacen,
-                    SUM(fl.lineamount) AS TotalAmount
+                    SUM(fl.lineamount * (1 + " . ITBIS_RATE . ")) AS TotalAmount -- Monto con ITBIS
                 FROM Facturas_lineas fl
                 WHERE CAST(fl.invoicedate AS DATE) BETWEEN ? AND ?
                   AND fl.inventlocationid IS NOT NULL AND fl.inventlocationid <> ''
-                  -- No se aplica filtro de almacén adicional aquí, ya que estamos calculando el top 10.
                 GROUP BY fl.inventlocationid
                 ORDER BY TotalAmount DESC
             ";
-            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); // Solo usa fechas
+            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); 
             if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
             while($row = sqlsrv_fetch_array($stmtWarehouses, SQLSRV_FETCH_ASSOC)) {
                 $response['topWarehouses'][] = $row;
@@ -243,6 +244,7 @@ try {
             break;
 
         case 'performance':
+            // Lógica de rendimiento... (usa la CTE f)
             if (empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros de fecha para el análisis de rendimiento.', 400);
             }
@@ -317,6 +319,7 @@ try {
 
         case 'overview':
         default:
+            // Lógica de resumen (Overview)
             if (empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros de fecha para consultar el resumen.', 400);
             }
@@ -369,3 +372,4 @@ try {
 // --- 6. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+?>
