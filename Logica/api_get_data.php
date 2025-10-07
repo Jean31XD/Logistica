@@ -1,6 +1,6 @@
 <?php
 // Requerir la conexión a la base de datos
-require 'conexion.php'; 
+require '../conexionBD/conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
 header('Content-Type: application/json; charset=utf-8');
 

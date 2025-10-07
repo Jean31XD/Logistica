@@ -235,7 +235,7 @@
         
         const populateAlmacenFilter = async () => {
             try {
-                const response = await fetch('api_get_data.php?view=almacenes');
+                const response = await fetch('../Logica/api_get_data.php?view=almacenes');
                 if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
                 const almacenes = await response.json();
                 almacenes.forEach(almacen => {
@@ -250,7 +250,7 @@
         const fetchData = async (inicio, fin, almacen, view) => {
             loaderEl.classList.add('loading');
             try {
-                const url = `api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
+                const url = `../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 const data = await response.json();
@@ -396,7 +396,7 @@
             const detailsTableBody = document.getElementById('detailsTableBody');
             detailsTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Cargando...</td></tr>';
             try {
-                const url = `api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
+                const url = `../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 const result = await response.json();
