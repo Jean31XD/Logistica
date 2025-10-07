@@ -8,7 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 $response = []; 
 $http_code = 200; 
 
-// Constante para el ITBIS (18%)
+// Ya no se necesita la constante ITBIS_RATE, pero la dejamos por si se usa en otro lado.
 const ITBIS_RATE = 0.18;
 
 try {
@@ -26,17 +26,18 @@ try {
     if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
     if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
-    // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS (REEMPLAZO DE Facturas_ALM) ---
-    // Esta CTE pre-calcula los totales por factura, incluyendo el ITBIS.
-    // Es la base para todas las consultas posteriores.
+    // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS ---
+    // Se ha modificado para usar la columna lineamounttax.
     $cte_facturas = "
         WITH Facturas_CTE AS (
             SELECT
                 fl.invoiceid,
                 MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
-                SUM(fl.lineamount * (1 + " . ITBIS_RATE . ")) AS invoiceamountmst, -- MONTO TOTAL DE LA FACTURA (Base + ITBIS 18%)
+                
+                -- MONTO TOTAL DE LA FACTURA (Base + ITBIS desde la columna lineamounttax)
+                SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
+
                 MAX(fl.invoicingname) AS invoicingname,
-                -- Se asume que una factura pertenece a un solo almacén. MAX() es para agregación.
                 MAX(fl.inventlocationid) AS inventlocationid
             FROM Facturas_lineas fl
             GROUP BY fl.invoiceid
@@ -44,7 +45,6 @@ try {
     ";
 
     // --- 3. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
-    // Filtro de almacén optimizado para ser más directo y rápido.
     $almacenParams = [];
     $almacenSqlAnd = '';
     if (!empty($almacen)) {
@@ -55,7 +55,6 @@ try {
     // --- 4. PROCESAMIENTO DE LA VISTA SOLICITADA ---
     switch ($view) {
         case 'almacenes':
-            // Esta consulta es independiente y carga la lista de almacenes para el filtro.
             $sqlAlmacenes = "
                 SELECT DISTINCT inventlocationid 
                 FROM Facturas_lineas 
@@ -103,7 +102,6 @@ try {
             break;
 
         case 'details':
-            // Lógica de detalles con paginación
             $estado = isset($_GET['estado']) ? trim(urldecode($_GET['estado'])) : '';
             if (empty($estado) || empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros (estado, fecha_inicio, fecha_fin) para obtener los detalles.', 400);
@@ -188,10 +186,8 @@ try {
             }
 
             $response = [ 'kpis' => [], 'topClients' => [], 'topWarehouses' => [] ];
-            
             $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
 
-            // 1. KPIs de Montos Totales (ahora respeta el filtro de almacén)
             $sqlKpis = $cte_facturas . "
                 SELECT 
                     ISNULL(SUM(f.invoiceamountmst), 0) AS totalAmount,
@@ -206,7 +202,6 @@ try {
             if ($stmtKpis === false) throw new Exception('Error al calcular KPIs financieros.');
             $response['kpis'] = sqlsrv_fetch_array($stmtKpis, SQLSRV_FETCH_ASSOC);
 
-            // 2. Top 10 Clientes por Monto (respeta el filtro de almacén)
             $sqlClients = $cte_facturas . "
                 SELECT TOP 10
                     f.invoicingname AS Cliente,
@@ -223,7 +218,6 @@ try {
                 $response['topClients'][] = $row;
             }
 
-            // 3. Top 10 Almacenes por Monto (ahora respeta el filtro de almacén)
             $sqlWarehouses = $cte_facturas . "
                 SELECT TOP 10
                     f.inventlocationid AS Almacen,
@@ -248,10 +242,8 @@ try {
             }
 
             $response = [ 'kpis' => [], 'ncReasons' => [], 'truckPerformance' => [] ];
-            
             $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
 
-            // 1. KPIs de Tiempos Promedio
             $sqlKpis = $cte_facturas . "
                 SELECT 
                     AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Despacho) AS FLOAT)) AS AvgTimeToDispatch,
@@ -270,7 +262,6 @@ try {
                 'AvgTimeToDispatch' => 0, 'AvgDispatchToDeliver' => 0, 'AvgTotalCycle' => 0
             ];
 
-            // 2. Análisis de Motivos de Nota de Crédito (NC)
             $sqlNc = $cte_facturas . "
                 SELECT 
                     ISNULL(m.Motivo_NC, 'No especificado') as Motivo,
@@ -289,7 +280,6 @@ try {
                 $response['ncReasons'][] = $row;
             }
 
-            // 3. Rendimiento de Camiones (Top 5 con más entregas)
             $sqlTrucks = $cte_facturas . "
                 SELECT TOP 5
                     m.Camion,
@@ -297,7 +287,7 @@ try {
                     AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDeliveryTime
                 FROM Factura_Programa_Despacho_MACOR m
                 JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
-                WHERE m.Estado = 'ENTREGADO' 
+                WHERE m.Estado = 'ENTREGado' 
                     AND m.Camion IS NOT NULL AND m.Camion <> ''
                     AND f.invoicedate BETWEEN ? AND ?
                     $almacenSqlAnd
@@ -313,7 +303,6 @@ try {
 
         case 'overview':
         default:
-            // Lógica de resumen (Overview)
             if (empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros de fecha para consultar el resumen.', 400);
             }
@@ -366,3 +355,4 @@ try {
 // --- 6. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+?>
