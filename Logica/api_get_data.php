@@ -213,7 +213,7 @@ try {
                 SELECT TOP 10
                     f.invoicingname AS Cliente,
                     SUM(f.invoiceamountmst) AS TotalAmount
-                FROM Facturas_CTE f
+                FROM Facturas_Lineas f
                 WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd
                 GROUP BY f.invoicingname
