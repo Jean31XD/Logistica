@@ -69,7 +69,7 @@
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="logo">
-                <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
+                <img src="LOGO MC - COLOR.png" alt="Logo">
             </div>
             <div class="sidebar-section">
                 <h3>Análisis</h3>
@@ -146,7 +146,7 @@
                         <table class="status-table">
                             <thead>
                                 <tr>
-                                    <th>No. Factura</th><th>Fecha Registro</th><th>Registrado Por</th><th>Camión</th>
+                                    <th>No. Factura</th><th>Fecha Registro</th><th>Cliente</th><th>Monto</th><th>Registrado Por</th><th>Camión</th>
                                     <th>Fecha Despacho</th><th>Despachado Por</th><th>Fecha Entregado</th><th>Entregado Por</th>
                                     <th>Estado</th><th>Fecha Reversada</th><th>Reversado Por</th><th>Fecha NC</th>
                                     <th>NC Realizado Por</th><th>Motivo NC</th><th>Camión 2</th>
@@ -235,7 +235,7 @@
         
         const populateAlmacenFilter = async () => {
             try {
-                const response = await fetch('../Logica/api_get_data.php?view=almacenes');
+                const response = await fetch('api_get_data.php?view=almacenes');
                 if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
                 const almacenes = await response.json();
                 almacenes.forEach(almacen => {
@@ -250,7 +250,7 @@
         const fetchData = async (inicio, fin, almacen, view) => {
             loaderEl.classList.add('loading');
             try {
-                const url = `../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
+                const url = `api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 const data = await response.json();
@@ -349,14 +349,24 @@
             } catch (e) { return 'N/A'; }
         };
         
+        // MODIFICACIÓN: Se actualiza la función para renderizar los nuevos datos y se ajusta el colspan.
         const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
-            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="15" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
+            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="17" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
             if(!facturas || facturas.length === 0) return;
+            
+            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+
             facturas.forEach(f => {
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = f.No_Factura || 'N/A';
                 row.insertCell().textContent = formatDate(f.Fecha_de_Registro);
+                row.insertCell().textContent = f.invoicingname || 'N/A';
+                
+                const montoCell = row.insertCell();
+                montoCell.textContent = currencyFormatter.format(f.invoiceamountmst || 0);
+                montoCell.style.textAlign = 'right';
+
                 row.insertCell().textContent = f.Registrado_por || 'N/A';
                 row.insertCell().textContent = f.Camion || 'N/A';
                 row.insertCell().textContent = formatDate(f.Fecha_de_Despacho);
@@ -379,13 +389,14 @@
             document.getElementById('next-page').disabled = currentPage >= totalPages;
         };
 
+        // MODIFICACIÓN: Se ajusta el colspan para los mensajes de carga y error.
         const fetchDetails = async (estado, inicio, fin, almacen, page, limit) => {
             detailsCurrentState = estado;
             loaderEl.classList.add('loading');
             const detailsTableBody = document.getElementById('detailsTableBody');
-            detailsTableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;">Cargando...</td></tr>';
+            detailsTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Cargando...</td></tr>';
             try {
-                const url = `../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
+                const url = `api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 const result = await response.json();
@@ -397,7 +408,7 @@
                 updatePaginationControls(result);
             } catch (error) {
                 console.error("Error al cargar detalles:", error);
-                detailsTableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; color: red;">Error: ${error.message}</td></tr>`;
+                detailsTableBody.innerHTML = `<tr><td colspan="17" style="text-align:center; color: red;">Error: ${error.message}</td></tr>`;
                 updatePaginationControls({ currentPage: 1, totalPages: 1, totalRecords: 0 });
             } finally {
                 loaderEl.classList.remove('loading');
@@ -493,6 +504,7 @@ document.getElementById('details-limit').addEventListener('change', e => {
     detailsCurrentPage = 1;
     applyFiltersAndFetchData();
 });
+
     });
 </script>
 </body>

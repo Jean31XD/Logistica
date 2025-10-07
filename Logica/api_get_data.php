@@ -1,6 +1,6 @@
 <?php
 // Requerir la conexión a la base de datos
-require '../conexionBD/conexion.php'; 
+require 'conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
 header('Content-Type: application/json; charset=utf-8');
 
@@ -121,12 +121,14 @@ try {
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
             ";
+            
+            // MODIFICACIÓN: Se añaden f.invoicingname y f.invoiceamountmst a la consulta.
             $sqlDetails = "
                 SELECT 
-                    f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, m.Registrado_por, m.Camion, 
-                    m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, m.Entregado_por, 
-                    ISNULL(m.Estado, 'Sin estado') AS Estado, m.Fecha_Reversada, m.Reversado_Por, m.Fecha_de_NC, 
-                    m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
+                    f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, f.invoicingname, f.invoiceamountmst,
+                    m.Registrado_por, m.Camion, m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, 
+                    m.Entregado_por, ISNULL(m.Estado, 'Sin estado') AS Estado, m.Fecha_Reversada, 
+                    m.Reversado_Por, m.Fecha_de_NC, m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
                 FROM Facturas_ALM f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
@@ -287,4 +289,3 @@ try {
 // --- 5. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-?>
