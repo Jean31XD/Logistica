@@ -227,19 +227,22 @@ try {
 // ... (dentro de case 'financial':)
 
             // 3. Top 10 Almacenes por Monto (AHORA USA LA CTE PARA COINCIDENCIA DE MONTO)
-            $sqlWarehouses = $cte_facturas . "
-                SELECT TOP 10
-                    f.inventlocationid AS Almacen,
-                    SUM(f.invoiceamountmst) AS TotalAmount
-                FROM Facturas_CTE f
-                WHERE f.invoicedate BETWEEN ? AND ?
-                  AND f.inventlocationid IS NOT NULL AND f.inventlocationid <> ''
-                GROUP BY f.inventlocationid
-                ORDER BY TotalAmount DESC
-            ";
+        $sqlWarehouses = $cte_facturas . "
+    SELECT TOP 10
+        f.inventlocationid AS Almacen,
+        -- Usamos el monto ya calculado y agrupado en la CTE (con ITBIS incluido)
+        SUM(f.invoiceamountmst) AS TotalAmount
+    FROM Facturas_CTE f
+    -- Filtramos SOLO por el rango de fechas. NO aplicamos el filtro de almacén ($almacenSqlAnd)
+    -- para que muestre el ranking de TODOS los almacenes en ese periodo.
+    WHERE f.invoicedate BETWEEN ? AND ?
+      AND f.inventlocationid IS NOT NULL AND f.inventlocationid <> ''
+    GROUP BY f.inventlocationid
+    ORDER BY TotalAmount DESC
+";
             
             // Usamos solo las fechas: [$fecha_inicio, $fecha_fin]
-            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); 
+$stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); 
             
             if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
             while($row = sqlsrv_fetch_array($stmtWarehouses, SQLSRV_FETCH_ASSOC)) {
