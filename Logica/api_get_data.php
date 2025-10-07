@@ -28,16 +28,19 @@ try {
     $almacenSqlAnd = '';
     
     if (!empty($almacen)) {
-        $almacenSqlAnd = " AND f.inventlocationid = ? "; 
+        // MODIFICACIÓN: La lógica de filtrado ahora usa una subconsulta EXISTS en la tabla Facturas_lineas.
+        // Esto asegura que se incluyan las facturas que tengan al menos una línea en el almacén seleccionado.
+        $almacenSqlAnd = " AND EXISTS (SELECT 1 FROM Facturas_lineas fl WHERE fl.invoiceid = f.invoiceid AND fl.inventlocationid = ?) "; 
         $almacenParams[] = $almacen;
     }
 
     // --- 3. PROCESAMIENTO DE LA VISTA SOLICITADA ---
     switch ($view) {
         case 'almacenes':
+            // MODIFICACIÓN: La fuente para la lista de almacenes es ahora la tabla Facturas_lineas.
             $sqlAlmacenes = "
                 SELECT DISTINCT inventlocationid 
-                FROM Facturas_ALM 
+                FROM Facturas_lineas 
                 WHERE inventlocationid IS NOT NULL AND inventlocationid <> ''
                 ORDER BY inventlocationid ASC
             ";
