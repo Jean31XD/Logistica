@@ -224,25 +224,25 @@ try {
             while($row = sqlsrv_fetch_array($stmtClients, SQLSRV_FETCH_ASSOC)) {
                 $response['topClients'][] = $row;
             }
-
-            // 3. Top 10 Almacenes por Monto (usa Facturas_lineas para precisión)
-            $sqlWarehouses = "
+$sqlWarehouses = "
                 SELECT TOP 10
                     fl.inventlocationid AS Almacen,
                     SUM(fl.lineamount * (1 + " . ITBIS_RATE . ")) AS TotalAmount -- Monto con ITBIS
                 FROM Facturas_lineas fl
                 WHERE CAST(fl.invoicedate AS DATE) BETWEEN ? AND ?
                   AND fl.inventlocationid IS NOT NULL AND fl.inventlocationid <> ''
+                  " . (!empty($almacen) ? " AND fl.inventlocationid = ? " : "") . "
                 GROUP BY fl.inventlocationid
                 ORDER BY TotalAmount DESC
             ";
-            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); 
+            // Usamos baseParams, que ya incluye el almacén si está presente.
+            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, $baseParams); 
+            
             if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
             while($row = sqlsrv_fetch_array($stmtWarehouses, SQLSRV_FETCH_ASSOC)) {
                 $response['topWarehouses'][] = $row;
             }
             break;
-
         case 'performance':
             // Lógica de rendimiento... (usa la CTE f)
             if (empty($fecha_inicio) || empty($fecha_fin)) {
