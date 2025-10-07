@@ -224,19 +224,22 @@ try {
             while($row = sqlsrv_fetch_array($stmtClients, SQLSRV_FETCH_ASSOC)) {
                 $response['topClients'][] = $row;
             }
-$sqlWarehouses = "
+// ... (dentro de case 'financial':)
+
+            // 3. Top 10 Almacenes por Monto (usa Facturas_lineas para precisión)
+            $sqlWarehouses = "
                 SELECT TOP 10
                     fl.inventlocationid AS Almacen,
                     SUM(fl.lineamount * (1 + " . ITBIS_RATE . ")) AS TotalAmount -- Monto con ITBIS
                 FROM Facturas_lineas fl
-                WHERE CAST(fl.invoicedate AS DATE) BETWEEN ? AND ?
+                WHERE CAST(fl.invoicedate AS DATE) BETWEEN ? AND ?  -- SOLO USAMOS FILTRO DE FECHAS
                   AND fl.inventlocationid IS NOT NULL AND fl.inventlocationid <> ''
-                  " . (!empty($almacen) ? " AND fl.inventlocationid = ? " : "") . "
                 GROUP BY fl.inventlocationid
                 ORDER BY TotalAmount DESC
             ";
-            // Usamos baseParams, que ya incluye el almacén si está presente.
-            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, $baseParams); 
+            
+            // IMPORTANTE: Los parámetros ahora son solo $fecha_inicio y $fecha_fin
+            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); 
             
             if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
             while($row = sqlsrv_fetch_array($stmtWarehouses, SQLSRV_FETCH_ASSOC)) {
