@@ -63,7 +63,7 @@ try {
                 SELECT 
                     CAST(f.invoicedate AS DATE) as Dia, 
                     COUNT(f.invoiceid) as Total
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                 $almacenSqlAnd
                 GROUP BY CAST(f.invoicedate AS DATE)
@@ -120,7 +120,7 @@ try {
 
             $sqlCount = "
                 SELECT COUNT(f.invoiceid) AS Total
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
             ";
@@ -130,7 +130,7 @@ try {
                     m.Registrado_por, m.Camion, m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, 
                     m.Entregado_por, ISNULL(m.Estado, 'Sin estado') AS Estado, m.Fecha_Reversada, 
                     m.Reversado_Por, m.Fecha_de_NC, m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
                 ORDER BY $orderBy
@@ -182,7 +182,7 @@ try {
                     ISNULL(SUM(f.invoiceamountmst), 0) AS totalAmount,
                     ISNULL(SUM(CASE WHEN m.No_Factura IS NULL THEN f.invoiceamountmst ELSE 0 END), 0) AS sinEstadoAmount,
                     ISNULL(SUM(CASE WHEN m.Estado = 'NC' THEN f.invoiceamountmst ELSE 0 END), 0) AS ncAmount
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                 $almacenSqlAnd
@@ -196,7 +196,7 @@ try {
                 SELECT TOP 10
                     f.invoicingname AS Cliente,
                     SUM(f.invoiceamountmst) AS TotalAmount
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                 $almacenSqlAnd
                 GROUP BY f.invoicingname
@@ -213,7 +213,7 @@ try {
                 SELECT TOP 10
                     f.inventlocationid AS Almacen,
                     SUM(f.invoiceamountmst) AS TotalAmount
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                   AND f.inventlocationid IS NOT NULL AND f.inventlocationid <> ''
                 $almacenSqlAnd
@@ -246,7 +246,7 @@ try {
                     AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Despacho) AS FLOAT)) AS AvgTimeToDispatch,
                     AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDispatchToDeliver,
                     AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Entregado) AS FLOAT)) AS AvgTotalCycle
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                   AND m.Fecha_de_Despacho IS NOT NULL
@@ -265,7 +265,7 @@ try {
                     ISNULL(m.Motivo_NC, 'No especificado') as Motivo,
                     COUNT(m.No_Factura) as Total
                 FROM Factura_Programa_Despacho_MACOR m
-                JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
+                JOIN Facturas_lineas f ON m.No_Factura = f.invoiceid
                 WHERE m.Estado = 'NC' 
                   AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                   $almacenSqlAnd
@@ -285,7 +285,7 @@ try {
                     COUNT(m.No_Factura) as TotalEntregas,
                     AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDeliveryTime
                 FROM Factura_Programa_Despacho_MACOR m
-                JOIN Facturas_ALM f ON m.No_Factura = f.invoiceid
+                JOIN Facturas_lineas f ON m.No_Factura = f.invoiceid
                 WHERE m.Estado = 'ENTREGADO' 
                   AND m.Camion IS NOT NULL AND m.Camion <> ''
                   AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
@@ -310,7 +310,7 @@ try {
                 SELECT 
                     ISNULL(m.Estado, 'Sin estado') AS Estado,
                     COUNT(f.invoiceid) AS Total
-                FROM Facturas_ALM f
+                FROM Facturas_lineas f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
                 $almacenSqlAnd
