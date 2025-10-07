@@ -9,8 +9,8 @@ $response = [];
 $http_code = 200; 
 
 try {
-    // --- 1. VERIFICACIÓN DE CONEXIÓN ---
-    if (!isset($conn) || $conn === false) {
+   // --- 1. VERIFICACIÓN DE CONEXIÓN ---
+  if (!isset($conn) || $conn === false) {
         throw new Exception('No se pudo establecer la conexión a la base de datos.', 503);
     }
 
@@ -23,21 +23,35 @@ try {
     if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
     if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
-    // --- 2. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
+    // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS (REEMPLAZO DE Facturas_ALM) ---
+    // Agrupamos Facturas_lineas por invoiceid para obtener los montos y fechas a nivel de cabecera.
+    $cte_facturas = "
+        WITH Facturas_CTE AS (
+            SELECT
+                fl.invoiceid,
+                MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate, 
+                SUM(fl.lineamount) AS invoiceamountmst, -- Sumamos el monto de las líneas
+                MAX(fl.invoicingname) AS invoicingname,  -- Tomamos un nombre de cliente
+                MAX(fl.inventlocationid) AS inventlocationid -- Tomamos un almacén (puede ser ambiguo, se usará el filtro EXISTS)
+            FROM Facturas_lineas fl
+            GROUP BY fl.invoiceid
+        )
+    ";
+
+    // --- 3. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
     $almacenParams = [];
     $almacenSqlAnd = '';
     
     if (!empty($almacen)) {
-        // MODIFICACIÓN: La lógica de filtrado ahora usa una subconsulta EXISTS en la tabla Facturas_lineas.
-        // Esto asegura que se incluyan las facturas que tengan al menos una línea en el almacén seleccionado.
+        // El filtro de almacén sigue usando la tabla Facturas_lineas directamente.
         $almacenSqlAnd = " AND EXISTS (SELECT 1 FROM Facturas_lineas fl WHERE fl.invoiceid = f.invoiceid AND fl.inventlocationid = ?) "; 
         $almacenParams[] = $almacen;
     }
-
-    // --- 3. PROCESAMIENTO DE LA VISTA SOLICITADA ---
+    
+    // --- 4. PROCESAMIENTO DE LA VISTA SOLICITADA ---
     switch ($view) {
         case 'almacenes':
-            // MODIFICACIÓN: La fuente para la lista de almacenes es ahora la tabla Facturas_lineas.
+            // Esta vista ya estaba bien, consulta la tabla de líneas.
             $sqlAlmacenes = "
                 SELECT DISTINCT inventlocationid 
                 FROM Facturas_lineas 
@@ -59,14 +73,14 @@ try {
             }
 
             $response['tendenciaRegistros'] = [];
-            $sqlTrends = "
+            $sqlTrends = $cte_facturas . "
                 SELECT 
-                    CAST(f.invoicedate AS DATE) as Dia, 
+                    f.invoicedate as Dia, 
                     COUNT(f.invoiceid) as Total
-                FROM Facturas_lineas f
-                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                FROM Facturas_CTE f
+                WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd
-                GROUP BY CAST(f.invoicedate AS DATE)
+                GROUP BY f.invoicedate
                 ORDER BY Dia ASC
             ";
             
@@ -100,17 +114,17 @@ try {
             $orderBy = "f.invoicedate DESC"; // Orden por defecto
 
             if ($estado === 'ALL') {
-                $whereSql = " WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ? $almacenSqlAnd ";
+                $whereSql = " WHERE f.invoicedate BETWEEN ? AND ? $almacenSqlAnd ";
             } elseif ($estado === 'Sin estado') {
                 $whereSql = " 
                     WHERE m.No_Factura IS NULL 
-                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ? 
+                    AND f.invoicedate BETWEEN ? AND ? 
                     $almacenSqlAnd
                 ";
             } else {
                 $whereSql = " 
                     WHERE m.Estado = ? 
-                    AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ? 
+                    AND f.invoicedate BETWEEN ? AND ? 
                     $almacenSqlAnd
                 ";
                 array_unshift($countParams, $estado);
@@ -118,19 +132,19 @@ try {
                 $orderBy = "m.Fecha_de_Registro DESC";
             }
 
-            $sqlCount = "
+            $sqlCount = $cte_facturas . "
                 SELECT COUNT(f.invoiceid) AS Total
-                FROM Facturas_lineas f
+                FROM Facturas_CTE f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
             ";
-            $sqlDetails = "
+            $sqlDetails = $cte_facturas . "
                 SELECT 
                     f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, f.invoicingname, f.invoiceamountmst,
                     m.Registrado_por, m.Camion, m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, 
                     m.Entregado_por, ISNULL(m.Estado, 'Sin estado') AS Estado, m.Fecha_Reversada, 
                     m.Reversado_Por, m.Fecha_de_NC, m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
-                FROM Facturas_lineas f
+                FROM Facturas_CTE f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
                 $whereSql
                 ORDER BY $orderBy
@@ -177,14 +191,14 @@ try {
             $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
 
             // 1. KPIs de Montos Totales
-            $sqlKpis = "
+            $sqlKpis = $cte_facturas . "
                 SELECT 
                     ISNULL(SUM(f.invoiceamountmst), 0) AS totalAmount,
                     ISNULL(SUM(CASE WHEN m.No_Factura IS NULL THEN f.invoiceamountmst ELSE 0 END), 0) AS sinEstadoAmount,
                     ISNULL(SUM(CASE WHEN m.Estado = 'NC' THEN f.invoiceamountmst ELSE 0 END), 0) AS ncAmount
-                FROM Facturas_lineas f
+                FROM Facturas_CTE f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
-                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd
             ";
             $stmtKpis = sqlsrv_query($conn, $sqlKpis, $baseParams);
@@ -192,12 +206,12 @@ try {
             $response['kpis'] = sqlsrv_fetch_array($stmtKpis, SQLSRV_FETCH_ASSOC);
 
             // 2. Top 10 Clientes por Monto
-            $sqlClients = "
+            $sqlClients = $cte_facturas . "
                 SELECT TOP 10
                     f.invoicingname AS Cliente,
                     SUM(f.invoiceamountmst) AS TotalAmount
-                FROM Facturas_lineas f
-                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                FROM Facturas_CTE f
+                WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd
                 GROUP BY f.invoicingname
                 ORDER BY TotalAmount DESC
@@ -209,18 +223,19 @@ try {
             }
 
             // 3. Top 10 Almacenes por Monto
+            // Usamos Facturas_lineas para el almacén para mayor precisión en el top 10
             $sqlWarehouses = "
                 SELECT TOP 10
-                    f.inventlocationid AS Almacen,
-                    SUM(f.invoiceamountmst) AS TotalAmount
-                FROM Facturas_lineas f
-                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
-                  AND f.inventlocationid IS NOT NULL AND f.inventlocationid <> ''
-                $almacenSqlAnd
-                GROUP BY f.inventlocationid
+                    fl.inventlocationid AS Almacen,
+                    SUM(fl.lineamount) AS TotalAmount
+                FROM Facturas_lineas fl
+                WHERE CAST(fl.invoicedate AS DATE) BETWEEN ? AND ?
+                  AND fl.inventlocationid IS NOT NULL AND fl.inventlocationid <> ''
+                  -- No se aplica filtro de almacén adicional aquí, ya que estamos calculando el top 10.
+                GROUP BY fl.inventlocationid
                 ORDER BY TotalAmount DESC
             ";
-            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, $baseParams);
+            $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); // Solo usa fechas
             if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
             while($row = sqlsrv_fetch_array($stmtWarehouses, SQLSRV_FETCH_ASSOC)) {
                 $response['topWarehouses'][] = $row;
@@ -241,14 +256,14 @@ try {
             $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
 
             // 1. KPIs de Tiempos Promedio
-            $sqlKpis = "
+            $sqlKpis = $cte_facturas . "
                 SELECT 
                     AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Despacho) AS FLOAT)) AS AvgTimeToDispatch,
                     AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDispatchToDeliver,
                     AVG(CAST(DATEDIFF(hour, f.invoicedate, m.Fecha_de_Entregado) AS FLOAT)) AS AvgTotalCycle
-                FROM Facturas_lineas f
+                FROM Facturas_CTE f
                 JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
-                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                WHERE f.invoicedate BETWEEN ? AND ?
                   AND m.Fecha_de_Despacho IS NOT NULL
                   AND m.Fecha_de_Entregado IS NOT NULL
                   $almacenSqlAnd
@@ -260,14 +275,14 @@ try {
             ];
 
             // 2. Análisis de Motivos de Nota de Crédito (NC)
-            $sqlNc = "
+            $sqlNc = $cte_facturas . "
                 SELECT 
                     ISNULL(m.Motivo_NC, 'No especificado') as Motivo,
                     COUNT(m.No_Factura) as Total
                 FROM Factura_Programa_Despacho_MACOR m
-                JOIN Facturas_lineas f ON m.No_Factura = f.invoiceid
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
                 WHERE m.Estado = 'NC' 
-                  AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                  AND f.invoicedate BETWEEN ? AND ?
                   $almacenSqlAnd
                 GROUP BY ISNULL(m.Motivo_NC, 'No especificado')
                 ORDER BY Total DESC
@@ -279,16 +294,16 @@ try {
             }
 
             // 3. Rendimiento de Camiones (Top 5 con más entregas)
-            $sqlTrucks = "
+            $sqlTrucks = $cte_facturas . "
                 SELECT TOP 5
                     m.Camion,
                     COUNT(m.No_Factura) as TotalEntregas,
                     AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDeliveryTime
                 FROM Factura_Programa_Despacho_MACOR m
-                JOIN Facturas_lineas f ON m.No_Factura = f.invoiceid
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
                 WHERE m.Estado = 'ENTREGADO' 
                   AND m.Camion IS NOT NULL AND m.Camion <> ''
-                  AND CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                  AND f.invoicedate BETWEEN ? AND ?
                   $almacenSqlAnd
                 GROUP BY m.Camion
                 ORDER BY TotalEntregas DESC
@@ -306,13 +321,13 @@ try {
                 throw new Exception('Faltan parámetros de fecha para consultar el resumen.', 400);
             }
 
-            $sqlOverview = "
+            $sqlOverview = $cte_facturas . "
                 SELECT 
                     ISNULL(m.Estado, 'Sin estado') AS Estado,
                     COUNT(f.invoiceid) AS Total
-                FROM Facturas_lineas f
+                FROM Facturas_CTE f
                 LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
-                WHERE CAST(f.invoicedate AS DATE) BETWEEN ? AND ?
+                WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd
                 GROUP BY ISNULL(m.Estado, 'Sin estado')
             ";
@@ -340,7 +355,7 @@ try {
             break;
     }
 } catch (Exception $e) {
-    // --- 4. MANEJO CENTRALIZADO DE ERRORES ---
+    // --- 5. MANEJO CENTRALIZADO DE ERRORES ---
     $http_code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
     $response = ['error' => $e->getMessage()];
     if ($sqlsrv_errors = sqlsrv_errors(SQLSRV_ERR_ERRORS)) {
@@ -351,7 +366,6 @@ try {
     if (isset($conn) && $conn !== false) sqlsrv_close($conn);
 }
 
-// --- 5. SALIDA FINAL ---
+// --- 6. SALIDA FINAL ---
 http_response_code($http_code);
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-?>
