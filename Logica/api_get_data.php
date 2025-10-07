@@ -191,7 +191,7 @@ try {
                 'topWarehouses' => []
             ];
             
-            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+                $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
 
             // 1. KPIs de Montos Totales
             $sqlKpis = $cte_facturas . "
@@ -226,19 +226,19 @@ try {
             }
 // ... (dentro de case 'financial':)
 
-            // 3. Top 10 Almacenes por Monto (usa Facturas_lineas para precisión)
-            $sqlWarehouses = "
+            // 3. Top 10 Almacenes por Monto (AHORA USA LA CTE PARA COINCIDENCIA DE MONTO)
+            $sqlWarehouses = $cte_facturas . "
                 SELECT TOP 10
-                    fl.inventlocationid AS Almacen,
-                    SUM(fl.lineamount * (1 + " . ITBIS_RATE . ")) AS TotalAmount -- Monto con ITBIS
-                FROM Facturas_lineas fl
-                WHERE CAST(fl.invoicedate AS DATE) BETWEEN ? AND ?  -- SOLO USAMOS FILTRO DE FECHAS
-                  AND fl.inventlocationid IS NOT NULL AND fl.inventlocationid <> ''
-                GROUP BY fl.inventlocationid
+                    f.inventlocationid AS Almacen,
+                    SUM(f.invoiceamountmst) AS TotalAmount
+                FROM Facturas_CTE f
+                WHERE f.invoicedate BETWEEN ? AND ?
+                  AND f.inventlocationid IS NOT NULL AND f.inventlocationid <> ''
+                GROUP BY f.inventlocationid
                 ORDER BY TotalAmount DESC
             ";
             
-            // IMPORTANTE: Los parámetros ahora son solo $fecha_inicio y $fecha_fin
+            // Usamos solo las fechas: [$fecha_inicio, $fecha_fin]
             $stmtWarehouses = sqlsrv_query($conn, $sqlWarehouses, [$fecha_inicio, $fecha_fin]); 
             
             if ($stmtWarehouses === false) throw new Exception('Error al obtener top almacenes.');
