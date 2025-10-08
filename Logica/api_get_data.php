@@ -9,7 +9,7 @@ $response = [];
 $http_code = 200; 
 
 // Ya no se necesita la constante ITBIS_RATE, pero la dejamos por si se usa en otro lado.
-const ITBIS_RATE = 0.18;
+
 
 try {
     // --- 1. VERIFICACIÓN DE CONEXIÓN ---
@@ -28,21 +28,22 @@ try {
 
     // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS ---
     // Se ha modificado para usar la columna lineamounttax.
-    $cte_facturas = "
-        WITH Facturas_CTE AS (
-            SELECT
-                fl.invoiceid,
-                MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
-                
-                -- MONTO TOTAL DE LA FACTURA (Base + ITBIS desde la columna lineamounttax)
-                SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
-
-                MAX(fl.invoicingname) AS invoicingname,
-                MAX(fl.inventlocationid) AS inventlocationid
-            FROM Facturas_lineas fl
-            GROUP BY fl.invoiceid
-        )
-    ";
+  $cte_facturas = "
+    WITH Facturas_CTE AS (
+        SELECT
+            fl.invoiceid,
+            fl.inventlocationid, -- Se selecciona directamente el almacén
+            
+            -- Se agrupan los datos de la factura por almacén
+            MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
+            SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
+            MAX(fl.invoicingname) AS invoicingname
+            
+        FROM Facturas_lineas fl
+        -- Se agrupa por factura Y por almacén para tratar cada parte por separado
+        GROUP BY fl.invoiceid, fl.inventlocationid 
+    )
+";
 
     // --- 3. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
     $almacenParams = [];
