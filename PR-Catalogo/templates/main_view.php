@@ -10,14 +10,56 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="public/css/style.css">
-</head>
+
+    <style>
+        .header {
+            /* Aseguramos que el header use flexbox para alinear ítems */
+            display: flex;
+            align-items: center;
+        }
+        .search-form {
+            /* Hacemos que el formulario de búsqueda sea flexible si es necesario */
+            flex-grow: 1; /* Opcional, dependiendo de tu layout */
+            margin-right: 20px; /* Espacio antes del widget de usuario */
+        }
+        .auth-widget {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9em;
+            color: #333;
+            margin-left: auto; /* Mueve el widget a la derecha */
+            padding: 0 10px; /* Añade padding horizontal */
+            text-align: right;
+            white-space: nowrap; /* Evita que el nombre se parta en dos líneas */
+        }
+        .auth-widget strong {
+            display: block;
+            color: #000;
+            font-weight: 600;
+            margin-bottom: 4px; /* Espacio entre el nombre y el enlace */
+        }
+        .auth-widget a {
+            color: #d9534f; /* Un color rojo para "salir" */
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .auth-widget a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    </head>
 <body>
     <header class="header">
         <img src="public/img/LOGO MC - COLOR.png" alt="Logo de la Empresa" class="header-logo">
         <form class="search-form" id="search-form" onsubmit="return false;">
             <input type="text" name="q" id="search-box" placeholder="Buscar por Nombre o SKU..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>" autocomplete="off">
         </form>
-    </header>
+
+        <div class="auth-widget">
+            <strong><?php echo htmlspecialchars(Auth::getUserName()); ?></strong>
+            
+            <a href="public/logout.php">Cerrar Sesión</a>
+        </div>
+        </header>
 
     <div class="page-container">
         <aside class="filters-sidebar">

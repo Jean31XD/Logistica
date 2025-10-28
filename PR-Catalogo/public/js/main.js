@@ -10,15 +10,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- LÓGICA DE LA GALERÍA (LIGHTBOX) ---
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    const lightboxInfo = document.getElementById('lightbox-info'); // NUEVO: Panel de info
+    const lightboxInfo = document.getElementById('lightbox-info'); // Panel de info
     const lightboxPrev = document.getElementById('lightbox-prev');
     const lightboxNext = document.getElementById('lightbox-next');
     
     let currentImageIndex = 0;
     let currentImageList = []; // Almacena los '.image-container'
-    let currentInfoList = [];  // NUEVO: Almacena los '.product-info'
+    let currentInfoList = [];  // Almacena los '.product-info'
 
-    // NUEVO: Variables para Swipe/Drag
+    // Variables para Swipe/Drag
     let touchStartX = 0;
     let touchEndX = 0;
     let isDragging = false;
@@ -50,6 +50,16 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(productUrl);
             
+            // --- MODIFICACIÓN IMPORTANTE ---
+            // Manejar sesión expirada (401 Unauthorized)
+            if (response.status === 401) {
+                // La sesión expiró. Forzamos un reload de la página.
+                // El reload será interceptado por el index.php y redirigido a login.php
+                window.location.reload();
+                return; 
+            }
+            // --- FIN MODIFICACIÓN ---
+
             if (!response.ok) {
                 const errorText = await response.text(); 
                 throw new Error(errorText || `Error ${response.status}: ${response.statusText}`);
@@ -69,7 +79,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function updateStats() {
-        // ... (Esta función no necesita cambios, la dejo colapsada por brevedad)
         const selectedCategory = categoriaSelect.value;
         const selectedMarca = marcaSelect.value;
         const statsBox = document.getElementById('stats-box');
@@ -87,6 +96,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = `index.php?${params.toString()}`;
         try {
             const response = await fetch(url);
+
+            // --- MODIFICACIÓN IMPORTANTE ---
+            // Manejar sesión expirada (401 Unauthorized)
+            if (response.status === 401) {
+                window.location.reload();
+                return;
+            }
+            // --- FIN MODIFICACIÓN ---
+
             if (!response.ok) {
                 let errorJson = {};
                 try {
@@ -124,9 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- INICIO LÓGICA LIGHTBOX Y PAGINACIÓN ---
             
-    /**
-     * MODIFICADO: Muestra la imagen Y la información
-     */
     function showImage(index) {
         if (!currentImageList.length) return;
 
@@ -154,7 +169,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Listener principal para clics en Paginación y en Imágenes
     mainContent.addEventListener('click', function(e) {
         
         // 1. Lógica de Paginación (CON SCROLL AL INICIO)
@@ -171,35 +185,26 @@ document.addEventListener('DOMContentLoaded', function() {
         // 2. Lógica de Apertura de Lightbox (Galería)
         const imageContainer = e.target.closest('.image-container');
         if (imageContainer) {
-            e.preventDefault(); // Prevenir comportamiento por defecto (ej. drag fantasma)
+            e.preventDefault(); 
 
-            // Buscamos los contenedores de imagen E info.
-            // Es crucial que .product-card contenga AMBOS
             const allCards = Array.from(mainContent.querySelectorAll('.product-card'));
             
-            // Limpiamos listas
             currentImageList = [];
             currentInfoList = [];
 
-            // Llenamos las listas
             allCards.forEach(card => {
                 const img = card.querySelector('.image-container');
                 const info = card.querySelector('.product-info');
                 
-                // Solo añadir si ambos existen
                 if (img && info) {
                     currentImageList.push(img);
                     currentInfoList.push(info);
                 }
             });
             
-            // Encontrar el índice de la imagen que se clickeó
             currentImageIndex = currentImageList.indexOf(imageContainer);
-            
-            // Mostrar la imagen inicial
             showImage(currentImageIndex);
             
-            // Mostrar flechas SÓLO si hay más de 1 imagen
             if (currentImageList.length > 1) {
                 lightboxPrev.classList.remove('hidden');
                 lightboxNext.classList.remove('hidden');
@@ -208,35 +213,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 lightboxNext.classList.add('hidden');
             }
             
-            // Abrir el lightbox
             lightbox.classList.add('active');
         }
     });
 
-    // --- NUEVO: Listeners para Swipe/Drag ---
+    // --- Listeners para Swipe/Drag ---
 
     function handleGesture() {
-        if (touchEndX === 0 || touchStartX === 0) return; // No se movió
+        if (touchEndX === 0 || touchStartX === 0) return; 
         
         const distance = touchEndX - touchStartX;
         
         if (distance > minSwipeDistance) {
-            // Swipe Derecha (dedo/ratón se movió a la derecha) -> Imagen Anterior
             showImage(currentImageIndex - 1);
         } else if (distance < -minSwipeDistance) {
-            // Swipe Izquierda (dedo/ratón se movió a la izquierda) -> Imagen Siguiente
             showImage(currentImageIndex + 1);
         }
         
-        // Resetear
         touchStartX = 0;
         touchEndX = 0;
     }
 
-    // -- Eventos Táctiles (Móvil) --
     lightboxImg.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true }); // passive: true para mejor rendimiento
+    }, { passive: true });
 
     lightboxImg.addEventListener('touchmove', (e) => {
         touchEndX = e.changedTouches[0].screenX;
@@ -246,15 +246,13 @@ document.addEventListener('DOMContentLoaded', function() {
         handleGesture();
     });
 
-    // -- Eventos de Ratón (PC) --
     lightboxImg.addEventListener('mousedown', (e) => {
-        e.preventDefault(); // Evita que la imagen sea "arrastrada" por el navegador
+        e.preventDefault(); 
         isDragging = true;
         touchStartX = e.screenX;
-        lightboxImg.style.cursor = 'grabbing'; // Cambia el cursor
+        lightboxImg.style.cursor = 'grabbing'; 
     });
 
-    // Se añaden al lightbox entero por si el usuario saca el ratón de la imagen
     lightbox.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
         e.preventDefault();
@@ -266,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         isDragging = false;
         handleGesture();
-        lightboxImg.style.cursor = 'grab'; // Restaura el cursor
+        lightboxImg.style.cursor = 'grab'; 
     });
 
     lightbox.addEventListener('mouseleave', (e) => {
@@ -274,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         isDragging = false;
         handleGesture();
-        lightboxImg.style.cursor = 'grab'; // Restaura el cursor
+        lightboxImg.style.cursor = 'grab'; 
     });
     
     // --- FIN LÓGICA SWIPE ---
