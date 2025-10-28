@@ -1,8 +1,0 @@
-{
-    "require": {
-        "microsoft/azure-storage-blob": "^1.5",
-        "league/oauth2-client": "^2.8",
-        "thenetworg/oauth2-azure": "^2.2",
-        "vlucas/phpdotenv": "^5.6"
-    }
-}
