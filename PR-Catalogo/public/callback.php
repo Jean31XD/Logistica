@@ -11,7 +11,7 @@ try {
     $auth->handleCallback();
     
     // 3. Redirigir al inicio (index.php) ya autenticado
-    header('Location: ../index.php');
+    header('Location: PR-Catalogo/index.php');
     exit();
     
 } catch (Exception $e) {
