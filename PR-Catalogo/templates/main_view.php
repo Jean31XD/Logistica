@@ -84,9 +84,17 @@
 
     <div id="lightbox" class="lightbox">
         <span class="close">&times;</span>
-        <img class="lightbox-content" id="lightbox-img">
+        <span class="prev hidden" id="lightbox-prev">&#10094;</span>
+        <span class="next hidden" id="lightbox-next">&#10095;</span>
+        
+        <div class="lightbox-main">
+            <div class="lightbox-image-wrapper">
+                <img class="lightbox-content" id="lightbox-img">
+            </div>
+            <div class="lightbox-info" id="lightbox-info">
+                </div>
+        </div>
     </div>
-
     <script src="public/js/main.js"></script>
 </body>
 </html>
