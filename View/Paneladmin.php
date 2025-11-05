@@ -215,7 +215,7 @@ if (empty($_SESSION['csrf_token'])) {
                     ['title' => 'Recepción', 'desc' => 'Control de recepción de documentos.', 'link' => '../View/facturas-recepcion.php', 'icon' => 'fa-inbox'],
                     ['title' => 'Reporte de Facturas', 'desc' => 'Reporte por Transportista.', 'link' => '../View/Reporte.php', 'icon' => 'fa-chart-pie'],
                     ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar'],
-                    // --- TARJETA NUEVA AÑADIDA AQUÍ ---
+                    ['title' => 'Dashboard', 'desc' => 'Visión general de la gestión.', 'link' => '../View/dashboard.php', 'icon' => 'fa-tachometer-alt'],
                 ];
                 $delay = 0.2;
                 foreach ($cards as $card):
