@@ -339,7 +339,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar'],
                     // --- TARJETA NUEVA AÑADIDA AQUÍ ---
                     ['title' => 'Etiquetado', 'desc' => 'Crea, modifica y elimina etiquetas.', 'link' => '../View/Listo-etiquetas.php', 'icon' => 'fa-tags'],
-                    ['title' => 'Gestión de Usuarios', 'desc' => 'Crea, modifica y elimina usuarios.', 'link' => '../View/Gestion_de_usuario.php', 'icon' => 'fa-users-cog']
+                    ['title' => 'Gestión de Usuarios', 'desc' => 'Crea, modifica y elimina usuarios.', 'link' => '../View/Gestion_de_usuario.php', 'icon' => 'fa-users-cog'],
+                    ['title' => 'Dashboard', 'desc' => 'Visión general de la gestión.', 'link' => '../View/dashboard.php', 'icon' => 'fa-tachometer-alt']
 
                 ];
                 $delay = 0.2;
