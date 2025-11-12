@@ -160,7 +160,7 @@
             font-size: 1rem;
             appearance: none;
             font-weight: 700;
-        }        
+        }        
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .filter-group select { background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; cursor: pointer; background-color: #1a202c;}
         .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
@@ -397,7 +397,7 @@
         descripcion: ''
     };
 
-    // Auto-focus en siguiente input (ESTO YA ESTABA CORRECTO)
+    // Auto-focus en siguiente input
     pinInputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {
             if (e.target.value && index < 3) {
@@ -432,7 +432,8 @@
         loginBtn.textContent = 'Verificando...';
         
         try {
-            const response = await fetch('../Logica/api_login.php', {
+            // 🚀 CORRECCIÓN DE RUTA 1: Quitado el '../'
+            const response = await fetch('Logica/api_login.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -440,6 +441,11 @@
                 body: JSON.stringify({ codigo })
             });
             
+            // Verificamos si la respuesta no es OK (ej. 404, 500)
+            if (!response.ok) {
+                 throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
             
             if (result.success) {
@@ -455,8 +461,9 @@
                 pinInputs[0].focus();
             }
         } catch (error) {
-            errorMessage.textContent = 'Error de conexión. Intenta nuevamente.';
-            console.error('Error:', error);
+            // Este error ahora captura el '404' y el error de JSON
+            errorMessage.textContent = 'Error de conexión o de servidor.';
+            console.error('Error en fetch de login:', error);
         } finally {
             loginBtn.disabled = false;
             loginBtn.textContent = 'Ingresar';
@@ -466,7 +473,8 @@
     // Logout
     document.getElementById('logout-btn').addEventListener('click', async () => {
         try {
-            await fetch('../Logica/api_login.php?action=logout');
+            // 🚀 CORRECCIÓN DE RUTA 2: Quitado el '../'
+            await fetch('Logica/api_login.php?action=logout');
             location.reload();
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
@@ -478,26 +486,22 @@
         loginScreen.classList.add('hidden');
         dashboardScreen.classList.remove('hidden');
         
-        // Actualizar info de usuario
         document.getElementById('user-info-display').textContent = userSession.descripcion;
         
-        // Si NO es admin, configurar filtro de almacén
         const almacenFilterContainer = document.getElementById('almacen-filter-container');
         const almacenFilterInput = document.getElementById('filtro_almacen');
         
         if (!userSession.esAdmin && userSession.almacen) {
-            // Ocultar filtro y forzar el almacén del usuario
             almacenFilterContainer.style.display = 'none';
             almacenFilterInput.value = userSession.almacen;
             almacenFilterInput.disabled = true;
         } else {
-            // Admin puede ver todos, poblamos el dropdown
             almacenFilterContainer.style.display = 'block';
             almacenFilterInput.disabled = false;
-            populateAlmacenes(); // Función para llenar el <select>
+            // 🚀 CAMBIO: Ya no llamamos a populateAlmacenes() aquí.
+            // Se poblará con la primera llamada a fetchData().
         }
         
-        // Inicializar dashboard
         initializeDashboard();
     }
 
@@ -516,15 +520,39 @@
         let detailsLimit = parseInt(document.getElementById('details-limit').value);
         let detailsTotalCount = 0;
         
-        // 🎨 Paleta de colores para las gráficas
+        // 🎨 Paleta de colores mejorada
         const CHART_COLORS = [
-            '#ff0000ff, #cb1717ef, #bb1b1bff, #751010ff)',
-            '#ff0000ff, #cb1717ef, #bb1b1bff, #751010ff)'
+            '#E53E3E', // Rojo (Accent)
+            '#3182CE', // Azul
+            '#38A169', // Verde
+            '#DD6B20', // Naranja
+            '#D69E2E', // Amarillo/Ocre
+            '#805AD5', // Morado
+            '#D53F8C', // Rosa
+            '#718096', // Gris
+            '#F56565', // Rojo claro
+            '#63B3ED', // Azul claro
+            '#68D391', // Verde claro
+            '#F6AD55'  // Naranja claro
+        ];
+        
+        const CHART_COLORS_RED_GRADIENT = [
+             '#751010ff',
+             '#bb1b1bff',
+             '#cb1717ef',
+             '#ff0000ff'
         ];
 
+
         // --- Helper Functions ---
-        const formatCurrency = (value) => new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(value);
-        const formatHours = (value) => `${(value || 0).toFixed(1)} horas`;
+        const formatCurrency = (value) => {
+            if (value === null || value === undefined) return '--';
+            return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(value);
+        };
+        const formatHours = (value) => {
+            if (value === null || value === undefined) return '-- horas';
+            return `${(value || 0).toFixed(1)} horas`;
+        };
         
         // Establecer fechas por defecto (hoy)
         const setDates = () => {
@@ -533,25 +561,23 @@
             fechaFinInput.value = today;
         };
 
-        // Poblar filtro de almacenes si es admin
-        const populateAlmacenes = async () => {
+        // 🚀 CAMBIO: Esta función ahora solo lee los datos, no los busca.
+        const populateAlmacenes = (almacenes = []) => {
             if (!userSession.esAdmin) return;
-            try {
-                // Asumimos que la API tiene un endpoint para esto
-                const response = await fetch('../Logica/api_dashboard.php?action=getAlmacenes');
-                const data = await response.json();
-                if (data.success && data.almacenes) {
-                    almacenFilterInput.innerHTML = '<option value="">Todos los Almacenes</option>'; // Reset
-                    data.almacenes.forEach(alm => {
-                        const option = document.createElement('option');
-                        option.value = alm.almacen;
-                        option.textContent = alm.almacen;
-                        almacenFilterInput.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error("Error cargando almacenes:", error);
-            }
+            
+            // Guardar el valor actual por si acaso
+            const currentValue = almacenFilterInput.value;
+            
+            almacenFilterInput.innerHTML = '<option value="">Todos los Almacenes</option>'; // Reset
+            almacenes.forEach(alm => {
+                const option = document.createElement('option');
+                option.value = alm.almacen; // El PHP ahora devuelve 'almacen'
+                option.textContent = alm.almacen;
+                almacenFilterInput.appendChild(option);
+            });
+            
+            // Restaurar el valor seleccionado si aún existe
+            almacenFilterInput.value = currentValue;
         };
 
         // --- Chart Initialization ---
@@ -579,7 +605,7 @@
             // Gráfica de Estados (Overview)
             statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), {
                 type: 'bar',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS }] },
+                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS_RED_GRADIENT }] },
                 options: defaultChartOptions(false)
             });
 
@@ -600,21 +626,21 @@
             // Gráfica de Camiones (Performance)
             truckPerformanceChart = new Chart(document.getElementById('truckPerformanceChart').getContext('2d'), {
                 type: 'bar',
-                options: { ...defaultChartOptions(false), indexAxis: 'y' },
+                options: { ...defaultChartOptions(false), indexAxis: 'y', scales: { y: { ticks: { color: '#4a5568' } } } },
                 data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[4] }] }
             });
 
             // Gráfica Top Clientes (Financial)
             topClientsChart = new Chart(document.getElementById('topClientsChart').getContext('2d'), {
                 type: 'bar',
-                options: { ...defaultChartOptions(false), indexAxis: 'y' },
+                options: { ...defaultChartOptions(false), indexAxis: 'y', scales: { y: { ticks: { color: '#4a5568' } } } },
                 data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[5] }] }
             });
             
             // Gráfica Top Almacenes (Financial)
             topWarehousesChart = new Chart(document.getElementById('topWarehousesChart').getContext('2d'), {
                 type: 'bar',
-                options: { ...defaultChartOptions(false), indexAxis: 'y' },
+                options: { ...defaultChartOptions(false), indexAxis: 'y', scales: { y: { ticks: { color: '#4a5568' } } } },
                 data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[6] }] }
             });
         };
@@ -630,15 +656,16 @@
             });
             
             try {
-                // Asumimos que api_dashboard.php devuelve toda la data agregada
-                const response = await fetch(`../Logica/api_dashboard.php?action=getData&${params.toString()}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
+                // 🚀 CORRECCIÓN DE RUTA 3: Usamos 'Logica/' y 'action=getData'
+                const response = await fetch(`Logica/api_dashboard.php?action=getData&${params.toString()}`);
+                if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
                 
-                if (data.success) {
-                    updateDashboard(data.data);
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateDashboard(result.data);
                 } else {
-                    alert('Error al cargar datos: ' + (data.message || 'Error desconocido'));
+                    alert('Error al cargar datos: ' + (result.message || 'Error desconocido'));
                 }
             } catch (error) {
                 console.error("Error al cargar datos del dashboard:", error);
@@ -649,6 +676,11 @@
         };
 
         const updateDashboard = (data) => {
+            // 🚀 CAMBIO: Poblar almacenes desde la data principal
+            if (userSession.esAdmin && data.allAlmacenes) {
+                populateAlmacenes(data.allAlmacenes);
+            }
+
             // 1. KPIs Overview
             document.getElementById('total-emitidas').textContent = data.kpi.total_emitidas || 0;
             document.getElementById('sin-estado').textContent = data.kpi.sin_estado || 0;
@@ -664,14 +696,18 @@
             tableBody.innerHTML = '';
             let totalGeneral = 0;
             data.statusDistribution.forEach(item => {
-                tableBody.innerHTML += `<tr><td>${item.estado}</td><td>${item.total}</td></tr>`;
+                // Hacemos que la fila de la tabla sea clickeable
+                tableBody.innerHTML += `<tr style="cursor: pointer;" data-estado="${item.estado}">
+                    <td>${item.estado}</td>
+                    <td>${item.total}</td>
+                </tr>`;
                 totalGeneral += item.total;
             });
             document.getElementById('statusTableTotal').textContent = totalGeneral;
 
             // 3. Gráfica de Tendencias
-            trendsChart.data.labels = data.trends.map(d => d.fecha);
-            trendsChart.data.datasets[0].data = data.trends.map(d => d.total);
+            trendsChart.data.labels = data.trends.map(d => d.Dia);
+            trendsChart.data.datasets[0].data = data.trends.map(d => d.Total);
             trendsChart.update();
 
             // 4. KPIs Performance
@@ -685,7 +721,7 @@
             ncReasonsChart.update();
 
             // 6. Gráfica Top Camiones
-            truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.camion);
+            truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.Camion);
             truckPerformanceChart.data.datasets[0].data = data.truckPerformance.map(d => d.total_entregas);
             truckPerformanceChart.update();
 
@@ -723,8 +759,10 @@
             });
             
             try {
-                const response = await fetch(`../Logica/api_dashboard.php?action=getDetails&${params.toString()}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                // 🚀 CORRECCIÓN DE RUTA 4: Usamos 'Logica/' y 'action=getDetails'
+                const response = await fetch(`Logica/api_dashboard.php?action=getDetails&${params.toString()}`);
+                if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+                
                 const data = await response.json();
                 
                 if (data.success) {
@@ -740,7 +778,7 @@
                     } else {
                         document.getElementById('details-title').textContent = `Detalle de Facturas: ${estado}`;
                     }
-                    document.getElementById('details-period').textContent = `Mostrando resultados para el período seleccionado.`;
+                    document.getElementById('details-period').textContent = `Mostrando resultados para ${fechaInicioInput.value} al ${fechaFinInput.value}.`;
                     
                 } else {
                     alert('Error al cargar detalles: ' + (data.message || 'Error desconocido'));
@@ -763,7 +801,6 @@
             
             details.forEach(row => {
                 const tr = document.createElement('tr');
-                // Campos de la tabla (ajusta el orden y los nombres según tu BD)
                 tr.innerHTML = `
                     <td>${row.NoFactura || ''}</td><td>${row.FechaRegistro || ''}</td><td>${row.Cliente || ''}</td>
                     <td>${row.Monto ? formatCurrency(row.Monto) : ''}</td><td>${row.RegistradoPor || ''}</td><td>${row.Camion || ''}</td>
@@ -795,7 +832,7 @@
                 navLink.classList.add('active');
                 mainTitle.textContent = navLink.textContent;
             } else if (viewId === 'details') {
-                // 'details' no está en el nav, no hacemos nada con el título principal
+                 mainTitle.textContent = "Detalle de Facturas"; // Título para la vista de detalles
             }
             
             currentView = viewId;
@@ -808,7 +845,11 @@
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const viewId = e.target.getAttribute('data-view');
-                showView(viewId);
+                if(viewId !== currentView) {
+                     showView(viewId);
+                     // No necesitamos recargar datos aquí, ya que los filtros no han cambiado
+                     // Los datos para todas las vistas se cargan una vez en fetchData()
+                }
             });
         });
 
@@ -819,14 +860,22 @@
                 if (currentView === 'details') {
                     showView('overview');
                 }
-                fetchData();
+                fetchData(); // Recargamos toda la data del dashboard
             });
         });
         
         // Clic en KPIs para ver detalles
         document.getElementById('kpi-total-emitidas').addEventListener('click', () => fetchDetails('TOTAL', 1, detailsLimit));
         document.getElementById('kpi-sin-estado').addEventListener('click', () => fetchDetails('SIN_ESTADO', 1, detailsLimit));
-        // Nota: Para hacer clic en la tabla de estados, necesitarías un listener en 'statusTableBody'
+        
+        // Clic en la tabla de estados
+        document.getElementById('statusTableBody').addEventListener('click', (e) => {
+             const row = e.target.closest('tr');
+             if (row && row.dataset.estado) {
+                 const estado = row.dataset.estado === 'Sin estado' ? 'SIN_ESTADO' : row.dataset.estado;
+                 fetchDetails(estado, 1, detailsLimit);
+             }
+        });
         
         // Controles de Details View
         document.getElementById('back-to-overview').addEventListener('click', () => showView('overview'));
@@ -848,6 +897,8 @@
         // --- Carga Inicial ---
         setDates();
         initializeCharts();
-        fetchData();
+        fetchData(); // Esto ahora también cargará los almacenes
     }
 </script>
+</body>
+</html>
