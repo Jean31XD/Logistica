@@ -518,8 +518,8 @@
         
         // 🎨 Paleta de colores para las gráficas
         const CHART_COLORS = [
-            '#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5', '#d53f8c',
-            '#f56565', '#f6ad55', '#faf089', '#68d391', '#63b3ed', '#b794f4', '#f687b3'
+            '#ff0000ff, #cb1717ef, #bb1b1bff, #751010ff)',
+            '#ff0000ff, #cb1717ef, #bb1b1bff, #751010ff)'
         ];
 
         // --- Helper Functions ---
