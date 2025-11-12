@@ -4,10 +4,12 @@ header('Content-Type: application/json');
 session_start();
 
 // Incluir tu archivo de conexión a la base de datos
-require_once __DIR__ . '../conexionBD/conexion.php';
+// 🚀 CORRECCIÓN: Se añadió un '/' después de __DIR__
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Función para registrar intentos de acceso
 function registrarAcceso($conn, $codigo, $exito) {
+// ... (resto del código sin cambios) ...
     $ip = $_SERVER['REMOTE_ADDR'];
     $stmt = $conn->prepare("INSERT INTO log_accesos (codigo, ip_address, exito) VALUES (?, ?, ?)");
     $stmt->bind_param("ssi", $codigo, $ip, $exito);
