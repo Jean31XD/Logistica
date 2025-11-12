@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 session_start();
 
 // Incluir tu archivo de conexión a la base de datos
-require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '../conexionBD/conexion.php';
 
 // Función para registrar intentos de acceso
 function registrarAcceso($conn, $codigo, $exito) {
