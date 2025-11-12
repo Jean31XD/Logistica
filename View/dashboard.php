@@ -433,7 +433,7 @@
         
         try {
             // 🚀 CORRECCIÓN DE RUTA 1: Quitado el '../'
-            const response = await fetch('Logica/api_login.php', {
+            const response = await fetch('../Logica/api_login.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -474,7 +474,7 @@
     document.getElementById('logout-btn').addEventListener('click', async () => {
         try {
             // 🚀 CORRECCIÓN DE RUTA 2: Quitado el '../'
-            await fetch('Logica/api_login.php?action=logout');
+            await fetch('../Logica/api_login.php?action=logout');
             location.reload();
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
@@ -657,7 +657,7 @@
             
             try {
                 // 🚀 CORRECCIÓN DE RUTA 3: Usamos 'Logica/' y 'action=getData'
-                const response = await fetch(`Logica/api_dashboard.php?action=getData&${params.toString()}`);
+                const response = await fetch(`../Logica/api_dashboard.php?action=getData&${params.toString()}`);
                 if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
                 
                 const result = await response.json();
@@ -760,7 +760,7 @@
             
             try {
                 // 🚀 CORRECCIÓN DE RUTA 4: Usamos 'Logica/' y 'action=getDetails'
-                const response = await fetch(`Logica/api_dashboard.php?action=getDetails&${params.toString()}`);
+                const response = await fetch(`../Logica/api_dashboard.php?action=getDetails&${params.toString()}`);
                 if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
                 
                 const data = await response.json();
