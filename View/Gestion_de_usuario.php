@@ -70,6 +70,8 @@ $mensajeCrear = $alertCrear = "";
 $mensajeModificar = $alertModificar = "";
 $mensajeEliminar = $alertEliminar = "";
 $mensajeVentanilla = $alertVentanilla = "";
+// --- 🚀 NUEVO: Mensajes para la sección de Códigos ---
+$mensajeCodigo = $alertCodigo = "";
 
 
 // --- SECCIÓN 2: PROCESAMIENTO DE FORMULARIOS (POST) ---
@@ -226,51 +228,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
 
         // --- Lógica para Gestión de Transportistas ---
-   // --- Lógica para Gestión de Transportistas ---
-case 'insertar':
-case 'actualizar':
-case 'eliminar_transportista':
+        case 'insertar':
+        case 'actualizar':
+        case 'eliminar_transportista':
 
-    // Recuperar datos del formulario
-    $nombre = $_POST['nombre'] ?? '';
-    $cedula = $_POST['cedula'] ?? '';
-    $empresa = $_POST['empresa'] ?? '';
-    $rnc = $_POST['rnc'] ?? '';
-    $matricula = $_POST['matricula'] ?? '';
+            // Recuperar datos del formulario
+            $nombre = $_POST['nombre'] ?? '';
+            $cedula = $_POST['cedula'] ?? '';
+            $empresa = $_POST['empresa'] ?? '';
+            $rnc = $_POST['rnc'] ?? '';
+            $matricula = $_POST['matricula'] ?? '';
 
-    // Usuario autenticado
-    if (!isset($_SESSION['usuario'])) {
-        die("Acceso denegado. Debe iniciar sesión.");
-    }
-    $usuario = $_SESSION['usuario'];
+            // Usuario autenticado
+            if (!isset($_SESSION['usuario'])) {
+                die("Acceso denegado. Debe iniciar sesión.");
+            }
+            $usuario = $_SESSION['usuario'];
 
-    if ($accion === 'insertar') {
-        $query = "INSERT INTO facebd (Nombres, Cedula, Empresa, RNC, Matricula, creado_por) 
-                  VALUES (?, ?, ?, ?, ?, ?)";
-        $params = [$nombre, $cedula, $empresa, $rnc, $matricula, $usuario];
-        $stmt = sqlsrv_query($conn, $query, $params);
-        $mensajeTransportista = $stmt ? "✅ Transportista agregado correctamente." : "❌ Error al insertar transportista.";
-    }
+            if ($accion === 'insertar') {
+                $query = "INSERT INTO facebd (Nombres, Cedula, Empresa, RNC, Matricula, creado_por) 
+                            VALUES (?, ?, ?, ?, ?, ?)";
+                $params = [$nombre, $cedula, $empresa, $rnc, $matricula, $usuario];
+                $stmt = sqlsrv_query($conn, $query, $params);
+                $mensajeTransportista = $stmt ? "✅ Transportista agregado correctamente." : "❌ Error al insertar transportista.";
+            }
 
-    if ($accion === 'actualizar') {
-        $query = "UPDATE facebd 
-                  SET Nombres = ?, Empresa = ?, RNC = ?, Matricula = ?, creado_por = ?
-                  WHERE Cedula = ?";
-        $params = [$nombre, $empresa, $rnc, $matricula, $usuario, $cedula];
-        $stmt = sqlsrv_query($conn, $query, $params);
-        $mensajeTransportista = $stmt ? "✅ Transportista actualizado correctamente." : "❌ Error al actualizar transportista.";
-    }
+            if ($accion === 'actualizar') {
+                $query = "UPDATE facebd 
+                            SET Nombres = ?, Empresa = ?, RNC = ?, Matricula = ?, creado_por = ?
+                            WHERE Cedula = ?";
+                $params = [$nombre, $empresa, $rnc, $matricula, $usuario, $cedula];
+                $stmt = sqlsrv_query($conn, $query, $params);
+                $mensajeTransportista = $stmt ? "✅ Transportista actualizado correctamente." : "❌ Error al actualizar transportista.";
+            }
 
-    if ($accion === 'eliminar_transportista') {
-        $query = "DELETE FROM facebd WHERE Cedula = ?";
-        $params = [$cedula];
-        $stmt = sqlsrv_query($conn, $query, $params);
-        $mensajeTransportista = $stmt ? "🗑️ Transportista eliminado correctamente." : "❌ Error al eliminar transportista.";
-    }
-    break;
+            if ($accion === 'eliminar_transportista') {
+                $query = "DELETE FROM facebd WHERE Cedula = ?";
+                $params = [$cedula];
+                $stmt = sqlsrv_query($conn, $query, $params);
+                $mensajeTransportista = $stmt ? "🗑️ Transportista eliminado correctamente." : "❌ Error al eliminar transportista.";
+            }
+            break;
 
-}
-}
+        // --- 🚀 SECCIÓN 5: GESTIÓN DE CÓDIGOS (NUEVO) ---
+        
+        case 'crear_codigo':
+            $codigo = trim($_POST['codigo']);
+            $almacen = trim($_POST['almacen']) ?: NULL;
+            $descripcion = trim($_POST['descripcion']);
+            $es_admin = isset($_POST['es_admin']) ? 1 : 0;
+            
+            $sql = "INSERT INTO codigos_acceso (codigo, almacen, descripcion, es_admin) VALUES (?, ?, ?, ?)";
+            $params = [$codigo, $almacen, $descripcion, $es_admin];
+            $stmt = sqlsrv_prepare($conn, $sql, $params);
+            
+            if ($stmt && sqlsrv_execute($stmt)) {
+                $mensajeCodigo = "✅ Código creado exitosamente.";
+                $alertCodigo = "alert-success";
+            } else {
+                $mensajeCodigo = "❌ Error al crear código.";
+                $alertCodigo = "alert-danger";
+                 // error_log(print_r(sqlsrv_errors(), true)); // Descomentar para depurar
+            }
+            break;
+            
+        case 'toggle_codigo':
+            $id = $_POST['id'];
+            // SQL Server usa CASE para alternar booleanos (bit)
+            $sql = "UPDATE codigos_acceso SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE id = ?";
+            $params = [$id];
+            $stmt = sqlsrv_prepare($conn, $sql, $params);
+            
+            if ($stmt && sqlsrv_execute($stmt)) {
+                 $mensajeCodigo = "✅ Estado del código actualizado.";
+                 $alertCodigo = "alert-info";
+            } else {
+                 $mensajeCodigo = "❌ Error al actualizar estado.";
+                 $alertCodigo = "alert-danger";
+            }
+            break;
+            
+        case 'eliminar_codigo':
+            $id = $_POST['id'];
+            $codigo_valor = $_POST['codigo_valor'] ?? '';
+            
+            if ($codigo_valor === '0000') {
+                 $mensajeCodigo = "❌ No se puede eliminar el código maestro '0000'.";
+                 $alertCodigo = "alert-danger";
+                 break;
+            }
+            
+            $sql = "DELETE FROM codigos_acceso WHERE id = ?";
+            $params = [$id];
+            $stmt = sqlsrv_prepare($conn, $sql, $params);
+            
+            if ($stmt && sqlsrv_execute($stmt)) {
+                if (sqlsrv_rows_affected($stmt) > 0) {
+                    $mensajeCodigo = "🗑️ Código eliminado exitosamente.";
+                    $alertCodigo = "alert-success";
+                } else {
+                    $mensajeCodigo = "🤷 No se encontró el código a eliminar.";
+                    $alertCodigo = "alert-warning";
+                }
+            } else {
+                 $mensajeCodigo = "❌ Error al eliminar código.";
+                 $alertCodigo = "alert-danger";
+            }
+            break;
+
+    } // Fin del switch
+} // Fin del POST
 
 // --- SECCIÓN 3: LÓGICA DE CONSULTA DE TRANSPORTISTA (GET) ---
 
@@ -297,6 +364,38 @@ if ($stmtUsuarios) {
         $listaUsuarios[] = $row;
     }
 }
+
+// --- 🚀 NUEVO: Obtener datos para la sección de Códigos ---
+// Obtener códigos de acceso
+$listaCodigos = [];
+$sqlCodigos = "SELECT * FROM codigos_acceso ORDER BY es_admin DESC, almacen ASC, codigo ASC";
+$stmtCodigos = sqlsrv_query($conn, $sqlCodigos);
+if ($stmtCodigos) {
+    while ($row = sqlsrv_fetch_array($stmtCodigos, SQLSRV_FETCH_ASSOC)) {
+        $listaCodigos[] = $row;
+    }
+}
+
+// Obtener almacenes
+$listaAlmacenes = [];
+$sqlAlmacenes = "SELECT DISTINCT inventlocationid FROM inventlocation ORDER BY inventlocationid";
+$stmtAlmacenes = sqlsrv_query($conn, $sqlAlmacenes);
+if ($stmtAlmacenes) {
+    while ($row = sqlsrv_fetch_array($stmtAlmacenes, SQLSRV_FETCH_ASSOC)) {
+        $listaAlmacenes[] = $row;
+    }
+}
+
+// Obtener estadísticas de acceso (Traducción de MySQL a SQL Server)
+$sqlStats = "SELECT 
+                COUNT(*) as total_intentos,
+                SUM(CASE WHEN exito = 1 THEN 1 ELSE 0 END) as exitosos,
+                SUM(CASE WHEN exito = 0 THEN 1 ELSE 0 END) as fallidos
+            FROM log_accesos
+            WHERE fecha_hora >= DATEADD(day, -7, GETDATE())"; // Sintaxis SQL Server
+$statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_ASSOC);
+// --- FIN DATOS CÓDIGOS ---
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -355,6 +454,8 @@ if ($stmtUsuarios) {
         }
         .form-select, .select2-container--bootstrap-5 .select2-selection { color-scheme: dark; color: #fff; }
         select.form-select option, .select2-results__option { background: #fff; color: #000; }
+        .form-check-input { background-color: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
+        .form-check-input:checked { background-color: var(--primary-color); border-color: var(--primary-color); }
         .btn { font-weight: 600; border-radius: 0.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .btn:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
         .result-card { background: rgba(0, 0, 0, 0.2); border-radius: 0.5rem; padding: 1rem; font-family: monospace; }
@@ -366,6 +467,8 @@ if ($stmtUsuarios) {
         .alert-info { background: rgba(13, 202, 240, 0.8); color: #fff; }
         .table-custom { background-color: rgba(0, 0, 0, 0.2); color: #fff; }
         .table-custom th { color: var(--warning-color); }
+        .table-custom .badge { min-width: 80px; text-align: center; }
+        .table-custom .actions-col { display: flex; gap: 0.5rem; }
     </style>
 </head>
 <body>
@@ -562,9 +665,204 @@ if ($stmtUsuarios) {
                     </div>
                 </div>
             </div>
-        
+            
+            <div class="col-lg-6 mb-4">
+                <div class="card animate__animated animate__fadeInRight">
+                     <div class="card-header"><i class="fa-solid fa-list-check me-2"></i>Usuarios y Ventanillas</div>
+                     <div class="card-body">
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-custom table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Ventanilla Asignada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($listaUsuarios as $user): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($user['Usuario']) ?></td>
+                                            <td><?= htmlspecialchars($user['Ventanilla'] ?: 'N/A') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                     </div>
+                </div>
+            </div>
+            
+        </div>
     </section>
-</main>
+
+    <hr style="border-width: 2px; border-color: rgba(255,255,255,0.3); margin: 3rem 0;">
+
+    <section id="gestion-codigos" aria-labelledby="gestion-codigos-title">
+        <h2 id="gestion-codigos-title" class="section-title animate__animated animate__fadeInUp">🔐 Gestión de Códigos de Acceso</h2>
+        
+        <?php if ($mensajeCodigo): ?>
+            <div class="alert <?= $alertCodigo ?> alert-dismissible fade show" role="alert">
+                <?= $mensajeCodigo ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <div class="row">
+            <div class="col-lg-5 mb-4">
+                <div class="card animate__animated animate__fadeInLeft">
+                    <div class="card-header"><i class="fa-solid fa-plus-circle me-2"></i>Crear Nuevo Código</div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="accion" value="crear_codigo">
+                            
+                            <div class="mb-3">
+                                <label for="codigo" class="form-label">Código PIN (4 dígitos) *</label>
+                                <input type="text" id="codigo" name="codigo" class="form-control" pattern="\d{4}" required 
+                                       placeholder="Ej: 1234" maxlength="4">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="descripcion" class="form-label">Descripción *</label>
+                                <input type="text" id="descripcion" name="descripcion" class="form-control" required 
+                                       placeholder="Ej: Gerente de Ventas - Juan Pérez">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="almacen" class="form-label">Almacén (dejar vacío para acceso total)</label>
+                                <select id="almacen" name="almacen" class="form-select">
+                                    <option value="">-- Acceso a todos los almacenes --</option>
+                                    <?php foreach ($listaAlmacenes as $alm): ?>
+                                        <option value="<?= htmlspecialchars($alm['inventlocationid']) ?>">
+                                            <?= htmlspecialchars($alm['inventlocationid']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" id="es_admin" name="es_admin" class="form-check-input">
+                                <label for="es_admin" class="form-check-label">Es Administrador (acceso total)</label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success w-100 mt-2"><i class="fa-solid fa-plus-circle me-1"></i>Crear Código</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7 mb-4">
+                <div class="card animate__animated animate__fadeInRight">
+                    <div class="card-header"><i class="fa-solid fa-list-check me-2"></i>Códigos Existentes</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descripción</th>
+                                        <th>Almacén</th>
+                                        <th>Tipo</th>
+                                        <th>Estado</th>
+                                        <th>Último Acceso</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($listaCodigos as $codigo): ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars($codigo['codigo']) ?></strong></td>
+                                            <td><?= htmlspecialchars($codigo['descripcion']) ?></td>
+                                            <td><?= $codigo['almacen'] ? htmlspecialchars($codigo['almacen']) : '<em>Todos</em>' ?></td>
+                                            <td>
+                                                <?php if ($codigo['es_admin']): ?>
+                                                    <span class="badge bg-danger">ADMIN</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-info text-dark">USUARIO</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($codigo['activo']): ?>
+                                                    <span class="badge bg-success">Activo</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary">Inactivo</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?= $codigo['ultimo_acceso'] ? $codigo['ultimo_acceso']->format('d/m/Y H:i') : 'Nunca' ?>
+                                            </td>
+                                            <td>
+                                                <div class="actions-col">
+                                                    <form method="POST" style="margin:0;">
+                                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                                        <input type="hidden" name="action" value="toggle_codigo">
+                                                        <input type="hidden" name="id" value="<?= $codigo['id'] ?>">
+                                                        <button type="submit" class="btn btn-sm <?= $codigo['activo'] ? 'btn-warning text-dark' : 'btn-info' ?>"
+                                                                title="<?= $codigo['activo'] ? 'Desactivar' : 'Activar' ?>">
+                                                            <i class="fa-solid <?= $codigo['activo'] ? 'fa-pause' : 'fa-play' ?>"></i>
+                                                        </button>
+                                                    </form>
+                                                    
+                                                    <?php if ($codigo['codigo'] !== '0000'): // Proteger código maestro ?>
+                                                        <form method="POST" style="margin:0;" 
+                                                              onsubmit="return confirm('¿Estás seguro de eliminar este código?');">
+                                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                                            <input type="hidden" name="action" value="eliminar_codigo">
+                                                            <input type="hidden" name="id" value="<?= $codigo['id'] ?>">
+                                                            <input type="hidden" name="codigo_valor" value="<?= htmlspecialchars($codigo['codigo']) ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
+                                                                <i class="fa-solid fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($listaCodigos)): ?>
+                                        <tr>
+                                            <td colspan="7" class="text-center">No hay códigos creados.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card animate__animated animate__fadeInUp" style="animation-delay: 0.5s;">
+                    <div class="card-header"><i class="fa-solid fa-chart-line me-2"></i>Estadísticas de Acceso (Últimos 7 días)</div>
+                    <div class="card-body">
+                        <div class="row text-center g-3">
+                            <div class="col-md-4">
+                                <div class="p-3 rounded" style="background-color: rgba(0, 0, 0, 0.2);">
+                                    <h2 class="fw-bold mb-1"><?= $statsAcceso['total_intentos'] ?? 0 ?></h2>
+                                    <p class="mb-0 text-white-50">Total Intentos</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 rounded text-white" style="background-color: rgba(25, 135, 84, 0.5);">
+                                    <h2 class="fw-bold mb-1"><?= $statsAcceso['exitosos'] ?? 0 ?></h2>
+                                    <p class="mb-0">Exitosos</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 rounded text-white" style="background-color: rgba(220, 53, 69, 0.5);">
+                                    <h2 class="fw-bold mb-1"><?= $statsAcceso['fallidos'] ?? 0 ?></h2>
+                                    <p class="mb-0">Fallidos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    </main>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -580,4 +878,4 @@ $(document).ready(function() {
 });
 </script>
 </body>
-</html> 
+</html>

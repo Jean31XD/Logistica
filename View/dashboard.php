@@ -397,7 +397,7 @@
         descripcion: ''
     };
 
-    // Auto-focus en siguiente input
+    // Auto-focus en siguiente input (ESTO YA ESTABA CORRECTO)
     pinInputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {
             if (e.target.value && index < 3) {
@@ -491,16 +491,17 @@
             almacenFilterInput.value = userSession.almacen;
             almacenFilterInput.disabled = true;
         } else {
-            // Admin puede ver todos
+            // Admin puede ver todos, poblamos el dropdown
             almacenFilterContainer.style.display = 'block';
             almacenFilterInput.disabled = false;
+            populateAlmacenes(); // Función para llenar el <select>
         }
         
         // Inicializar dashboard
         initializeDashboard();
     }
 
-    // ===== CÓDIGO DEL DASHBOARD (existente) =====
+    // ===== LÓGICA DEL DASHBOARD =====
     function initializeDashboard() {
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart;
         let currentView = 'overview';
@@ -509,16 +510,344 @@
         const almacenFilterInput = document.getElementById('filtro_almacen');
         const loaderEl = document.getElementById('loader');
         const mainTitle = document.getElementById('main-title');
+        
         let detailsCurrentState = ''; 
         let detailsCurrentPage = 1;
         let detailsLimit = parseInt(document.getElementById('details-limit').value);
-        let detailsTotalPages = 1;
+        let detailsTotalCount = 0;
         
+        // 🎨 Paleta de colores para las gráficas
+        const CHART_COLORS = [
+            '#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5', '#d53f8c',
+            '#f56565', '#f6ad55', '#faf089', '#68d391', '#63b3ed', '#b794f4', '#f687b3'
+        ];
+
+        // --- Helper Functions ---
+        const formatCurrency = (value) => new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(value);
+        const formatHours = (value) => `${(value || 0).toFixed(1)} horas`;
+        
+        // Establecer fechas por defecto (hoy)
+        const setDates = () => {
+            const today = new Date().toISOString().split('T')[0];
+            fechaInicioInput.value = today;
+            fechaFinInput.value = today;
+        };
+
+        // Poblar filtro de almacenes si es admin
+        const populateAlmacenes = async () => {
+            if (!userSession.esAdmin) return;
+            try {
+                // Asumimos que la API tiene un endpoint para esto
+                const response = await fetch('../Logica/api_dashboard.php?action=getAlmacenes');
+                const data = await response.json();
+                if (data.success && data.almacenes) {
+                    almacenFilterInput.innerHTML = '<option value="">Todos los Almacenes</option>'; // Reset
+                    data.almacenes.forEach(alm => {
+                        const option = document.createElement('option');
+                        option.value = alm.almacen;
+                        option.textContent = alm.almacen;
+                        almacenFilterInput.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error("Error cargando almacenes:", error);
+            }
+        };
+
+        // --- Chart Initialization ---
         const initializeCharts = () => {
-            const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
-            statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] }, options: chartOptions });
-            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: 'rgba(229, 62, 62, 1)', tension: 0.1, fill: false }] }, options: chartOptions });
+            const defaultChartOptions = (legendDisplay = false) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: legendDisplay }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#4a5568' }, grid: { color: '#e2e8f0' } },
+                    x: { ticks: { color: '#4a5568' }, grid: { color: '#e2e8f0' } }
+                }
+            });
             
-            const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
+            const defaultDoughnutOptions = (legendPosition = 'right') => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: legendPosition, labels: { color: '#4a5568' } }
+                }
+            });
+
+            // Gráfica de Estados (Overview)
+            statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS }] },
+                options: defaultChartOptions(false)
+            });
+
+            // Gráfica de Tendencias (Trends)
+            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ data: [], borderColor: '#e53e3e', backgroundColor: '#e53e3e', tension: 0.1, fill: false }] },
+                options: defaultChartOptions(false)
+            });
+            
+            // Gráfica de Razones NC (Performance)
             ncReasonsChart = new Chart(document.getElementById('ncReasonsChart').getContext('2d'), {
-                type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5', '#d53f8c'] }] }, options: doughnutOptions
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS }] },
+                options: defaultDoughnutOptions('right')
+            });
+            
+            // Gráfica de Camiones (Performance)
+            truckPerformanceChart = new Chart(document.getElementById('truckPerformanceChart').getContext('2d'), {
+                type: 'bar',
+                options: { ...defaultChartOptions(false), indexAxis: 'y' },
+                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[4] }] }
+            });
+
+            // Gráfica Top Clientes (Financial)
+            topClientsChart = new Chart(document.getElementById('topClientsChart').getContext('2d'), {
+                type: 'bar',
+                options: { ...defaultChartOptions(false), indexAxis: 'y' },
+                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[5] }] }
+            });
+            
+            // Gráfica Top Almacenes (Financial)
+            topWarehousesChart = new Chart(document.getElementById('topWarehousesChart').getContext('2d'), {
+                type: 'bar',
+                options: { ...defaultChartOptions(false), indexAxis: 'y' },
+                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[6] }] }
+            });
+        };
+
+        // --- Data Fetching & Updating ---
+        
+        const fetchData = async () => {
+            loaderEl.classList.add('loading');
+            const params = new URLSearchParams({
+                fecha_inicio: fechaInicioInput.value,
+                fecha_fin: fechaFinInput.value,
+                almacen: almacenFilterInput.value
+            });
+            
+            try {
+                // Asumimos que api_dashboard.php devuelve toda la data agregada
+                const response = await fetch(`../Logica/api_dashboard.php?action=getData&${params.toString()}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDashboard(data.data);
+                } else {
+                    alert('Error al cargar datos: ' + (data.message || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error("Error al cargar datos del dashboard:", error);
+                alert('Error de conexión al cargar datos.');
+            } finally {
+                loaderEl.classList.remove('loading');
+            }
+        };
+
+        const updateDashboard = (data) => {
+            // 1. KPIs Overview
+            document.getElementById('total-emitidas').textContent = data.kpi.total_emitidas || 0;
+            document.getElementById('sin-estado').textContent = data.kpi.sin_estado || 0;
+
+            // 2. Gráfica de Estados y Tabla
+            const statusLabels = data.statusDistribution.map(d => d.estado);
+            const statusData = data.statusDistribution.map(d => d.total);
+            statusChart.data.labels = statusLabels;
+            statusChart.data.datasets[0].data = statusData;
+            statusChart.update();
+            
+            const tableBody = document.getElementById('statusTableBody');
+            tableBody.innerHTML = '';
+            let totalGeneral = 0;
+            data.statusDistribution.forEach(item => {
+                tableBody.innerHTML += `<tr><td>${item.estado}</td><td>${item.total}</td></tr>`;
+                totalGeneral += item.total;
+            });
+            document.getElementById('statusTableTotal').textContent = totalGeneral;
+
+            // 3. Gráfica de Tendencias
+            trendsChart.data.labels = data.trends.map(d => d.fecha);
+            trendsChart.data.datasets[0].data = data.trends.map(d => d.total);
+            trendsChart.update();
+
+            // 4. KPIs Performance
+            document.getElementById('perf-kpi-time-to-dispatch').textContent = formatHours(data.performance.avg_time_to_dispatch);
+            document.getElementById('perf-kpi-dispatch-to-deliver').textContent = formatHours(data.performance.avg_dispatch_to_deliver);
+            document.getElementById('perf-kpi-total-cycle').textContent = formatHours(data.performance.avg_total_cycle);
+            
+            // 5. Gráfica Razones NC
+            ncReasonsChart.data.labels = data.ncReasons.map(d => d.motivo_nc);
+            ncReasonsChart.data.datasets[0].data = data.ncReasons.map(d => d.total);
+            ncReasonsChart.update();
+
+            // 6. Gráfica Top Camiones
+            truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.camion);
+            truckPerformanceChart.data.datasets[0].data = data.truckPerformance.map(d => d.total_entregas);
+            truckPerformanceChart.update();
+
+            // 7. KPIs Financial
+            document.getElementById('financial-kpi-total-amount').textContent = formatCurrency(data.financials.total_amount);
+            document.getElementById('financial-kpi-sin-estado-amount').textContent = formatCurrency(data.financials.sin_estado_amount);
+            document.getElementById('financial-kpi-nc-amount').textContent = formatCurrency(data.financials.nc_amount);
+            
+            // 8. Gráfica Top Clientes
+            topClientsChart.data.labels = data.topClients.map(d => d.cliente);
+            topClientsChart.data.datasets[0].data = data.topClients.map(d => d.monto_total);
+            topClientsChart.update();
+            
+            // 9. Gráfica Top Almacenes
+            topWarehousesChart.data.labels = data.topWarehouses.map(d => d.almacen);
+            topWarehousesChart.data.datasets[0].data = data.topWarehouses.map(d => d.monto_total);
+            topWarehousesChart.update();
+        };
+
+        // --- Details View & Pagination ---
+        
+        const fetchDetails = async (estado = '', page = 1, limit = 50) => {
+            loaderEl.classList.add('loading');
+            detailsCurrentState = estado;
+            detailsCurrentPage = page;
+            detailsLimit = limit;
+            
+            const params = new URLSearchParams({
+                fecha_inicio: fechaInicioInput.value,
+                fecha_fin: fechaFinInput.value,
+                almacen: almacenFilterInput.value,
+                estado: estado,
+                page: page,
+                limit: limit
+            });
+            
+            try {
+                const response = await fetch(`../Logica/api_dashboard.php?action=getDetails&${params.toString()}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    populateDetailsTable(data.details);
+                    detailsTotalCount = data.pagination.total_count;
+                    updatePaginationControls();
+                    showView('details');
+                    
+                    if(estado === 'TOTAL') {
+                         document.getElementById('details-title').textContent = 'Detalle de Todas las Facturas Emitidas';
+                    } else if (estado === 'SIN_ESTADO') {
+                         document.getElementById('details-title').textContent = 'Detalle de Facturas Sin Estado';
+                    } else {
+                        document.getElementById('details-title').textContent = `Detalle de Facturas: ${estado}`;
+                    }
+                    document.getElementById('details-period').textContent = `Mostrando resultados para el período seleccionado.`;
+                    
+                } else {
+                    alert('Error al cargar detalles: ' + (data.message || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error("Error al cargar detalles:", error);
+                alert('Error de conexión al cargar detalles.');
+            } finally {
+                loaderEl.classList.remove('loading');
+            }
+        };
+
+        const populateDetailsTable = (details) => {
+            const tableBody = document.getElementById('detailsTableBody');
+            tableBody.innerHTML = '';
+            if (details.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="17" style="text-align: center;">No se encontraron registros para esta selección.</td></tr>';
+                return;
+            }
+            
+            details.forEach(row => {
+                const tr = document.createElement('tr');
+                // Campos de la tabla (ajusta el orden y los nombres según tu BD)
+                tr.innerHTML = `
+                    <td>${row.NoFactura || ''}</td><td>${row.FechaRegistro || ''}</td><td>${row.Cliente || ''}</td>
+                    <td>${row.Monto ? formatCurrency(row.Monto) : ''}</td><td>${row.RegistradoPor || ''}</td><td>${row.Camion || ''}</td>
+                    <td>${row.FechaDespacho || ''}</td><td>${row.DespachadoPor || ''}</td><td>${row.FechaEntregado || ''}</td>
+                    <td>${row.EntregadoPor || ''}</td><td>${row.Estado || ''}</td><td>${row.FechaReversada || ''}</td>
+                    <td>${row.ReversadoPor || ''}</td><td>${row.FechaNC || ''}</td><td>${row.NCRealizadoPor || ''}</td>
+                    <td>${row.MotivoNC || ''}</td><td>${row.Camion2 || ''}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        };
+        
+        const updatePaginationControls = () => {
+            const totalPages = Math.ceil(detailsTotalCount / detailsLimit);
+            document.getElementById('page-info').textContent = `Página ${detailsCurrentPage} de ${totalPages} (Total: ${detailsTotalCount})`;
+            document.getElementById('prev-page').disabled = (detailsCurrentPage === 1);
+            document.getElementById('next-page').disabled = (detailsCurrentPage === totalPages || totalPages === 0);
+        };
+        
+        // --- View Navigation ---
+        
+        const showView = (viewId) => {
+            document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.nav-item a').forEach(link => link.classList.remove('active'));
+            
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            const navLink = document.querySelector(`.nav-item a[data-view="${viewId}"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+                mainTitle.textContent = navLink.textContent;
+            } else if (viewId === 'details') {
+                // 'details' no está en el nav, no hacemos nada con el título principal
+            }
+            
+            currentView = viewId;
+        };
+
+        // --- Event Listeners ---
+        
+        // Navegación principal
+        document.querySelectorAll('.nav-item a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const viewId = e.target.getAttribute('data-view');
+                showView(viewId);
+            });
+        });
+
+        // Filtros
+        [fechaInicioInput, fechaFinInput, almacenFilterInput].forEach(input => {
+            input.addEventListener('change', () => {
+                // Si estamos en 'details', volvemos a 'overview' al cambiar filtros
+                if (currentView === 'details') {
+                    showView('overview');
+                }
+                fetchData();
+            });
+        });
+        
+        // Clic en KPIs para ver detalles
+        document.getElementById('kpi-total-emitidas').addEventListener('click', () => fetchDetails('TOTAL', 1, detailsLimit));
+        document.getElementById('kpi-sin-estado').addEventListener('click', () => fetchDetails('SIN_ESTADO', 1, detailsLimit));
+        // Nota: Para hacer clic en la tabla de estados, necesitarías un listener en 'statusTableBody'
+        
+        // Controles de Details View
+        document.getElementById('back-to-overview').addEventListener('click', () => showView('overview'));
+        document.getElementById('details-limit').addEventListener('change', (e) => {
+            fetchDetails(detailsCurrentState, 1, parseInt(e.target.value));
+        });
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (detailsCurrentPage > 1) {
+                fetchDetails(detailsCurrentState, detailsCurrentPage - 1, detailsLimit);
+            }
+        });
+        document.getElementById('next-page').addEventListener('click', () => {
+             const totalPages = Math.ceil(detailsTotalCount / detailsLimit);
+            if (detailsCurrentPage < totalPages) {
+                fetchDetails(detailsCurrentState, detailsCurrentPage + 1, detailsLimit);
+            }
+        });
+
+        // --- Carga Inicial ---
+        setDates();
+        initializeCharts();
+        fetchData();
+    }
+</script>
