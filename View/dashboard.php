@@ -16,8 +16,129 @@
         }
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--main-bg); color: var(--text-primary); }
+        
+        /* === ESTILOS DE LOGIN === */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .login-logo {
+            margin-bottom: 2rem;
+        }
+        .login-logo img {
+            max-width: 150px;
+            height: auto;
+        }
+        .login-box h2 {
+            margin: 0 0 0.5rem;
+            font-size: 1.8rem;
+            color: var(--text-primary);
+        }
+        .login-box p {
+            margin: 0 0 2rem;
+            color: var(--text-secondary);
+        }
+        .pin-input-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+        .pin-digit {
+            width: 60px;
+            height: 70px;
+            font-size: 2rem;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .pin-digit:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .login-btn:hover {
+            background-color: #c53030;
+        }
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        .login-btn:disabled {
+            background-color: #cbd5e0;
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: #e53e3e;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        
+        /* === ESTILOS DEL DASHBOARD === */
         .dashboard-layout { display: flex; height: 100%; }
-        .sidebar { width: 280px; background-color: var(--sidebar-bg); padding: 2rem; display: flex; flex-direction: column; color: #fff; }
+        .sidebar { width: 280px; background-color: var(--sidebar-bg); padding: 2rem; display: flex; flex-direction: column; color: #fff; position: relative; }
+        .user-info {
+            background-color: #2d3748;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+        .user-info-title {
+            color: #a0aec0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+        .user-info-content {
+            color: #fff;
+            font-weight: 700;
+        }
+        .logout-btn {
+            background-color: #742a2a;
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-top: auto;
+            transition: background-color 0.2s;
+        }
+        .logout-btn:hover {
+            background-color: #c53030;
+        }
         .logo { margin-bottom: 2rem; text-align: center; }
         .logo img { max-width: 100%; height: auto; max-height: 100px; }
         .sidebar-section h3 { font-size: 0.9rem; margin-bottom: 1.5rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 0.5rem; border-bottom: 1px solid #4a5568; }
@@ -66,11 +187,39 @@
     </style>
 </head>
 <body>
-    <div class="dashboard-layout">
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
+            </div>
+            <h2>Acceso al Dashboard</h2>
+            <p>Ingresa tu código PIN de 4 dígitos</p>
+            <form id="login-form">
+                <div class="pin-input-container">
+                    <input type="password" maxlength="1" class="pin-digit" id="pin1" pattern="\d" inputmode="numeric">
+                    <input type="password" maxlength="1" class="pin-digit" id="pin2" pattern="\d" inputmode="numeric">
+                    <input type="password" maxlength="1" class="pin-digit" id="pin3" pattern="\d" inputmode="numeric">
+                    <input type="password" maxlength="1" class="pin-digit" id="pin4" pattern="\d" inputmode="numeric">
+                </div>
+                <button type="submit" class="login-btn" id="login-btn">Ingresar</button>
+                <div class="error-message" id="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen" class="dashboard-layout hidden">
         <aside class="sidebar">
             <div class="logo">
                 <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
             </div>
+            
+            <div class="user-info">
+                <div class="user-info-title">Usuario Activo</div>
+                <div class="user-info-content" id="user-info-display">Cargando...</div>
+            </div>
+            
             <div class="sidebar-section">
                 <h3>Análisis</h3>
                 <ul class="sidebar-nav">
@@ -91,7 +240,7 @@
                         <label for="fecha_fin">Hasta:</label>
                         <input type="date" id="fecha_fin" name="fecha_fin">
                     </div>
-                    <div class="filter-group">
+                    <div class="filter-group" id="almacen-filter-container">
                         <label for="filtro_almacen">Almacén:</label>
                         <select id="filtro_almacen" name="filtro_almacen">
                             <option value="">Todos los Almacenes</option>
@@ -99,6 +248,8 @@
                     </div>
                 </div>
             </div>
+            
+            <button class="logout-btn" id="logout-btn">🚪 Cerrar Sesión</button>
         </aside>
         
         <main class="main-content">
@@ -228,7 +379,129 @@
         </main>
     </div>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    // ===== SISTEMA DE LOGIN =====
+    const loginScreen = document.getElementById('login-screen');
+    const dashboardScreen = document.getElementById('dashboard-screen');
+    const loginForm = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+    const pinInputs = [
+        document.getElementById('pin1'),
+        document.getElementById('pin2'),
+        document.getElementById('pin3'),
+        document.getElementById('pin4')
+    ];
+    
+    let userSession = {
+        almacen: null,
+        esAdmin: false,
+        descripcion: ''
+    };
+
+    // Auto-focus en siguiente input
+    pinInputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            if (e.target.value && index < 3) {
+                pinInputs[index + 1].focus();
+            }
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                pinInputs[index - 1].focus();
+            }
+        });
+    });
+
+    // Focus inicial
+    pinInputs[0].focus();
+
+    // Manejo del login
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMessage.textContent = '';
+        
+        const codigo = pinInputs.map(input => input.value).join('');
+        
+        if (codigo.length !== 4) {
+            errorMessage.textContent = 'Por favor ingresa los 4 dígitos';
+            return;
+        }
+        
+        const loginBtn = document.getElementById('login-btn');
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Verificando...';
+        
+        try {
+            const response = await fetch('../Logica/api_login.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ codigo })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                userSession = {
+                    almacen: result.data.almacen,
+                    esAdmin: result.data.es_admin,
+                    descripcion: result.data.descripcion
+                };
+                showDashboard();
+            } else {
+                errorMessage.textContent = result.message || 'Código inválido';
+                pinInputs.forEach(input => input.value = '');
+                pinInputs[0].focus();
+            }
+        } catch (error) {
+            errorMessage.textContent = 'Error de conexión. Intenta nuevamente.';
+            console.error('Error:', error);
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Ingresar';
+        }
+    });
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        try {
+            await fetch('../Logica/api_login.php?action=logout');
+            location.reload();
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+            location.reload();
+        }
+    });
+
+    function showDashboard() {
+        loginScreen.classList.add('hidden');
+        dashboardScreen.classList.remove('hidden');
+        
+        // Actualizar info de usuario
+        document.getElementById('user-info-display').textContent = userSession.descripcion;
+        
+        // Si NO es admin, configurar filtro de almacén
+        const almacenFilterContainer = document.getElementById('almacen-filter-container');
+        const almacenFilterInput = document.getElementById('filtro_almacen');
+        
+        if (!userSession.esAdmin && userSession.almacen) {
+            // Ocultar filtro y forzar el almacén del usuario
+            almacenFilterContainer.style.display = 'none';
+            almacenFilterInput.value = userSession.almacen;
+            almacenFilterInput.disabled = true;
+        } else {
+            // Admin puede ver todos
+            almacenFilterContainer.style.display = 'block';
+            almacenFilterInput.disabled = false;
+        }
+        
+        // Inicializar dashboard
+        initializeDashboard();
+    }
+
+    // ===== CÓDIGO DEL DASHBOARD (existente) =====
+    function initializeDashboard() {
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart;
         let currentView = 'overview';
         const fechaInicioInput = document.getElementById('fecha_inicio');
@@ -248,339 +521,4 @@
             
             const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
             ncReasonsChart = new Chart(document.getElementById('ncReasonsChart').getContext('2d'), {
-                type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5'] }] }, options: doughnutOptions
-            });
-            
-            const barOptions = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } };
-            truckPerformanceChart = new Chart(document.getElementById('truckPerformanceChart').getContext('2d'), {
-                type: 'bar', data: { labels: [], datasets: [{ label: 'Total Entregas', data: [], backgroundColor: 'rgba(54, 162, 235, 0.7)' }] }, options: barOptions
-            });
-
-            const barOptionsHorizontal = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } };
-            topClientsChart = new Chart(document.getElementById('topClientsChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Monto Total', data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] },
-                options: barOptionsHorizontal
-            });
-            topWarehousesChart = new Chart(document.getElementById('topWarehousesChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Monto Total', data: [], backgroundColor: 'rgba(49, 130, 206, 0.7)' }] },
-                options: barOptionsHorizontal
-            });
-        };
-        
-        const populateAlmacenFilter = async () => {
-            try {
-                const response = await fetch('../Logica/api_get_data.php?view=almacenes');
-                if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
-                const almacenes = await response.json();
-                almacenes.forEach(almacen => {
-                    const option = document.createElement('option');
-                    option.value = almacen.inventlocationid;
-                    option.textContent = almacen.inventlocationid;
-                    almacenFilterInput.appendChild(option);
-                });
-            } catch (error) { console.error("Error cargando almacenes:", error); }
-        };
-
-        const fetchData = async (inicio, fin, almacen, view) => {
-            loaderEl.classList.add('loading');
-            try {
-                const url = `../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-
-                if (view === 'performance') {
-                    updatePerformanceView(data);
-                } else if (view === 'financial') {
-                    updateFinancialView(data);
-                } else if (view !== 'details') {
-                    updateDashboard(data, view);
-                }
-            } catch (error) {
-                console.error(`Error al cargar datos para la vista ${view}:`, error);
-                if (view !== 'details') alert('Error al cargar datos del dashboard: ' + error.message);
-            } finally {
-                loaderEl.classList.remove('loading');
-            }
-        };
-
-        const updateFinancialView = (data) => {
-            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
-
-            document.getElementById('financial-kpi-total-amount').textContent = currencyFormatter.format(data.kpis.totalAmount || 0);
-            document.getElementById('financial-kpi-sin-estado-amount').textContent = currencyFormatter.format(data.kpis.sinEstadoAmount || 0);
-            document.getElementById('financial-kpi-nc-amount').textContent = currencyFormatter.format(data.kpis.ncAmount || 0);
-
-            if (topClientsChart) {
-                const clientLabels = data.topClients.map(c => {
-                    const name = c.Cliente || 'N/A';
-                    return name.length > 30 ? name.substring(0, 27) + '...' : name;
-                });
-                topClientsChart.data.labels = clientLabels;
-                topClientsChart.data.datasets[0].data = data.topClients.map(c => c.TotalAmount);
-                topClientsChart.update();
-            }
-
-            if (topWarehousesChart) {
-                topWarehousesChart.data.labels = data.topWarehouses.map(w => w.Almacen);
-                topWarehousesChart.data.datasets[0].data = data.topWarehouses.map(w => w.TotalAmount);
-                topWarehousesChart.update();
-            }
-        };
-        
-        const updatePerformanceView = (data) => {
-            const formatter = new Intl.NumberFormat('es-DO', { maximumFractionDigits: 1 });
-            document.getElementById('perf-kpi-time-to-dispatch').textContent = `${formatter.format(data.kpis.AvgTimeToDispatch || 0)} horas`;
-            document.getElementById('perf-kpi-dispatch-to-deliver').textContent = `${formatter.format(data.kpis.AvgDispatchToDeliver || 0)} horas`;
-            document.getElementById('perf-kpi-total-cycle').textContent = `${formatter.format(data.kpis.AvgTotalCycle || 0)} horas`;
-
-            if (ncReasonsChart) {
-                ncReasonsChart.data.labels = data.ncReasons.map(d => d.Motivo);
-                ncReasonsChart.data.datasets[0].data = data.ncReasons.map(d => d.Total);
-                ncReasonsChart.update();
-            }
-
-            if (truckPerformanceChart) {
-                truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.Camion);
-                truckPerformanceChart.data.datasets[0].data = data.truckPerformance.map(d => d.TotalEntregas);
-                truckPerformanceChart.options.plugins.tooltip = {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) label += ': ';
-                            if (context.parsed.x !== null) {
-                                label += context.parsed.x;
-                                const truckData = data.truckPerformance[context.dataIndex];
-                                if (truckData) {
-                                    label += ` (Avg: ${formatter.format(truckData.AvgDeliveryTime)} hrs)`;
-                                }
-                            }
-                            return label;
-                        }
-                    }
-                };
-                truckPerformanceChart.update();
-            }
-        };
-
-        const updateDashboard = (data, view) => {
-            const formatter = new Intl.NumberFormat();
-            if (view === 'overview') {
-                document.getElementById('total-emitidas').textContent = formatter.format(data.totalEmitidas || 0);
-                document.getElementById('sin-estado').textContent = formatter.format(data.sinEstado || 0);
-                
-                statusChart.data.labels = data.estadosData.map(d => d.Estado);
-                statusChart.data.datasets[0].data = data.estadosData.map(d => d.Total);
-                statusChart.update();
-
-                const statusTableBody = document.getElementById('statusTableBody');
-                statusTableBody.innerHTML = '';
-                const allStatusData = [...data.estadosData, { Estado: 'Sin estado', Total: data.sinEstado }];
-                
-                allStatusData.forEach(item => {
-                    if (item.Total > 0) {
-                        const row = statusTableBody.insertRow();
-                        row.style.cursor = 'pointer';
-                        row.title = `Haz clic para ver los detalles de "${item.Estado}"`;
-                        row.onclick = () => showDetailsView(item.Estado);
-                        row.insertCell().textContent = item.Estado;
-                        row.insertCell().textContent = formatter.format(item.Total);
-                    }
-                });
-                document.getElementById('statusTableTotal').textContent = formatter.format(data.totalEmitidas);
-            
-            } else if (view === 'trends' && data.tendenciaRegistros) {
-                const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                trendsChart.data.labels = data.tendenciaRegistros.map(d => {
-                    const fecha = new Date(d.Dia + 'T00:00:00'); 
-                    return `${diasSemana[fecha.getDay()]} (${d.Dia.substring(5)})`;
-                });
-                trendsChart.data.datasets[0].data = data.tendenciaRegistros.map(d => d.Total);
-                trendsChart.update();
-            }
-        };
-
-        const formatDate = (dateStr) => {
-            if (!dateStr) return 'N/A';
-            try {
-                const date = new Date(dateStr);
-                return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-            } catch (e) { return 'N/A'; }
-        };
-        
-        const populateDetailsTable = (facturas) => {
-            const tableBody = document.getElementById('detailsTableBody');
-            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="17" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
-            if(!facturas || facturas.length === 0) return;
-            
-            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
-
-            facturas.forEach(f => {
-                const row = tableBody.insertRow();
-                row.insertCell().textContent = f.No_Factura || 'N/A';
-                row.insertCell().textContent = formatDate(f.Fecha_de_Registro);
-                row.insertCell().textContent = f.invoicingname || 'N/A';
-                
-                const montoCell = row.insertCell();
-                montoCell.textContent = currencyFormatter.format(f.invoiceamountmst || 0);
-                montoCell.style.textAlign = 'right';
-
-                row.insertCell().textContent = f.Registrado_por || 'N/A';
-                row.insertCell().textContent = f.Camion || 'N/A';
-                row.insertCell().textContent = formatDate(f.Fecha_de_Despacho);
-                row.insertCell().textContent = f.Despachado_por || 'N/A';
-                row.insertCell().textContent = formatDate(f.Fecha_de_Entregado);
-                row.insertCell().textContent = f.Entregado_por || 'N/A';
-                row.insertCell().textContent = f.Estado || 'N/A';
-                row.insertCell().textContent = formatDate(f.Fecha_Reversada);
-                row.insertCell().textContent = f.Reversado_Por || 'N/A';
-                row.insertCell().textContent = formatDate(f.Fecha_de_NC);
-                row.insertCell().textContent = f.NC_Realizado_Por || 'N/A';
-                row.insertCell().textContent = f.Motivo_NC || 'N/A';
-                row.insertCell().textContent = f.Camion2 || 'N/A';
-            });
-        };
-    
-        const updatePaginationControls = ({ currentPage, totalPages, totalRecords }) => {
-            document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (Total: ${totalRecords})`;
-            document.getElementById('prev-page').disabled = currentPage <= 1;
-            document.getElementById('next-page').disabled = currentPage >= totalPages;
-        };
-
-        const fetchDetails = async (estado, inicio, fin, almacen, page, limit) => {
-            detailsCurrentState = estado;
-            loaderEl.classList.add('loading');
-            const detailsTableBody = document.getElementById('detailsTableBody');
-            detailsTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Cargando...</td></tr>';
-            try {
-                const url = `../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-                const result = await response.json();
-                if (result.error) throw new Error(result.error);
-                detailsCurrentPage = result.currentPage;
-                detailsLimit = result.limit;
-                detailsTotalPages = result.totalPages;
-                populateDetailsTable(result.data);
-                updatePaginationControls(result);
-            } catch (error) {
-                console.error("Error al cargar detalles:", error);
-                detailsTableBody.innerHTML = `<tr><td colspan="17" style="text-align:center; color: red;">Error: ${error.message}</td></tr>`;
-                updatePaginationControls({ currentPage: 1, totalPages: 1, totalRecords: 0 });
-            } finally {
-                loaderEl.classList.remove('loading');
-            }
-        };
-
-        const showDetailsView = (estado) => {
-            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-details').classList.add('active');
-            currentView = 'details';
-            const inicio = fechaInicioInput.value;
-            const fin = fechaFinInput.value;
-            const almacen = almacenFilterInput.value; 
-            const displayTitle = (estado === 'ALL') ? 'TOTAL DE FACTURAS EMITIDAS' : `Detalle de Facturas: ${estado}`;
-            document.getElementById('details-title').textContent = displayTitle;
-            document.getElementById('details-period').innerHTML = `Mostrando resultados del <strong>${inicio}</strong> al <strong>${fin}</strong>.`;
-            detailsCurrentPage = 1; 
-            fetchDetails(estado, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
-        };
-        
-        const applyFiltersAndFetchData = () => {
-            const inicio = fechaInicioInput.value;
-            const fin = fechaFinInput.value;
-            const almacen = almacenFilterInput.value;
-            if (inicio && fin) {
-                if (currentView === 'details' && detailsCurrentState) {
-                    detailsCurrentPage = 1;
-                    fetchDetails(detailsCurrentState, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
-                } else if (currentView !== 'details') {
-                    fetchData(inicio, fin, almacen, currentView);
-                }
-            }
-        };
-
-        const setupKpiClickEvents = () => {
-            document.getElementById('kpi-total-emitidas').onclick = () => showDetailsView('ALL');
-            document.getElementById('kpi-sin-estado').onclick = () => showDetailsView('Sin estado');
-        };
-
-        const setDateDefaults = () => {
-            const today = new Date();
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
-            fechaInicioInput.value = firstDay;
-            fechaFinInput.value = lastDay;
-        };
-
-        setDateDefaults();
-        initializeCharts();
-        populateAlmacenFilter();
-        applyFiltersAndFetchData();
-        setupKpiClickEvents();
-
-        // --- Eventos ---
-        document.querySelectorAll('.sidebar-nav a').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-                link.classList.add('active');
-                
-                const targetView = link.dataset.view;
-                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-                document.getElementById(`view-${targetView}`).classList.add('active');
-                
-                const viewTitles = {
-                    overview: 'Resumen de Facturas',
-                    trends: 'Tendencias Diarias de Registros',
-                    performance: 'Análisis de Rendimiento y Calidad',
-                    financial: 'Análisis Financiero',
-                    details: 'Detalle de Facturas'
-                };
-                mainTitle.textContent = viewTitles[targetView] || 'Dashboard';
-                
-                currentView = targetView;
-                applyFiltersAndFetchData();
-            });
-        });
-
-        document.getElementById('back-to-overview').addEventListener('click', () => {
-            document.getElementById('view-details').classList.remove('active');
-            document.getElementById('view-overview').classList.add('active');
-            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
-            document.querySelector('.sidebar-nav a[data-view="overview"]').classList.add('active');
-            mainTitle.textContent = 'Resumen de Facturas';
-            currentView = 'overview';
-            applyFiltersAndFetchData();
-        });
-
-        fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
-        fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
-        almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
-
-        // --- Paginación ---
-        document.getElementById('prev-page').addEventListener('click', () => {
-            if (detailsCurrentPage > 1) {
-                detailsCurrentPage--;
-                applyFiltersAndFetchData();
-            }
-        });
-        document.getElementById('next-page').addEventListener('click', () => {
-            if (detailsCurrentPage < detailsTotalPages) {
-                detailsCurrentPage++;
-                applyFiltersAndFetchData();
-            }
-        });
-        document.getElementById('details-limit').addEventListener('change', e => {
-            detailsLimit = parseInt(e.target.value);
-            detailsCurrentPage = 1;
-            applyFiltersAndFetchData();
-        });
-    });
-</script>
-</body>
-</html>
+                type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5', '#d53f8c'] }] }, options: doughnutOptions
