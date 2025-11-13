@@ -17,3 +17,5 @@ if (ini_get("session.use_cookies")) {
 // Redirigir al login
 header("Location: ../index.php");
 exit();
+
+// ¡LA LLAVE "}" EXTRA QUE ESTABA AQUÍ FUE ELIMINADA!
