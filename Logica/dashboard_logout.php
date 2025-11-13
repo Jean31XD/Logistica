@@ -7,8 +7,7 @@ unset($_SESSION['dashboard_access_granted']);
 unset($_SESSION['dashboard_user_type']);
 unset($_SESSION['dashboard_warehouse']);
 
-// Redirigir de vuelta a la página del dashboard
-// Como 'dashboard_access_granted' ya no existe (pero 'usuario' sí),
-// se mostrará la pantalla de login por PIN.
-header("Location: ../dashboard.php");
+// ===== ESTA ES LA LÍNEA CORREGIDA =====
+// Redirigir de vuelta al dashboard.php (que está en la carpeta ../view/)
+header("Location: ../view/dashboard.php");
 exit();
