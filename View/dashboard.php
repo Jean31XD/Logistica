@@ -1,3 +1,149 @@
+<?php
+session_start();
+date_default_timezone_set('America/Santo_Domingo');
+
+// 1. VERIFICAR SESIÓN PRINCIPAL DEL PROYECTO
+// Si no está logueado en el sistema principal, se va al index.
+if (!isset($_SESSION['usuario'])) {
+    header("Location: ../index.php");
+    exit();
+}
+
+// 2. VERIFICAR SI EL ACCESO AL DASHBOARD YA FUE CONCEDIDO
+if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_granted'] === true) {
+    // Si ya tiene acceso, preparamos las variables para el dashboard
+    $USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
+    $USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
+    
+    // Si el tipo es 'warehouse', el almacén NO puede estar vacío.
+    if ($USER_TYPE === 'warehouse' && empty($USER_WAREHOUSE)) {
+        // Algo está mal (ej. un usuario de almacén sin almacén asignado).
+        // Lo forzamos a salir del dashboard para que vuelva a loguearse.
+        unset($_SESSION['dashboard_access_granted']);
+        header("Location: dashboard.php?error=3"); // Error: Perfil de almacén sin almacén
+        exit();
+    }
+    
+    // Si es admin, $USER_WAREHOUSE será "" (vacío), lo cual está bien.
+    
+} else {
+    // Si NO tiene acceso, mostramos el formulario de login por CÓDIGO.
+    // El resto de la página (el dashboard) no se cargará.
+    
+    $error_msg = '';
+    if (isset($_GET['error'])) {
+        switch ($_GET['error']) {
+            case '1': $error_msg = 'Código incorrecto o inactivo.'; break;
+            case '2': $error_msg = 'No tiene permiso para acceder.'; break;
+            case '3': $error_msg = 'Error de configuración: Su código de almacén no tiene un almacén asignado.'; break;
+            default: $error_msg = 'Error desconocido.';
+        }
+    }
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso al Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #1a202c; /* Mismo fondo que el sidebar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #fff;
+        }
+        .login-container {
+            background-color: #2d3748; /* Un poco más claro */
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-container img {
+            max-width: 100%;
+            height: auto;
+            max-height: 80px;
+            margin-bottom: 2rem;
+            filter: brightness(0) invert(1); /* Logo en blanco */
+        }
+        .login-container h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 0.5em; /* Para que el PIN se vea espaciado */
+            border: 2px solid #4a5568;
+            background-color: #1a202c;
+            color: #fff;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-sizing: border-box;
+        }
+        .login-form button {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            background-color: #e53e3e; /* Color acento */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .login-form button:hover {
+            background-color: #c53030;
+        }
+        .error-message {
+            color: #f56565; /* Rojo claro */
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+        .logout-link {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo">
+        <h1>Acceso al Dashboard</h1>
+        <form action="../Logica/check_dashboard_code.php" method="POST" class="login-form">
+            <input type="password" name="codigo" placeholder="PIN de 4 dígitos" required maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="one-time-code">
+            <button type="submit">Entrar</button>
+        </form>
+        <?php if ($error_msg): ?>
+            <p class="error-message"><?php echo htmlspecialchars($error_msg); ?></p>
+        <?php endif; ?>
+        <a href="../Logica/logout.php" class="logout-link">Volver al login principal</a>
+    </div>
+</body>
+</html>
+<?php
+    exit(); // Importante: detenemos la ejecución para no mostrar el dashboard
+}
+
+// =========================================================================
+// SI EL SCRIPT LLEGA HASTA AQUÍ, SIGNIFICA QUE EL LOGIN FUE EXITOSO.
+// AHORA MOSTRAMOS EL DASHBOARD NORMALMENTE.
+// =========================================================================
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -16,129 +162,8 @@
         }
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--main-bg); color: var(--text-primary); }
-        
-        /* === ESTILOS DE LOGIN === */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-        }
-        .login-box {
-            background: white;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-        }
-        .login-logo {
-            margin-bottom: 2rem;
-        }
-        .login-logo img {
-            max-width: 150px;
-            height: auto;
-        }
-        .login-box h2 {
-            margin: 0 0 0.5rem;
-            font-size: 1.8rem;
-            color: var(--text-primary);
-        }
-        .login-box p {
-            margin: 0 0 2rem;
-            color: var(--text-secondary);
-        }
-        .pin-input-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 1.5rem;
-        }
-        .pin-digit {
-            width: 60px;
-            height: 70px;
-            font-size: 2rem;
-            text-align: center;
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            font-weight: 700;
-            transition: all 0.2s;
-        }
-        .pin-digit:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
-        }
-        .login-btn {
-            width: 100%;
-            padding: 1rem;
-            font-size: 1.1rem;
-            font-weight: 700;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .login-btn:hover {
-            background-color: #c53030;
-        }
-        .login-btn:active {
-            transform: scale(0.98);
-        }
-        .login-btn:disabled {
-            background-color: #cbd5e0;
-            cursor: not-allowed;
-        }
-        .error-message {
-            color: #e53e3e;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            min-height: 20px;
-        }
-        .hidden {
-            display: none !important;
-        }
-        
-        /* === ESTILOS DEL DASHBOARD === */
         .dashboard-layout { display: flex; height: 100%; }
-        .sidebar { width: 280px; background-color: var(--sidebar-bg); padding: 2rem; display: flex; flex-direction: column; color: #fff; position: relative; }
-        .user-info {
-            background-color: #2d3748;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            font-size: 0.85rem;
-        }
-        .user-info-title {
-            color: #a0aec0;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-        }
-        .user-info-content {
-            color: #fff;
-            font-weight: 700;
-        }
-        .logout-btn {
-            background-color: #742a2a;
-            color: white;
-            border: none;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-            margin-top: auto;
-            transition: background-color 0.2s;
-        }
-        .logout-btn:hover {
-            background-color: #c53030;
-        }
+        .sidebar { width: 280px; background-color: var(--sidebar-bg); padding: 2rem; display: flex; flex-direction: column; color: #fff; }
         .logo { margin-bottom: 2rem; text-align: center; }
         .logo img { max-width: 100%; height: auto; max-height: 100px; }
         .sidebar-section h3 { font-size: 0.9rem; margin-bottom: 1.5rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 0.5rem; border-bottom: 1px solid #4a5568; }
@@ -146,6 +171,11 @@
         .nav-item a { display: block; padding: 0.9rem 1rem; color: #cbd5e0; text-decoration: none; border-radius: 8px; margin-bottom: 0.5rem; transition: background-color 0.2s, color 0.2s; }
         .nav-item a:hover { background-color: #2d3748; color: #fff; }
         .nav-item a.active { background-color: var(--accent-color); color: #fff; font-weight: 700; }
+        
+        /* Estilo para el enlace de cerrar sesión del dashboard */
+        .nav-item a.logout-link { color: #f56565; }
+        .nav-item a.logout-link:hover { background-color: #c53030; color: #fff; }
+
         .filter-form { display: flex; flex-direction: column; gap: 1.5rem; }
         .filter-group { position: relative; background-color: #2d3748; border-radius: 8px; border: 2px solid #4a5568; transition: border-color 0.2s; }
         .filter-group:focus-within { border-color: var(--accent-color); }
@@ -160,7 +190,7 @@
             font-size: 1rem;
             appearance: none;
             font-weight: 700;
-        }        
+        }        
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .filter-group select { background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; cursor: pointer; background-color: #1a202c;}
         .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
@@ -187,39 +217,11 @@
     </style>
 </head>
 <body>
-    <!-- PANTALLA DE LOGIN -->
-    <div id="login-screen" class="login-container">
-        <div class="login-box">
-            <div class="login-logo">
-                <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
-            </div>
-            <h2>Acceso al Dashboard</h2>
-            <p>Ingresa tu código PIN de 4 dígitos</p>
-            <form id="login-form">
-                <div class="pin-input-container">
-                    <input type="password" maxlength="1" class="pin-digit" id="pin1" pattern="\d" inputmode="numeric">
-                    <input type="password" maxlength="1" class="pin-digit" id="pin2" pattern="\d" inputmode="numeric">
-                    <input type="password" maxlength="1" class="pin-digit" id="pin3" pattern="\d" inputmode="numeric">
-                    <input type="password" maxlength="1" class="pin-digit" id="pin4" pattern="\d" inputmode="numeric">
-                </div>
-                <button type="submit" class="login-btn" id="login-btn">Ingresar</button>
-                <div class="error-message" id="error-message"></div>
-            </form>
-        </div>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div id="dashboard-screen" class="dashboard-layout hidden">
+    <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="logo">
                 <img src="../IMG/LOGO MC - COLOR.png" alt="Logo">
             </div>
-            
-            <div class="user-info">
-                <div class="user-info-title">Usuario Activo</div>
-                <div class="user-info-content" id="user-info-display">Cargando...</div>
-            </div>
-            
             <div class="sidebar-section">
                 <h3>Análisis</h3>
                 <ul class="sidebar-nav">
@@ -240,16 +242,33 @@
                         <label for="fecha_fin">Hasta:</label>
                         <input type="date" id="fecha_fin" name="fecha_fin">
                     </div>
-                    <div class="filter-group" id="almacen-filter-container">
+
+                    <?php if ($USER_TYPE === 'admin'): ?>
+                    <div class="filter-group">
                         <label for="filtro_almacen">Almacén:</label>
                         <select id="filtro_almacen" name="filtro_almacen">
                             <option value="">Todos los Almacenes</option>
                         </select>
                     </div>
+                    <?php else: ?>
+                    <div class="filter-group">
+                        <label for="filtro_almacen">Almacén Asignado:</label>
+                        <input type="text" id="filtro_almacen_fijo" name="filtro_almacen_fijo" value="<?php echo htmlspecialchars($USER_WAREHOUSE); ?>" disabled>
+                        <select id="filtro_almacen" name="filtro_almacen" style="display:none;"></select>
+                    </div>
+                    <?php endif; ?>
+                    
                 </div>
             </div>
-            
-            <button class="logout-btn" id="logout-btn">🚪 Cerrar Sesión</button>
+            <div class="sidebar-section" style="margin-top: auto;">
+                 <ul class="sidebar-nav">
+                    <li class="nav-item">
+                        <a href="../Logica/dashboard_logout.php" class="logout-link">
+                            Cerrar Dashboard (<?php echo htmlspecialchars($USER_TYPE === 'admin' ? 'Admin' : $USER_WAREHOUSE); ?>)
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </aside>
         
         <main class="main-content">
@@ -379,526 +398,421 @@
         </main>
     </div>
 <script>
-    // ===== SISTEMA DE LOGIN =====
-    const loginScreen = document.getElementById('login-screen');
-    const dashboardScreen = document.getElementById('dashboard-screen');
-    const loginForm = document.getElementById('login-form');
-    const errorMessage = document.getElementById('error-message');
-    const pinInputs = [
-        document.getElementById('pin1'),
-        document.getElementById('pin2'),
-        document.getElementById('pin3'),
-        document.getElementById('pin4')
-    ];
-    
-    let userSession = {
-        almacen: null,
-        esAdmin: false,
-        descripcion: ''
-    };
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- MODIFICACIÓN: Pasar variables de sesión de PHP a JavaScript ---
+        const USER_TYPE = <?php echo json_encode($USER_TYPE); ?>;
+        const USER_WAREHOUSE = <?php echo json_encode($USER_WAREHOUSE); ?>;
 
-    // Auto-focus en siguiente input
-    pinInputs.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-            if (e.target.value && index < 3) {
-                pinInputs[index + 1].focus();
-            }
-        });
-        
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                pinInputs[index - 1].focus();
-            }
-        });
-    });
-
-    // Focus inicial
-    pinInputs[0].focus();
-
-    // Manejo del login
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorMessage.textContent = '';
-        
-        const codigo = pinInputs.map(input => input.value).join('');
-        
-        if (codigo.length !== 4) {
-            errorMessage.textContent = 'Por favor ingresa los 4 dígitos';
-            return;
-        }
-        
-        const loginBtn = document.getElementById('login-btn');
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Verificando...';
-        
-        try {
-            // 🚀 CORRECCIÓN DE RUTA 1: Quitado el '../'
-            const response = await fetch('../Logica/api_login.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ codigo })
-            });
-            
-            // Verificamos si la respuesta no es OK (ej. 404, 500)
-            if (!response.ok) {
-                 throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            
-            if (result.success) {
-                userSession = {
-                    almacen: result.data.almacen,
-                    esAdmin: result.data.es_admin,
-                    descripcion: result.data.descripcion
-                };
-                showDashboard();
-            } else {
-                errorMessage.textContent = result.message || 'Código inválido';
-                pinInputs.forEach(input => input.value = '');
-                pinInputs[0].focus();
-            }
-        } catch (error) {
-            // Este error ahora captura el '404' y el error de JSON
-            errorMessage.textContent = 'Error de conexión o de servidor.';
-            console.error('Error en fetch de login:', error);
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Ingresar';
-        }
-    });
-
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        try {
-            // 🚀 CORRECCIÓN DE RUTA 2: Quitado el '../'
-            await fetch('../Logica/api_login.php?action=logout');
-            location.reload();
-        } catch (error) {
-            console.error('Error al cerrar sesión:', error);
-            location.reload();
-        }
-    });
-
-    function showDashboard() {
-        loginScreen.classList.add('hidden');
-        dashboardScreen.classList.remove('hidden');
-        
-        document.getElementById('user-info-display').textContent = userSession.descripcion;
-        
-        const almacenFilterContainer = document.getElementById('almacen-filter-container');
-        const almacenFilterInput = document.getElementById('filtro_almacen');
-        
-        if (!userSession.esAdmin && userSession.almacen) {
-            almacenFilterContainer.style.display = 'none';
-            almacenFilterInput.value = userSession.almacen;
-            almacenFilterInput.disabled = true;
-        } else {
-            almacenFilterContainer.style.display = 'block';
-            almacenFilterInput.disabled = false;
-            // 🚀 CAMBIO: Ya no llamamos a populateAlmacenes() aquí.
-            // Se poblará con la primera llamada a fetchData().
-        }
-        
-        initializeDashboard();
-    }
-
-    // ===== LÓGICA DEL DASHBOARD =====
-    function initializeDashboard() {
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart;
         let currentView = 'overview';
         const fechaInicioInput = document.getElementById('fecha_inicio');
         const fechaFinInput = document.getElementById('fecha_fin');
+        // El filtro de almacén puede ser 'null' si no es admin
         const almacenFilterInput = document.getElementById('filtro_almacen');
         const loaderEl = document.getElementById('loader');
         const mainTitle = document.getElementById('main-title');
-        
         let detailsCurrentState = ''; 
         let detailsCurrentPage = 1;
         let detailsLimit = parseInt(document.getElementById('details-limit').value);
-        let detailsTotalCount = 0;
+        let detailsTotalPages = 1;
         
-        // 🎨 Paleta de colores mejorada
-        const CHART_COLORS = [
-            '#E53E3E', // Rojo (Accent)
-            '#3182CE', // Azul
-            '#38A169', // Verde
-            '#DD6B20', // Naranja
-            '#D69E2E', // Amarillo/Ocre
-            '#805AD5', // Morado
-            '#D53F8C', // Rosa
-            '#718096', // Gris
-            '#F56565', // Rojo claro
-            '#63B3ED', // Azul claro
-            '#68D391', // Verde claro
-            '#F6AD55'  // Naranja claro
-        ];
-        
-        const CHART_COLORS_RED_GRADIENT = [
-             '#751010ff',
-             '#bb1b1bff',
-             '#cb1717ef',
-             '#ff0000ff'
-        ];
-
-
-        // --- Helper Functions ---
-        const formatCurrency = (value) => {
-            if (value === null || value === undefined) return '--';
-            return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(value);
-        };
-        const formatHours = (value) => {
-            if (value === null || value === undefined) return '-- horas';
-            return `${(value || 0).toFixed(1)} horas`;
-        };
-        
-        // Establecer fechas por defecto (hoy)
-        const setDates = () => {
-            const today = new Date().toISOString().split('T')[0];
-            fechaInicioInput.value = today;
-            fechaFinInput.value = today;
-        };
-
-        // 🚀 CAMBIO: Esta función ahora solo lee los datos, no los busca.
-        const populateAlmacenes = (almacenes = []) => {
-            if (!userSession.esAdmin) return;
-            
-            // Guardar el valor actual por si acaso
-            const currentValue = almacenFilterInput.value;
-            
-            almacenFilterInput.innerHTML = '<option value="">Todos los Almacenes</option>'; // Reset
-            almacenes.forEach(alm => {
-                const option = document.createElement('option');
-                option.value = alm.almacen; // El PHP ahora devuelve 'almacen'
-                option.textContent = alm.almacen;
-                almacenFilterInput.appendChild(option);
-            });
-            
-            // Restaurar el valor seleccionado si aún existe
-            almacenFilterInput.value = currentValue;
-        };
-
-        // --- Chart Initialization ---
         const initializeCharts = () => {
-            const defaultChartOptions = (legendDisplay = false) => ({
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: legendDisplay }
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: '#4a5568' }, grid: { color: '#e2e8f0' } },
-                    x: { ticks: { color: '#4a5568' }, grid: { color: '#e2e8f0' } }
-                }
-            });
+            // Tu función initializeCharts (sin cambios)
+            const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
+            statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] }, options: chartOptions });
+            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: 'rgba(229, 62, 62, 1)', tension: 0.1, fill: false }] }, options: chartOptions });
             
-            const defaultDoughnutOptions = (legendPosition = 'right') => ({
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: legendPosition, labels: { color: '#4a5568' } }
-                }
-            });
-
-            // Gráfica de Estados (Overview)
-            statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS_RED_GRADIENT }] },
-                options: defaultChartOptions(false)
-            });
-
-            // Gráfica de Tendencias (Trends)
-            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), {
-                type: 'line',
-                data: { labels: [], datasets: [{ data: [], borderColor: '#e53e3e', backgroundColor: '#e53e3e', tension: 0.1, fill: false }] },
-                options: defaultChartOptions(false)
-            });
-            
-            // Gráfica de Razones NC (Performance)
+            const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
             ncReasonsChart = new Chart(document.getElementById('ncReasonsChart').getContext('2d'), {
-                type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS }] },
-                options: defaultDoughnutOptions('right')
+                type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ['#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce', '#805ad5'] }] }, options: doughnutOptions
             });
             
-            // Gráfica de Camiones (Performance)
+            const barOptions = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } };
             truckPerformanceChart = new Chart(document.getElementById('truckPerformanceChart').getContext('2d'), {
-                type: 'bar',
-                options: { ...defaultChartOptions(false), indexAxis: 'y', scales: { y: { ticks: { color: '#4a5568' } } } },
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[4] }] }
+                type: 'bar', data: { labels: [], datasets: [{ label: 'Total Entregas', data: [], backgroundColor: 'rgba(54, 162, 235, 0.7)' }] }, options: barOptions
             });
 
-            // Gráfica Top Clientes (Financial)
+            const barOptionsHorizontal = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } };
             topClientsChart = new Chart(document.getElementById('topClientsChart').getContext('2d'), {
                 type: 'bar',
-                options: { ...defaultChartOptions(false), indexAxis: 'y', scales: { y: { ticks: { color: '#4a5568' } } } },
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[5] }] }
+                data: { labels: [], datasets: [{ label: 'Monto Total', data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] },
+                options: barOptionsHorizontal
             });
-            
-            // Gráfica Top Almacenes (Financial)
             topWarehousesChart = new Chart(document.getElementById('topWarehousesChart').getContext('2d'), {
                 type: 'bar',
-                options: { ...defaultChartOptions(false), indexAxis: 'y', scales: { y: { ticks: { color: '#4a5568' } } } },
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CHART_COLORS[6] }] }
+                data: { labels: [], datasets: [{ label: 'Monto Total', data: [], backgroundColor: 'rgba(49, 130, 206, 0.7)' }] },
+                options: barOptionsHorizontal
             });
         };
-
-        // --- Data Fetching & Updating ---
         
-        const fetchData = async () => {
-            loaderEl.classList.add('loading');
-            const params = new URLSearchParams({
-                fecha_inicio: fechaInicioInput.value,
-                fecha_fin: fechaFinInput.value,
-                almacen: almacenFilterInput.value
-            });
-            
+        const populateAlmacenFilter = async () => {
+            // Esta función solo se llamará si es admin
             try {
-                // 🚀 CORRECCIÓN DE RUTA 3: Usamos 'Logica/' y 'action=getData'
-                const response = await fetch(`../Logica/api_dashboard.php?action=getData&${params.toString()}`);
-                if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+                const response = await fetch('../Logica/api_get_data.php?view=almacenes');
+                if (response.status === 401) { window.location.href = 'dashboard.php'; return; }
+                if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
+                const almacenes = await response.json();
                 
-                const result = await response.json();
+                // Chequeo por si la API devuelve error por sesión
+                if (almacenes.error) throw new Error(almacenes.error);
+
+                almacenes.forEach(almacen => {
+                    const option = document.createElement('option');
+                    option.value = almacen.inventlocationid;
+                    option.textContent = almacen.inventlocationid;
+                    almacenFilterInput.appendChild(option);
+                });
+            } catch (error) { console.error("Error cargando almacenes:", error); }
+        };
+
+        const fetchData = async (inicio, fin, almacen, view) => {
+            loaderEl.classList.add('loading');
+            try {
+                // El 'almacen' que se pasa aquí ya está decidido (o del admin o del usuario)
+                const url = `../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
+                const response = await fetch(url);
                 
-                if (result.success) {
-                    updateDashboard(result.data);
-                } else {
-                    alert('Error al cargar datos: ' + (result.message || 'Error desconocido'));
+                if (response.status === 401) { // 401 Unauthorized (sesión de dashboard expirada)
+                    window.location.href = 'dashboard.php'; // Redirigir a la misma pág (mostrará login)
+                    return;
                 }
-            } catch (error) {
-                console.error("Error al cargar datos del dashboard:", error);
-                alert('Error de conexión al cargar datos.');
-            } finally {
-                loaderEl.classList.remove('loading');
-            }
-        };
-
-        const updateDashboard = (data) => {
-            // 🚀 CAMBIO: Poblar almacenes desde la data principal
-            if (userSession.esAdmin && data.allAlmacenes) {
-                populateAlmacenes(data.allAlmacenes);
-            }
-
-            // 1. KPIs Overview
-            document.getElementById('total-emitidas').textContent = data.kpi.total_emitidas || 0;
-            document.getElementById('sin-estado').textContent = data.kpi.sin_estado || 0;
-
-            // 2. Gráfica de Estados y Tabla
-            const statusLabels = data.statusDistribution.map(d => d.estado);
-            const statusData = data.statusDistribution.map(d => d.total);
-            statusChart.data.labels = statusLabels;
-            statusChart.data.datasets[0].data = statusData;
-            statusChart.update();
-            
-            const tableBody = document.getElementById('statusTableBody');
-            tableBody.innerHTML = '';
-            let totalGeneral = 0;
-            data.statusDistribution.forEach(item => {
-                // Hacemos que la fila de la tabla sea clickeable
-                tableBody.innerHTML += `<tr style="cursor: pointer;" data-estado="${item.estado}">
-                    <td>${item.estado}</td>
-                    <td>${item.total}</td>
-                </tr>`;
-                totalGeneral += item.total;
-            });
-            document.getElementById('statusTableTotal').textContent = totalGeneral;
-
-            // 3. Gráfica de Tendencias
-            trendsChart.data.labels = data.trends.map(d => d.Dia);
-            trendsChart.data.datasets[0].data = data.trends.map(d => d.Total);
-            trendsChart.update();
-
-            // 4. KPIs Performance
-            document.getElementById('perf-kpi-time-to-dispatch').textContent = formatHours(data.performance.avg_time_to_dispatch);
-            document.getElementById('perf-kpi-dispatch-to-deliver').textContent = formatHours(data.performance.avg_dispatch_to_deliver);
-            document.getElementById('perf-kpi-total-cycle').textContent = formatHours(data.performance.avg_total_cycle);
-            
-            // 5. Gráfica Razones NC
-            ncReasonsChart.data.labels = data.ncReasons.map(d => d.motivo_nc);
-            ncReasonsChart.data.datasets[0].data = data.ncReasons.map(d => d.total);
-            ncReasonsChart.update();
-
-            // 6. Gráfica Top Camiones
-            truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.Camion);
-            truckPerformanceChart.data.datasets[0].data = data.truckPerformance.map(d => d.total_entregas);
-            truckPerformanceChart.update();
-
-            // 7. KPIs Financial
-            document.getElementById('financial-kpi-total-amount').textContent = formatCurrency(data.financials.total_amount);
-            document.getElementById('financial-kpi-sin-estado-amount').textContent = formatCurrency(data.financials.sin_estado_amount);
-            document.getElementById('financial-kpi-nc-amount').textContent = formatCurrency(data.financials.nc_amount);
-            
-            // 8. Gráfica Top Clientes
-            topClientsChart.data.labels = data.topClients.map(d => d.cliente);
-            topClientsChart.data.datasets[0].data = data.topClients.map(d => d.monto_total);
-            topClientsChart.update();
-            
-            // 9. Gráfica Top Almacenes
-            topWarehousesChart.data.labels = data.topWarehouses.map(d => d.almacen);
-            topWarehousesChart.data.datasets[0].data = data.topWarehouses.map(d => d.monto_total);
-            topWarehousesChart.update();
-        };
-
-        // --- Details View & Pagination ---
-        
-        const fetchDetails = async (estado = '', page = 1, limit = 50) => {
-            loaderEl.classList.add('loading');
-            detailsCurrentState = estado;
-            detailsCurrentPage = page;
-            detailsLimit = limit;
-            
-            const params = new URLSearchParams({
-                fecha_inicio: fechaInicioInput.value,
-                fecha_fin: fechaFinInput.value,
-                almacen: almacenFilterInput.value,
-                estado: estado,
-                page: page,
-                limit: limit
-            });
-            
-            try {
-                // 🚀 CORRECCIÓN DE RUTA 4: Usamos 'Logica/' y 'action=getDetails'
-                const response = await fetch(`../Logica/api_dashboard.php?action=getDetails&${params.toString()}`);
-                if (!response.ok) throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
                 
                 const data = await response.json();
-                
-                if (data.success) {
-                    populateDetailsTable(data.details);
-                    detailsTotalCount = data.pagination.total_count;
-                    updatePaginationControls();
-                    showView('details');
-                    
-                    if(estado === 'TOTAL') {
-                         document.getElementById('details-title').textContent = 'Detalle de Todas las Facturas Emitidas';
-                    } else if (estado === 'SIN_ESTADO') {
-                         document.getElementById('details-title').textContent = 'Detalle de Facturas Sin Estado';
-                    } else {
-                        document.getElementById('details-title').textContent = `Detalle de Facturas: ${estado}`;
-                    }
-                    document.getElementById('details-period').textContent = `Mostrando resultados para ${fechaInicioInput.value} al ${fechaFinInput.value}.`;
-                    
-                } else {
-                    alert('Error al cargar detalles: ' + (data.message || 'Error desconocido'));
+                if (data.error) throw new Error(data.error);
+
+                if (view === 'performance') {
+                    updatePerformanceView(data);
+                } else if (view === 'financial') {
+                    updateFinancialView(data);
+                } else if (view !== 'details') {
+                    updateDashboard(data, view);
                 }
             } catch (error) {
-                console.error("Error al cargar detalles:", error);
-                alert('Error de conexión al cargar detalles.');
+                console.error(`Error al cargar datos para la vista ${view}:`, error);
+                if (view !== 'details') alert('Error al cargar datos del dashboard: ' + error.message);
             } finally {
                 loaderEl.classList.remove('loading');
             }
         };
 
-        const populateDetailsTable = (details) => {
+        // updateFinancialView y updatePerformanceView (sin cambios)
+        const updateFinancialView = (data) => {
+            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+
+            document.getElementById('financial-kpi-total-amount').textContent = currencyFormatter.format(data.kpis.totalAmount || 0);
+            document.getElementById('financial-kpi-sin-estado-amount').textContent = currencyFormatter.format(data.kpis.sinEstadoAmount || 0);
+            document.getElementById('financial-kpi-nc-amount').textContent = currencyFormatter.format(data.kpis.ncAmount || 0);
+
+            if (topClientsChart) {
+                const clientLabels = data.topClients.map(c => {
+                    const name = c.Cliente || 'N/A';
+                    return name.length > 30 ? name.substring(0, 27) + '...' : name;
+                });
+                topClientsChart.data.labels = clientLabels;
+                topClientsChart.data.datasets[0].data = data.topClients.map(c => c.TotalAmount);
+                topClientsChart.update();
+            }
+
+            if (topWarehousesChart) {
+                topWarehousesChart.data.labels = data.topWarehouses.map(w => w.Almacen);
+                topWarehousesChart.data.datasets[0].data = data.topWarehouses.map(w => w.TotalAmount);
+                topWarehousesChart.update();
+            }
+        };
+        
+        const updatePerformanceView = (data) => {
+            const formatter = new Intl.NumberFormat('es-DO', { maximumFractionDigits: 1 });
+            document.getElementById('perf-kpi-time-to-dispatch').textContent = `${formatter.format(data.kpis.AvgTimeToDispatch || 0)} horas`;
+            document.getElementById('perf-kpi-dispatch-to-deliver').textContent = `${formatter.format(data.kpis.AvgDispatchToDeliver || 0)} horas`;
+            document.getElementById('perf-kpi-total-cycle').textContent = `${formatter.format(data.kpis.AvgTotalCycle || 0)} horas`;
+
+            if (ncReasonsChart) {
+                ncReasonsChart.data.labels = data.ncReasons.map(d => d.Motivo);
+                ncReasonsChart.data.datasets[0].data = data.ncReasons.map(d => d.Total);
+                ncReasonsChart.update();
+            }
+
+            if (truckPerformanceChart) {
+                truckPerformanceChart.data.labels = data.truckPerformance.map(d => d.Camion);
+                truckPerformanceChart.data.datasets[0].data = data.truckPerformance.map(d => d.TotalEntregas);
+                truckPerformanceChart.options.plugins.tooltip = {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.x !== null) {
+                                label += context.parsed.x;
+                                const truckData = data.truckPerformance[context.dataIndex];
+                                if (truckData) {
+                                    label += ` (Avg: ${formatter.format(truckData.AvgDeliveryTime)} hrs)`;
+                                }
+                            }
+                            return label;
+                        }
+                    }
+                };
+                truckPerformanceChart.update();
+            }
+        };
+        
+        // updateDashboard (sin cambios)
+        const updateDashboard = (data, view) => {
+            const formatter = new Intl.NumberFormat();
+            if (view === 'overview') {
+                document.getElementById('total-emitidas').textContent = formatter.format(data.totalEmitidas || 0);
+                document.getElementById('sin-estado').textContent = formatter.format(data.sinEstado || 0);
+                
+                statusChart.data.labels = data.estadosData.map(d => d.Estado);
+                statusChart.data.datasets[0].data = data.estadosData.map(d => d.Total);
+                statusChart.update();
+
+                const statusTableBody = document.getElementById('statusTableBody');
+                statusTableBody.innerHTML = '';
+                const allStatusData = [...data.estadosData, { Estado: 'Sin estado', Total: data.sinEstado }];
+                
+                allStatusData.forEach(item => {
+                    if (item.Total > 0) {
+                        const row = statusTableBody.insertRow();
+                        row.style.cursor = 'pointer';
+                        row.title = `Haz clic para ver los detalles de "${item.Estado}"`;
+                        row.onclick = () => showDetailsView(item.Estado);
+                        row.insertCell().textContent = item.Estado;
+                        row.insertCell().textContent = formatter.format(item.Total);
+                    }
+                });
+                document.getElementById('statusTableTotal').textContent = formatter.format(data.totalEmitidas);
+            
+            } else if (view === 'trends' && data.tendenciaRegistros) {
+                const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                trendsChart.data.labels = data.tendenciaRegistros.map(d => {
+                    const fecha = new Date(d.Dia + 'T00:00:00'); 
+                    return `${diasSemana[fecha.getDay()]} (${d.Dia.substring(5)})`;
+                });
+                trendsChart.data.datasets[0].data = data.tendenciaRegistros.map(d => d.Total);
+                trendsChart.update();
+            }
+        };
+
+        // formatDate, populateDetailsTable, updatePaginationControls (sin cambios)
+        const formatDate = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            try {
+                const date = new Date(dateStr);
+                return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return 'N/A'; }
+        };
+        
+        const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
-            tableBody.innerHTML = '';
-            if (details.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="17" style="text-align: center;">No se encontraron registros para esta selección.</td></tr>';
-                return;
-            }
+            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="17" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
+            if(!facturas || facturas.length === 0) return;
             
-            details.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.NoFactura || ''}</td><td>${row.FechaRegistro || ''}</td><td>${row.Cliente || ''}</td>
-                    <td>${row.Monto ? formatCurrency(row.Monto) : ''}</td><td>${row.RegistradoPor || ''}</td><td>${row.Camion || ''}</td>
-                    <td>${row.FechaDespacho || ''}</td><td>${row.DespachadoPor || ''}</td><td>${row.FechaEntregado || ''}</td>
-                    <td>${row.EntregadoPor || ''}</td><td>${row.Estado || ''}</td><td>${row.FechaReversada || ''}</td>
-                    <td>${row.ReversadoPor || ''}</td><td>${row.FechaNC || ''}</td><td>${row.NCRealizadoPor || ''}</td>
-                    <td>${row.MotivoNC || ''}</td><td>${row.Camion2 || ''}</td>
-                `;
-                tableBody.appendChild(tr);
+            const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
+
+            facturas.forEach(f => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = f.No_Factura || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_Registro);
+                row.insertCell().textContent = f.invoicingname || 'N/A';
+                
+                const montoCell = row.insertCell();
+                montoCell.textContent = currencyFormatter.format(f.invoiceamountmst || 0);
+                montoCell.style.textAlign = 'right';
+
+                row.insertCell().textContent = f.Registrado_por || 'N/A';
+                row.insertCell().textContent = f.Camion || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_Despacho);
+                row.insertCell().textContent = f.Despachado_por || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_Entregado);
+                row.insertCell().textContent = f.Entregado_por || 'N/A';
+                row.insertCell().textContent = f.Estado || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_Reversada);
+                row.insertCell().textContent = f.Reversado_Por || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_de_NC);
+                row.insertCell().textContent = f.NC_Realizado_Por || 'N/A';
+                row.insertCell().textContent = f.Motivo_NC || 'N/A';
+                row.insertCell().textContent = f.Camion2 || 'N/A';
             });
         };
-        
-        const updatePaginationControls = () => {
-            const totalPages = Math.ceil(detailsTotalCount / detailsLimit);
-            document.getElementById('page-info').textContent = `Página ${detailsCurrentPage} de ${totalPages} (Total: ${detailsTotalCount})`;
-            document.getElementById('prev-page').disabled = (detailsCurrentPage === 1);
-            document.getElementById('next-page').disabled = (detailsCurrentPage === totalPages || totalPages === 0);
-        };
-        
-        // --- View Navigation ---
-        
-        const showView = (viewId) => {
-            document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
-            document.querySelectorAll('.nav-item a').forEach(link => link.classList.remove('active'));
-            
-            document.getElementById(`view-${viewId}`).classList.add('active');
-            const navLink = document.querySelector(`.nav-item a[data-view="${viewId}"]`);
-            if (navLink) {
-                navLink.classList.add('active');
-                mainTitle.textContent = navLink.textContent;
-            } else if (viewId === 'details') {
-                 mainTitle.textContent = "Detalle de Facturas"; // Título para la vista de detalles
-            }
-            
-            currentView = viewId;
+    
+        const updatePaginationControls = ({ currentPage, totalPages, totalRecords }) => {
+            document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (Total: ${totalRecords})`;
+            document.getElementById('prev-page').disabled = currentPage <= 1;
+            document.getElementById('next-page').disabled = currentPage >= totalPages;
         };
 
-        // --- Event Listeners ---
+        const fetchDetails = async (estado, inicio, fin, almacen, page, limit) => {
+            detailsCurrentState = estado;
+            loaderEl.classList.add('loading');
+            const detailsTableBody = document.getElementById('detailsTableBody');
+            detailsTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Cargando...</td></tr>';
+            try {
+                // El 'almacen' que se pasa aquí ya está decidido (o del admin o del usuario)
+                const url = `../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
+                const response = await fetch(url);
+
+                if (response.status === 401) {
+                    window.location.href = 'dashboard.php'; // Redirigir al login
+                    return;
+                }
+                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+                
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+                detailsCurrentPage = result.currentPage;
+                detailsLimit = result.limit;
+                detailsTotalPages = result.totalPages;
+                populateDetailsTable(result.data);
+                updatePaginationControls(result);
+            } catch (error) {
+                console.error("Error al cargar detalles:", error);
+                detailsTableBody.innerHTML = `<tr><td colspan="17" style="text-align:center; color: red;">Error: ${error.message}</td></tr>`;
+                updatePaginationControls({ currentPage: 1, totalPages: 1, totalRecords: 0 });
+            } finally {
+                loaderEl.classList.remove('loading');
+            }
+        };
+
+        const showDetailsView = (estado) => {
+            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-details').classList.add('active');
+            currentView = 'details';
+            
+            const inicio = fechaInicioInput.value;
+            const fin = fechaFinInput.value;
+            
+            // --- MODIFICACIÓN: Decidir qué almacén usar ---
+            let almacen = '';
+            if (USER_TYPE === 'admin') {
+                almacen = almacenFilterInput ? almacenFilterInput.value : '';
+            } else {
+                almacen = USER_WAREHOUSE;
+            }
+            // --- FIN MODIFICACIÓN ---
+
+            const displayTitle = (estado === 'ALL') ? 'TOTAL DE FACTURAS EMITIDAS' : `Detalle de Facturas: ${estado}`;
+            document.getElementById('details-title').textContent = displayTitle;
+            document.getElementById('details-period').innerHTML = `Mostrando resultados del <strong>${inicio}</strong> al <strong>${fin}</strong>.`;
+            detailsCurrentPage = 1; 
+            fetchDetails(estado, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
+        };
         
-        // Navegación principal
-        document.querySelectorAll('.nav-item a').forEach(link => {
-            link.addEventListener('click', (e) => {
+        const applyFiltersAndFetchData = () => {
+            const inicio = fechaInicioInput.value;
+            const fin = fechaFinInput.value;
+            
+            // --- MODIFICACIÓN: Decidir qué almacén usar ---
+            let almacen = '';
+            if (USER_TYPE === 'admin') {
+                almacen = almacenFilterInput ? almacenFilterInput.value : '';
+            } else {
+                almacen = USER_WAREHOUSE;
+            }
+            // --- FIN MODIFICACIÓN ---
+
+            if (inicio && fin) {
+                if (currentView === 'details' && detailsCurrentState) {
+                    detailsCurrentPage = 1;
+                    fetchDetails(detailsCurrentState, inicio, fin, almacen, detailsCurrentPage, detailsLimit);
+                } else if (currentView !== 'details') {
+                    fetchData(inicio, fin, almacen, currentView);
+                }
+            }
+        };
+
+        const setupKpiClickEvents = () => {
+            document.getElementById('kpi-total-emitidas').onclick = () => showDetailsView('ALL');
+            document.getElementById('kpi-sin-estado').onclick = () => showDetailsView('Sin estado');
+        };
+
+        const setDateDefaults = () => {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+            fechaInicioInput.value = firstDay;
+            fechaFinInput.value = lastDay;
+        };
+
+        // --- INICIALIZACIÓN ---
+        setDateDefaults();
+        initializeCharts();
+        
+        // --- MODIFICACIÓN: Solo poblar filtro si es admin ---
+        if (USER_TYPE === 'admin' && almacenFilterInput) {
+            populateAlmacenFilter();
+        }
+        
+        applyFiltersAndFetchData();
+        setupKpiClickEvents();
+
+        // --- Eventos ---
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', e => {
                 e.preventDefault();
-                const viewId = e.target.getAttribute('data-view');
-                if(viewId !== currentView) {
-                     showView(viewId);
-                     // No necesitamos recargar datos aquí, ya que los filtros no han cambiado
-                     // Los datos para todas las vistas se cargan una vez en fetchData()
-                }
+                
+                // Evitar que el link de logout dispare la navegación
+                if (link.classList.contains('logout-link')) return;
+
+                document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+                link.classList.add('active');
+                
+                const targetView = link.dataset.view;
+                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${targetView}`).classList.add('active');
+                
+                const viewTitles = {
+                    overview: 'Resumen de Facturas',
+                    trends: 'Tendencias Diarias de Registros',
+                    performance: 'Análisis de Rendimiento y Calidad',
+                    financial: 'Análisis Financiero',
+                    details: 'Detalle de Facturas'
+                };
+                mainTitle.textContent = viewTitles[targetView] || 'Dashboard';
+                
+                currentView = targetView;
+                applyFiltersAndFetchData();
             });
         });
 
-        // Filtros
-        [fechaInicioInput, fechaFinInput, almacenFilterInput].forEach(input => {
-            input.addEventListener('change', () => {
-                // Si estamos en 'details', volvemos a 'overview' al cambiar filtros
-                if (currentView === 'details') {
-                    showView('overview');
-                }
-                fetchData(); // Recargamos toda la data del dashboard
-            });
+        document.getElementById('back-to-overview').addEventListener('click', () => {
+            document.getElementById('view-details').classList.remove('active');
+            document.getElementById('view-overview').classList.add('active');
+            document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
+            document.querySelector('.sidebar-nav a[data-view="overview"]').classList.add('active');
+            mainTitle.textContent = 'Resumen de Facturas';
+            currentView = 'overview';
+            applyFiltersAndFetchData();
         });
+
+        fechaInicioInput.addEventListener('change', applyFiltersAndFetchData);
+        fechaFinInput.addEventListener('change', applyFiltersAndFetchData);
         
-        // Clic en KPIs para ver detalles
-        document.getElementById('kpi-total-emitidas').addEventListener('click', () => fetchDetails('TOTAL', 1, detailsLimit));
-        document.getElementById('kpi-sin-estado').addEventListener('click', () => fetchDetails('SIN_ESTADO', 1, detailsLimit));
-        
-        // Clic en la tabla de estados
-        document.getElementById('statusTableBody').addEventListener('click', (e) => {
-             const row = e.target.closest('tr');
-             if (row && row.dataset.estado) {
-                 const estado = row.dataset.estado === 'Sin estado' ? 'SIN_ESTADO' : row.dataset.estado;
-                 fetchDetails(estado, 1, detailsLimit);
-             }
-        });
-        
-        // Controles de Details View
-        document.getElementById('back-to-overview').addEventListener('click', () => showView('overview'));
-        document.getElementById('details-limit').addEventListener('change', (e) => {
-            fetchDetails(detailsCurrentState, 1, parseInt(e.target.value));
-        });
+        // --- MODIFICACIÓN: Solo añadir evento si el filtro existe (admin) ---
+        if (USER_TYPE === 'admin' && almacenFilterInput) {
+            almacenFilterInput.addEventListener('change', applyFiltersAndFetchData);
+        }
+
+        // --- Paginación (sin cambios) ---
         document.getElementById('prev-page').addEventListener('click', () => {
             if (detailsCurrentPage > 1) {
-                fetchDetails(detailsCurrentState, detailsCurrentPage - 1, detailsLimit);
+                detailsCurrentPage--;
+                applyFiltersAndFetchData();
             }
         });
         document.getElementById('next-page').addEventListener('click', () => {
-             const totalPages = Math.ceil(detailsTotalCount / detailsLimit);
-            if (detailsCurrentPage < totalPages) {
-                fetchDetails(detailsCurrentState, detailsCurrentPage + 1, detailsLimit);
+            if (detailsCurrentPage < detailsTotalPages) {
+                detailsCurrentPage++;
+                applyFiltersAndFetchData();
             }
         });
-
-        // --- Carga Inicial ---
-        setDates();
-        initializeCharts();
-        fetchData(); // Esto ahora también cargará los almacenes
-    }
+        document.getElementById('details-limit').addEventListener('change', e => {
+            detailsLimit = parseInt(e.target.value);
+            detailsCurrentPage = 1;
+            applyFiltersAndFetchData();
+        });
+    });
 </script>
 </body>
 </html>

@@ -1,4 +1,21 @@
 <?php
+// --- MODIFICACIÓN: Iniciar y validar sesión ---
+session_start();
+date_default_timezone_set('America/Santo_Domingo');
+
+// 1. Debe estar logueado en el sistema principal Y HABER PASADO EL LOGIN DEL DASHBOARD
+if (!isset($_SESSION['usuario']) || !isset($_SESSION['dashboard_access_granted']) || $_SESSION['dashboard_access_granted'] !== true) {
+    http_response_code(401); // 401 Unauthorized
+    echo json_encode(['error' => 'No autorizado. Por favor, inicie sesión.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// 2. Obtener datos de la sesión del DASHBOARD
+$USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
+$USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
+// ----------------------------------------------
+
+
 // Requerir la conexión a la base de datos
 require '../conexionBD/conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
@@ -7,8 +24,6 @@ header('Content-Type: application/json; charset=utf-8');
 // --- Inicialización de variables ---
 $response = []; 
 $http_code = 200; 
-
-// Ya no se necesita la constante ITBIS_RATE, pero la dejamos por si se usa en otro lado.
 
 
 try {
@@ -21,14 +36,24 @@ try {
     $fecha_inicio = $_GET['fecha_inicio'] ?? '';
     $fecha_fin = $_GET['fecha_fin'] ?? '';
     $view = $_GET['view'] ?? 'overview';
-    $almacen = $_GET['almacen'] ?? '';
+    $almacen_param = $_GET['almacen'] ?? ''; // Parámetro del GET
+
+    // --- MODIFICACIÓN: Forzar almacén según sesión ---
+    $almacen = '';
+    if ($USER_TYPE === 'admin') {
+        $almacen = $almacen_param; // Admin puede usar el filtro que quiera
+    } else {
+        // Usuario no-admin USA SU PROPIO ALMACÉN, ignorando el parámetro del GET
+        $almacen = $USER_WAREHOUSE; 
+    }
+    // ----------------------------------------------
 
     if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
     if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
     // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS ---
-    // Se ha modificado para usar la columna lineamounttax.
-  $cte_facturas = "
+    // (Tu CTE original no necesita cambios)
+    $cte_facturas = "
     WITH Facturas_CTE AS (
         SELECT
             fl.invoiceid,
@@ -43,9 +68,10 @@ try {
         -- Se agrupa por factura Y por almacén para tratar cada parte por separado
         GROUP BY fl.invoiceid, fl.inventlocationid 
     )
-";
+    ";
 
     // --- 3. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
+    // (Esta lógica ahora usa el $almacen forzado por la sesión)
     $almacenParams = [];
     $almacenSqlAnd = '';
     if (!empty($almacen)) {
@@ -56,6 +82,11 @@ try {
     // --- 4. PROCESAMIENTO DE LA VISTA SOLICITADA ---
     switch ($view) {
         case 'almacenes':
+            // --- MODIFICACIÓN: Esta vista solo debe ser para admins ---
+            if ($USER_TYPE !== 'admin') {
+                 throw new Exception('Acceso denegado a esta función.', 403); // 403 Forbidden
+            }
+            
             $sqlAlmacenes = "
                 SELECT DISTINCT inventlocationid 
                 FROM Facturas_lineas 
@@ -71,6 +102,10 @@ try {
             }
             break;
 
+        // El resto de tus 'case' (trends, details, financial, performance, overview)
+        // no necesitan cambios, ya que la variable $almacenSqlAnd y $almacenParams
+        // ya están correctamente filtradas por la lógica de sesión del inicio.
+        
         case 'trends':
             if (empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros de fecha para consultar tendencias.', 400);
