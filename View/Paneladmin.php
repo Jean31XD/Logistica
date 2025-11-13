@@ -210,10 +210,6 @@ if (empty($_SESSION['csrf_token'])) {
         <div class="cards-container mb-5">
             <?php 
                 $cards = [
-                    ['title' => 'Despacho de Factura', 'desc' => 'Gestiona los envíos y entregas.', 'link' => '../View/Inicio.php', 'icon' => 'fa-truck-fast'],
-                    ['title' => 'Validación', 'desc' => 'Valida facturas escaneadas.', 'link' => '../View/facturas.php', 'icon' => 'fa-check-double'],
-                    ['title' => 'Recepción', 'desc' => 'Control de recepción de documentos.', 'link' => '../View/facturas-recepcion.php', 'icon' => 'fa-inbox'],
-                    ['title' => 'Reporte de Facturas', 'desc' => 'Reporte por Transportista.', 'link' => '../View/Reporte.php', 'icon' => 'fa-chart-pie'],
                     ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar'],
                     ['title' => 'Dashboard', 'desc' => 'Visión general de la gestión.', 'link' => '../View/dashboard.php', 'icon' => 'fa-tachometer-alt'],
                 ];

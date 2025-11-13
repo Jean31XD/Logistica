@@ -263,10 +263,10 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             <div class="sidebar-section" style="margin-top: auto;">
                  <ul class="sidebar-nav">
                     <li class="nav-item">
-                        <a href="../Logica/logout.php" class="logout-link">
+                        <a href="../Logica/dashboard_logout.php" class="logout-link">
                             Cerrar Dashboard (<?php echo htmlspecialchars($USER_TYPE === 'admin' ? 'Admin' : $USER_WAREHOUSE); ?>)
                         </a>
-                    </li>
+                        </li>
                 </ul>
             </div>
         </aside>
