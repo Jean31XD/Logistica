@@ -1,9 +1,36 @@
 <?php
 session_start();
+
+// =========================================================================
+// NUEVO BLOQUE DE LOGOUT (INICIO)
+// =========================================================================
+// Si la URL tiene "?action=logout", cerramos la sesión completa.
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+    $_SESSION = [];
+    session_destroy();
+
+    // Eliminar la cookie de sesión también
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    // Redirigir al login principal (la "página anterior")
+    header("Location: ../index.php");
+    exit();
+}
+// =========================================================================
+// NUEVO BLOQUE DE LOGOUT (FIN)
+// =========================================================================
+
+
 date_default_timezone_set('America/Santo_Domingo');
 
 // 1. VERIFICAR SESIÓN PRINCIPAL DEL PROYECTO
-// Si no está logueado en el sistema principal, se va al index.
+// (El resto de tu código de verificación sigue igual)
 if (!isset($_SESSION['usuario'])) {
     header("Location: ../index.php");
     exit();
@@ -263,7 +290,7 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             <div class="sidebar-section" style="margin-top: auto;">
                  <ul class="sidebar-nav">
                     <li class="nav-item">
-                        <a href="../Logica/logout.php" class="logout-link">
+                        <a href="dashboard.php?action=logout" class="logout-link">
                             Cerrar Dashboard (<?php echo htmlspecialchars($USER_TYPE === 'admin' ? 'Admin' : $USER_WAREHOUSE); ?>)
                         </a>
                         </li>
@@ -628,7 +655,7 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
                 row.insertCell().textContent = f.Entregado_por || 'N/A';
                 row.insertCell().textContent = f.Estado || 'N/A';
                 row.insertCell().textContent = formatDate(f.Fecha_Reversada);
-                row.insertCell().textContent = f.Reversado_Por || 'N/D';
+                row.insertCell().textContent = f.Reversado_Por || 'N/A';
                 row.insertCell().textContent = formatDate(f.Fecha_de_NC);
                 row.insertCell().textContent = f.NC_Realizado_Por || 'N/A';
                 row.insertCell().textContent = f.Motivo_NC || 'N/A';
@@ -750,10 +777,17 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
         // --- Eventos ---
         document.querySelectorAll('.sidebar-nav a').forEach(link => {
             link.addEventListener('click', e => {
-                e.preventDefault();
                 
-                // Evitar que el link de logout dispare la navegación
-                if (link.classList.contains('logout-link')) return;
+                // --- MODIFICACIÓN ---
+                // Si el link es el de logout, no prevenimos la acción por defecto
+                // El navegador SÍ debe seguir el enlace "dashboard.php?action=logout"
+                if (link.classList.contains('logout-link')) {
+                    return; 
+                }
+                
+                // Si es cualquier otro link, prevenimos la acción
+                e.preventDefault();
+                // --- FIN MODIFICACIÓN ---
 
                 document.querySelector('.sidebar-nav a.active')?.classList.remove('active');
                 link.classList.add('active');
