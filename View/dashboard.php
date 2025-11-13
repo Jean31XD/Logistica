@@ -263,7 +263,7 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             <div class="sidebar-section" style="margin-top: auto;">
                  <ul class="sidebar-nav">
                     <li class="nav-item">
-                        <a href="../Logica/dashboard_logout.php" class="logout-link">
+                        <a href="../Logica/logout.php" class="logout-link">
                             Cerrar Dashboard (<?php echo htmlspecialchars($USER_TYPE === 'admin' ? 'Admin' : $USER_WAREHOUSE); ?>)
                         </a>
                         </li>
@@ -628,7 +628,7 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
                 row.insertCell().textContent = f.Entregado_por || 'N/A';
                 row.insertCell().textContent = f.Estado || 'N/A';
                 row.insertCell().textContent = formatDate(f.Fecha_Reversada);
-                row.insertCell().textContent = f.Reversado_Por || 'N/A';
+                row.insertCell().textContent = f.Reversado_Por || 'N/D';
                 row.insertCell().textContent = formatDate(f.Fecha_de_NC);
                 row.insertCell().textContent = f.NC_Realizado_Por || 'N/A';
                 row.insertCell().textContent = f.Motivo_NC || 'N/A';
