@@ -22,7 +22,7 @@
         }
         
         .search-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             padding: 1.5rem;
@@ -92,6 +92,21 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border-left: 4px solid #ffd700;
+        }
+        
+        .product-card .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .product-card .product-image:hover {
+            transform: scale(1.05);
         }
         
         .product-card .item-header {
@@ -180,6 +195,54 @@
             transform: scale(1.01);
         }
         
+        .table .product-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .table .product-thumb:hover {
+            transform: scale(1.5);
+        }
+        
+        /* Modal para imagen */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .image-modal.active {
+            display: flex;
+        }
+        
+        .modal-content-img {
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
         /* Mensajes */
         .alert {
             border-radius: 12px;
@@ -224,7 +287,7 @@
             }
             
             #buscador {
-                font-size: 16px; /* Evita zoom en iOS */
+                font-size: 16px;
             }
             
             .product-card {
@@ -234,6 +297,12 @@
     </style>
 </head>
 <body>
+
+    <!-- Modal para imagen ampliada -->
+    <div class="image-modal" id="imageModal">
+        <span class="close-modal" id="closeModal">&times;</span>
+        <img class="modal-content-img" id="modalImage">
+    </div>
 
     <div class="container-fluid">
         <div class="search-container">
@@ -274,6 +343,7 @@
                     <table class="table table-hover align-middle" id="tablaResultados" style="display:none;">
                         <thead>
                             <tr>
+                                <th style="width: 80px;">Imagen</th>
                                 <th>ItemID</th>
                                 <th>Descripción</th>
                                 <th>Barcode</th>
@@ -297,6 +367,26 @@
     <script>
     $(document).ready(function(){
         let timeout = null;
+        const azureAccountName = 'catalogodeimagenes';
+        const azureContainerName = 'imagenes-productos';
+
+        // Función para generar URL de imagen
+        function getImageUrl(itemid) {
+            return `https://${azureAccountName}.blob.core.windows.net/${azureContainerName}/${encodeURIComponent(itemid.trim())}.jpg`;
+        }
+
+        // Función para abrir modal de imagen
+        function openImageModal(imageSrc) {
+            $('#modalImage').attr('src', imageSrc);
+            $('#imageModal').addClass('active');
+        }
+
+        // Cerrar modal
+        $('#closeModal, #imageModal').on('click', function(e) {
+            if (e.target.id === 'closeModal' || e.target.id === 'imageModal') {
+                $('#imageModal').removeClass('active');
+            }
+        });
 
         // Función de búsqueda
         function buscar(valor){
@@ -326,14 +416,22 @@
 
                     if (response.success && response.data && response.data.length > 0) {
                         response.data.forEach(function(item){
-                            // Convertimos a número y lo mostramos con 1 decimal
                             let promedio = item.promedio_Ventas_3M ? parseFloat(item.promedio_Ventas_3M).toFixed(1) : "0.0";
                             let mi = item.MI ? parseFloat(item.MI).toFixed(1) : "0.0";
                             let inventario = item.Inventario_Listo ? parseFloat(item.Inventario_Listo).toFixed(1) : "0.0";
+                            let imageUrl = getImageUrl(item.itemid);
+                            let placeholderImg = 'https://via.placeholder.com/280x250.png?text=Sin+Imagen';
 
                             // Fila de tabla para escritorio
                             const fila = `
                                 <tr>
+                                    <td>
+                                        <img src="${imageUrl}" 
+                                             class="product-thumb" 
+                                             alt="${item.description}"
+                                             onerror="this.onerror=null; this.src='${placeholderImg}';"
+                                             onclick="openImageModal('${imageUrl}')">
+                                    </td>
                                     <td><strong>${item.itemid}</strong></td>
                                     <td>${item.description}</td>
                                     <td>${item.itembarcode}</td>
@@ -348,6 +446,11 @@
                             // Tarjeta para móvil
                             const card = `
                                 <div class="product-card">
+                                    <img src="${imageUrl}" 
+                                         class="product-image" 
+                                         alt="${item.description}"
+                                         onerror="this.onerror=null; this.src='${placeholderImg}';"
+                                         onclick="openImageModal('${imageUrl}')">
                                     <div class="item-header">
                                         <span class="item-id">${item.itemid}</span>
                                         <span class="inventory-badge">
@@ -392,6 +495,9 @@
                 }
             });
         }
+
+        // Hacer disponible globalmente para los onclick
+        window.openImageModal = openImageModal;
 
         // Búsqueda al escribir
         $("#buscador").on("keyup", function(){
