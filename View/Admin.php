@@ -113,6 +113,8 @@ $additionalCSS = <<<'CSS'
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 2rem;
         margin-bottom: 4rem;
+        max-width: 100%;
+        width: 100%;
     }
 
     .module-card {
@@ -206,6 +208,8 @@ $additionalCSS = <<<'CSS'
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 2rem;
         margin-bottom: 4rem;
+        max-width: 100%;
+        width: 100%;
     }
 
     .stat-card {
@@ -215,6 +219,8 @@ $additionalCSS = <<<'CSS'
         padding: 2rem;
         text-align: center;
         transition: all 0.3s ease;
+        box-sizing: border-box;
+        max-width: 100%;
     }
 
     .stat-card:hover {
