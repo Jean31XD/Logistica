@@ -36,6 +36,21 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
+// Mapeo de pantallas a su página principal/inicio
+$homePage = [
+    0 => 'Admin.php',
+    1 => 'Inicio_gestion.php',
+    2 => 'facturas.php',
+    3 => 'CXC.php',
+    4 => 'Reporte.php',
+    5 => 'Paneladmin.php',
+    6 => 'BI.php',
+    8 => 'Listo-etiquetas.php',
+    9 => 'dashboard.php'
+];
+
+$homeUrl = $homePage[$_SESSION['pantalla'] ?? 0] ?? 'Inicio.php';
+
 // 2. VERIFICAR SI EL ACCESO AL DASHBOARD YA FUE CONCEDIDO
 if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_granted'] === true) {
     // Si ya tiene acceso, preparamos las variables para el dashboard
@@ -77,83 +92,147 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #1a202c; /* Mismo fondo que el sidebar */
+            background: var(--gray-100);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: rgba(230, 57, 70, 0.1);
+            border-radius: 50%;
+            top: -300px;
+            right: -200px;
+            animation: float 6s ease-in-out infinite;
+        }
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: rgba(69, 123, 157, 0.15);
+            border-radius: 50%;
+            bottom: -200px;
+            left: -150px;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-30px) translateX(30px); }
         }
         .login-container {
-            background-color: #2d3748; /* Un poco más claro */
+            background: rgba(255, 255, 255, 0.98);
             padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.2);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             text-align: center;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(10px);
         }
         .login-container img {
             max-width: 100%;
             height: auto;
-            max-height: 80px;
+            max-height: 90px;
             margin-bottom: 2rem;
-            filter: brightness(0) invert(1); /* Logo en blanco */
+            filter: none;
         }
         .login-container h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: #1D3557;
+            background: linear-gradient(135deg, #E63946 0%, #457B9D 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .login-container p {
+            color: #718096;
             margin-bottom: 2rem;
+            font-size: 0.95rem;
         }
         .login-form input {
             width: 100%;
-            padding: 1rem;
-            font-size: 1.2rem;
+            padding: 1.25rem;
+            font-size: 1.5rem;
             text-align: center;
-            letter-spacing: 0.5em; /* Para que el PIN se vea espaciado */
-            border: 2px solid #4a5568;
-            background-color: #1a202c;
-            color: #fff;
-            border-radius: 8px;
+            letter-spacing: 0.8em;
+            border: 2px solid #E2E8F0;
+            background-color: #F7FAFC;
+            color: #2D3748;
+            border-radius: 12px;
             margin-bottom: 1.5rem;
             box-sizing: border-box;
+            transition: all 0.3s ease;
+            font-weight: 700;
+        }
+        .login-form input:focus {
+            outline: none;
+            border-color: #E63946;
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
+            background-color: white;
         }
         .login-form button {
             width: 100%;
-            padding: 1rem;
+            padding: 1.25rem;
             font-size: 1rem;
             font-weight: 700;
             color: #fff;
-            background-color: #e53e3e; /* Color acento */
+            background: linear-gradient(135deg, #E63946 0%, #D62839 100%);
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
         }
         .login-form button:hover {
-            background-color: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
+        }
+        .login-form button:active {
+            transform: translateY(0);
         }
         .error-message {
-            color: #f56565; /* Rojo claro */
+            color: #E63946;
             margin-top: 1rem;
-            font-weight: 500;
+            font-weight: 600;
+            background: rgba(230, 57, 70, 0.1);
+            padding: 0.75rem;
+            border-radius: 8px;
         }
         .logout-link {
-            color: #a0aec0;
+            color: #457B9D;
             font-size: 0.9rem;
             margin-top: 1.5rem;
             display: inline-block;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        .logout-link:hover {
+            color: #E63946;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo">
+        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo">
         <h1>Acceso al Dashboard</h1>
+        <p>Ingresa tu PIN de 4 dígitos para continuar</p>
         <form action="../Logica/check_dashboard_code.php" method="POST" class="login-form">
-            <input type="password" name="codigo" placeholder="PIN de 4 dígitos" required maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="one-time-code">
-            <button type="submit">Entrar</button>
+            <input type="password" name="codigo" placeholder="••••" required maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="one-time-code">
+            <button type="submit">Ingresar al Dashboard</button>
         </form>
         <?php if ($error_msg): ?>
             <p class="error-message"><?php echo htmlspecialchars($error_msg); ?></p>
@@ -183,64 +262,305 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --sidebar-bg: #1a202c; --main-bg: #f7fafc; --card-bg: #ffffff;
-            --text-primary: #2d3748; --text-secondary: #718096; --accent-color: #e53e3e;
-            --border-color: #e2e8f0; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --sidebar-bg: #1D3557; --main-bg: #F7FAFC; --card-bg: #ffffff;
+            --text-primary: #2D3748; --text-secondary: #718096; --accent-color: #E63946;
+            --accent-dark: #D62839; --accent-blue: #457B9D;
+            --border-color: #E2E8F0; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
         }
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--main-bg); color: var(--text-primary); }
         .dashboard-layout { display: flex; height: 100%; }
-        .sidebar { width: 280px; background-color: var(--sidebar-bg); padding: 2rem; display: flex; flex-direction: column; color: #fff; }
-        .logo { margin-bottom: 2rem; text-align: center; }
-        .logo img { max-width: 100%; height: auto; max-height: 100px; }
-        .sidebar-section h3 { font-size: 0.9rem; margin-bottom: 1.5rem; color: #a0aec0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 0.5rem; border-bottom: 1px solid #4a5568; }
-        .sidebar-nav { list-style: none; padding: 0; margin: 0 0 2rem 0; }
-        .nav-item a { display: block; padding: 0.9rem 1rem; color: #cbd5e0; text-decoration: none; border-radius: 8px; margin-bottom: 0.5rem; transition: background-color 0.2s, color 0.2s; }
-        .nav-item a:hover { background-color: #2d3748; color: #fff; }
-        .nav-item a.active { background-color: var(--accent-color); color: #fff; font-weight: 700; }
-        
-        /* Estilo para el enlace de cerrar sesión del dashboard */
-        .nav-item a.logout-link { color: #f56565; }
-        .nav-item a.logout-link:hover { background-color: #c53030; color: #fff; }
-
-        .filter-form { display: flex; flex-direction: column; gap: 1.5rem; }
-        .filter-group { position: relative; background-color: #2d3748; border-radius: 8px; border: 2px solid #4a5568; transition: border-color 0.2s; }
-        .filter-group:focus-within { border-color: var(--accent-color); }
-        .filter-group label { position: absolute; top: 8px; left: 12px; font-size: 0.75rem; color: #a0aec0; }
-        .filter-group input, .filter-group select {
-            width: 100%;
-            padding: 1.75rem 0.75rem 0.75rem 0.75rem;
-            border: none;
-            background: transparent;
+        .sidebar {
+            width: 300px;
+            background: linear-gradient(180deg, #1D3557 0%, #0F1F30 100%);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
             color: #fff;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+        }
+        .logo { margin-bottom: 2rem; text-align: center; padding-bottom: 1.5rem; border-bottom: 2px solid rgba(255, 255, 255, 0.1); }
+        .logo img { max-width: 100%; height: auto; max-height: 80px; }
+        .sidebar-section { margin-bottom: 2rem; }
+        .sidebar-section h3 {
+            font-size: 0.75rem;
+            margin-bottom: 1rem;
+            color: #A0AEC0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid rgba(230, 57, 70, 0.2);
+        }
+        .sidebar-nav { list-style: none; padding: 0; margin: 0; }
+        .nav-item { margin-bottom: 0.5rem; }
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            padding: 0.875rem 1rem;
+            color: #CBD5E0;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .nav-item a:hover {
+            background: rgba(230, 57, 70, 0.1);
+            color: #fff;
+            transform: translateX(5px);
+        }
+        .nav-item a.active {
+            background: var(--accent-color);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.4);
+        }
+
+        /* Estilo para el enlace de cerrar sesión del dashboard */
+        .nav-item a.logout-link { color: #F56565; border: 1px solid rgba(245, 101, 101, 0.3); }
+        .nav-item a.logout-link:hover {
+            background: rgba(230, 57, 70, 0.15);
+            color: #fff;
+            border-color: var(--accent-color);
+        }
+
+        .filter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        .filter-group {
+            position: relative;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .filter-group:hover {
+            border-color: rgba(230, 57, 70, 0.3);
+            background: rgba(255, 255, 255, 0.98);
+        }
+        .filter-group:focus-within {
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.2);
+            transform: translateY(-2px);
+        }
+        .filter-group label {
+            position: absolute;
+            top: 10px;
+            left: 14px;
+            font-size: 0.7rem;
+            color: #718096;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            pointer-events: none;
+        }
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 2rem 1rem 0.75rem 1rem;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #2D3748;
             font-family: inherit;
             font-size: 1rem;
             appearance: none;
-            font-weight: 700;
-        }        
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-        .filter-group select { background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0aec0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; cursor: pointer; background-color: #1a202c;}
-        .main-content { flex-grow: 1; padding: 2rem; overflow-y: auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        header h1 { font-size: 2.25rem; font-weight: 800; }
-        .loader { font-size: 0.9rem; color: var(--text-secondary); opacity: 0; transition: opacity 0.3s; }
+            font-weight: 600;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+        .filter-group select {
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23E63946%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 1rem top 50%;
+            background-size: 0.7em auto;
+            cursor: pointer;
+            padding-right: 2.5rem;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 2.5rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
+            max-width: 100%;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 3px solid rgba(230, 57, 70, 0.1);
+        }
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #E63946 0%, #457B9D 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .loader {
+            font-size: 0.9rem;
+            color: var(--accent-color);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: 600;
+        }
         .loader.loading { opacity: 1; }
         .view-container { display: none; }
         .view-container.active { display: block; }
-        .grid-layout { display: grid; gap: 1.5rem; grid-template-columns: repeat(2, 1fr); }
-        .card { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: var(--shadow); }
-        .card h2 { margin-top: 0; }
-        .chart-container { position: relative; height: 400px; width: 100%; }
-        .kpi-card { background-color: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow); border-left: 5px solid var(--accent-color); cursor: pointer; transition: transform 0.2s; }
-        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px -3px rgba(0,0,0,0.15), 0 4px 8px -2px rgba(0,0,0,0.08); }
-        .kpi-card h2 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--text-secondary); font-weight: 500;}
-        .kpi-card p { margin: 0; font-size: 2.5rem; font-weight: 800; }
-        .status-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem; }
-        .status-table th, .status-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        .status-table th { background-color: #f0f4f8; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px; }
-        .status-table tr:hover { background-color: #f7f9fb; }
-        .status-table tfoot td { font-weight: 800; background-color: #eef2f5; border-top: 2px solid var(--border-color); }
-        .status-table tfoot td:last-child { color: var(--accent-color); font-size: 1.2rem; }
+        .grid-layout {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: repeat(2, 1fr);
+            max-width: 100%;
+            width: 100%;
+        }
+        .card {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(230, 57, 70, 0.1);
+            transition: all 0.3s ease;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        }
+        .card h2 { margin-top: 0; font-weight: 700; color: var(--text-primary); }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #fff 0%, #F7FAFC 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border-left: 6px solid var(--accent-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -10px rgba(230, 57, 70, 0.3);
+            border-left-width: 8px;
+        }
+        .kpi-card h2 {
+            margin: 0 0 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-card p {
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+        .status-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .status-table th, .status-table td { padding: 1rem; text-align: left; }
+        .status-table th {
+            background: #1D3557;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 3px solid var(--accent-color);
+        }
+        .status-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+        .status-table tbody tr:hover { background-color: rgba(69, 123, 157, 0.05); }
+        .status-table tbody tr:nth-child(even) { background-color: #F7FAFC; }
+        .status-table tfoot td {
+            font-weight: 800;
+            background: #EDF2F7;
+            border-top: 3px solid var(--accent-color);
+            padding: 1.25rem 1rem;
+            font-size: 1.1rem;
+        }
+        .status-table tfoot td:last-child {
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        /* Tabla de detalles de entregas */
+        .delivery-details-table {
+            width: 100%;
+            margin-top: 2rem;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 0.85rem;
+        }
+        .delivery-details-table th {
+            background: #457B9D;
+            color: white;
+            padding: 0.75rem;
+            font-weight: 600;
+            text-align: left;
+            border-bottom: 2px solid var(--accent-color);
+        }
+        .delivery-details-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .delivery-details-table tbody tr:hover {
+            background-color: rgba(69, 123, 157, 0.08);
+        }
+        .delivery-details-table tbody tr:nth-child(even) {
+            background-color: #F9FAFB;
+        }
+        .truck-header {
+            background: #E63946;
+            color: white;
+            padding: 1rem;
+            font-weight: 700;
+            font-size: 1rem;
+            text-align: left;
+        }
+        .truck-summary {
+            background: #FEF3C7;
+            font-weight: 700;
+            border-top: 2px solid #F59E0B;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -290,10 +610,17 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             <div class="sidebar-section" style="margin-top: auto;">
                  <ul class="sidebar-nav">
                     <li class="nav-item">
+                        <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="logout-link" style="background: rgba(69, 123, 157, 0.2); border-left: 4px solid #457B9D;">
+                            <i class="fas fa-home" style="margin-right: 0.5rem;"></i>
+                            Volver al Menú Principal
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="dashboard.php?action=logout" class="logout-link">
+                            <i class="fas fa-sign-out-alt" style="margin-right: 0.5rem;"></i>
                             Cerrar Dashboard (<?php echo htmlspecialchars($USER_TYPE === 'admin' ? 'Admin' : $USER_WAREHOUSE); ?>)
                         </a>
-                        </li>
+                    </li>
                 </ul>
             </div>
         </aside>
@@ -392,6 +719,15 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
                         <h2>Top 5 Camiones por Entregas</h2>
                         <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Rendimiento de la flota en el período.</p>
                         <div class="chart-container" style="height: 350px;"><canvas id="truckPerformanceChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Tabla detallada de entregas por chofer -->
+                <div class="card" style="margin-top: 2rem;">
+                    <h2>Detalle de Entregas por Chofer</h2>
+                    <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Listado completo de todas las entregas realizadas por cada chofer en el período seleccionado.</p>
+                    <div id="deliveryDetailsContainer">
+                        <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Cargando detalles de entregas...</p>
                     </div>
                 </div>
             </div>
@@ -523,7 +859,7 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             }
         };
 
-        // updateFinancialView y updatePerformanceView (sin cambios)
+        // updateFinancialView y updatePerformanceView
         const updateFinancialView = (data) => {
             const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
 
@@ -581,8 +917,97 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
                 };
                 truckPerformanceChart.update();
             }
+
+            // Renderizar tabla detallada de entregas
+            renderDeliveryDetails(data.truckPerformance || []);
         };
-        
+
+        const renderDeliveryDetails = async (truckData) => {
+            const container = document.getElementById('deliveryDetailsContainer');
+
+            if (!truckData || truckData.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No hay datos de entregas disponibles para el período seleccionado.</p>';
+                return;
+            }
+
+            try {
+                // Obtener detalles completos de cada camión
+                const inicio = fechaInicioInput.value;
+                const fin = fechaFinInput.value;
+                const almacen = almacenFilterInput ? almacenFilterInput.value : '';
+
+                const response = await fetch(`../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=delivery_details`);
+                const deliveries = await response.json();
+
+                if (deliveries.error) {
+                    container.innerHTML = `<p style="text-align: center; color: var(--danger); padding: 2rem;">${deliveries.error}</p>`;
+                    return;
+                }
+
+                // Agrupar por camión
+                const deliveriesByTruck = {};
+                deliveries.forEach(delivery => {
+                    const truck = delivery.Camion || 'Sin Asignar';
+                    if (!deliveriesByTruck[truck]) {
+                        deliveriesByTruck[truck] = [];
+                    }
+                    deliveriesByTruck[truck].push(delivery);
+                });
+
+                // Construir HTML de la tabla
+                let html = '';
+                Object.keys(deliveriesByTruck).sort().forEach(truck => {
+                    const deliveriesForTruck = deliveriesByTruck[truck];
+                    html += `
+                        <table class="delivery-details-table">
+                            <tr class="truck-header">
+                                <td colspan="6"><i class="fas fa-truck"></i> ${truck} (${deliveriesForTruck.length} entregas)</td>
+                            </tr>
+                            <thead>
+                                <tr>
+                                    <th>No. Factura</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha Despacho</th>
+                                    <th>Despachado Por</th>
+                                    <th>Fecha Entrega</th>
+                                    <th>Tiempo (hrs)</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                    let totalTime = 0;
+                    deliveriesForTruck.forEach(delivery => {
+                        const timeInHours = delivery.DeliveryTimeHours || 0;
+                        totalTime += timeInHours;
+                        html += `
+                            <tr>
+                                <td><strong>${delivery.Factura || 'N/A'}</strong></td>
+                                <td>${delivery.Cliente || 'N/A'}</td>
+                                <td>${delivery.FechaDespacho ? new Date(delivery.FechaDespacho).toLocaleDateString('es-DO') : 'N/A'}</td>
+                                <td>${delivery.DespachadoPor || 'N/A'}</td>
+                                <td>${delivery.FechaEntregado ? new Date(delivery.FechaEntregado).toLocaleDateString('es-DO') : 'N/A'}</td>
+                                <td>${timeInHours.toFixed(1)}</td>
+                            </tr>`;
+                    });
+
+                    const avgTime = deliveriesForTruck.length > 0 ? (totalTime / deliveriesForTruck.length).toFixed(1) : 0;
+                    html += `
+                            <tr class="truck-summary">
+                                <td colspan="5" style="text-align: right;">Promedio de tiempo:</td>
+                                <td style="font-weight: 800;">${avgTime} hrs</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando detalles de entregas:', error);
+                container.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 2rem;">Error al cargar los detalles de entregas.</p>';
+            }
+        };
+
         // updateDashboard (sin cambios)
         const updateDashboard = (data, view) => {
             const formatter = new Intl.NumberFormat();
@@ -801,6 +1226,7 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
                     trends: 'Tendencias Diarias de Registros',
                     performance: 'Análisis de Rendimiento y Calidad',
                     financial: 'Análisis Financiero',
+                    drivers: 'Rendimiento de Choferes',
                     details: 'Detalle de Facturas'
                 };
                 mainTitle.textContent = viewTitles[targetView] || 'Dashboard';
@@ -848,5 +1274,6 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
         });
     });
 </script>
+
 </body>
 </html>

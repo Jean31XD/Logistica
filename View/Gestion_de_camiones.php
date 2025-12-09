@@ -91,7 +91,7 @@ if (!empty($_GET['cedula_consulta'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        body {font-family: 'Poppins', sans-serif; background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818); background-size: 400% 400%; animation: gradientBG 15s ease infinite; color: #fff;}
+        body {font-family: 'Poppins', sans-serif; background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818); background-size: 100% 100%; animation: none; color: #fff;}
         @keyframes gradientBG {0% {background-position: 0% 50%;}50% {background-position: 100% 50%;}100% {background-position: 0% 50%;}}
         .card {background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.2);}
         .form-control, .form-select {background-color: rgba(255,255,255,0.2); color: #fff;}

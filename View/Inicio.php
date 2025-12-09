@@ -1,9 +1,16 @@
 <?php
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);
-ini_set('session.use_strict_mode', 1);
+/**
+ * Pantalla de Despacho/Tickets - MACO Design System
+ */
 
-session_start();
+// Seguridad de sesión
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.cookie_secure', 0);
+    ini_set('session.use_strict_mode', 1);
+    session_start();
+}
+
 session_regenerate_id(true);
 
 if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 1, 5])) {
@@ -14,178 +21,203 @@ if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 1, 5])
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
+
+$pageTitle = "Despacho de Tickets | MACO";
+$additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';
+include __DIR__ . '/templates/header.php';
 ?>
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pantalla de Tickets ✨</title>
-    <link rel="icon" href="../IMG/favicon.ico">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<style>
+    /* Estilos específicos para la tabla de tickets */
+    .tickets-container {
+        margin-top: 1rem;
+    }
 
-    <style>
-        :root {
-            --theme-red: #d32f2f;
-        }
+    .table-tickets {
+        background: white;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #d32f2f, #b71c1c, #9a1a1a, #7f1818);
-            background-size: 400% 400%;
-            animation: gradientBG 25s ease infinite;
-            color: #fff;
-            padding: 1.5rem;
-        }
+    .table-tickets thead {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+    }
 
-        .header-panel {
-            background: #ffffff;
-            color: #333;
-            border-radius: 1.5rem;
-            padding: 1rem 2rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header-panel .logo img {
-            height: 60px;
-        }
-        .header-panel h1 {
-            font-weight: 700;
-            color: var(--theme-red);
-            text-shadow: none;
-        }
+    .table-tickets thead th {
+        padding: 1rem;
+        font-weight: 600;
+        text-align: center;
+        border: none;
+    }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            padding: 1.5rem 2rem;
-        }
-        
-        .table-container { margin-top: 2rem; }
-        .table { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
-        
-        .table thead th {
-            background: #ffffff;
-            color: var(--theme-red);
-            border-color: #dee2e6;
-            font-weight: 700;
-        }
+    .table-tickets tbody td {
+        padding: 0.875rem;
+        vertical-align: middle;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+    }
 
-        .table td, .table th {
-            vertical-align: middle;
-            padding: 0.75rem 1rem;
-        }
+    .table-tickets tbody tr {
+        transition: background-color 0.2s ease;
+    }
 
-        .table tbody tr { transition: background-color 0.3s ease; }
-        .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.1); }
-        
-        .table-danger, .table-danger:hover {
-            background-color: rgba(220, 53, 69, 0.4) !important;
-            border-color: rgba(220, 53, 69, 0.6) !important;
-        }
+    .table-tickets tbody tr:hover {
+        background-color: var(--bg-hover);
+    }
 
-        .btn { font-weight: 600; }
-        .btn:disabled { transform: none; box-shadow: none; }
-        
-        .modal-content {
-            background: rgba(10, 25, 40, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-        }
-        .modal-header, .modal-footer { border-color: rgba(255, 255, 255, 0.2); }
-        .form-control, .form-select {
-            background-color: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            color: #fff;
-        }
-        .form-control:focus { background-color: rgba(0, 0, 0, 0.4); color: #fff; }
-        .form-control::placeholder { color: rgba(255, 255, 255, 0.6); }
+    .table-tickets tbody tr.table-danger {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+        border-left: 4px solid var(--danger);
+    }
 
-    </style>
-</head>
-<body>
+    .estatus-select {
+        padding: 0.5rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: white;
+        font-size: 0.875rem;
+        min-width: 120px;
+    }
+
+    .btn-table {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: var(--radius);
+        transition: all 0.2s ease;
+    }
+
+    .modal-content {
+        border-radius: var(--radius-lg);
+        border: none;
+        box-shadow: var(--shadow-xl);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        background: var(--bg-secondary);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+
+    .form-control, .form-select {
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        padding: 0.625rem 0.875rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+</style>
+
+<h1 class="maco-title maco-title-gradient">
+    <i class="fas fa-ticket-alt"></i>
+    Despacho de Tickets
+</h1>
+
+<p class="maco-subtitle">
+    Gestión y control de tickets de despacho en tiempo real
+</p>
+
+<div class="tickets-container">
+    <div class="maco-card">
+        <div class="table-responsive">
+            <table id="tablaTickets" class="table table-tickets mb-0">
+                <thead>
+                    <tr>
+                        <th><i class="fa-solid fa-ticket me-2"></i>Ticket</th>
+                        <th><i class="fa-solid fa-user me-2"></i>Nombre</th>
+                        <th><i class="fa-solid fa-building me-2"></i>Empresa</th>
+                        <th><i class="fa-solid fa-info-circle me-2"></i>Estatus</th>
+                        <th><i class="fa-solid fa-user-check me-2"></i>Asignado A</th>
+                        <th>Asignar</th>
+                        <th>Despachar</th>
+                        <th>Retención</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Asignar Ticket -->
 <div class="modal fade" id="asignarModal" tabindex="-1" aria-labelledby="asignarModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="formAsignar">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="asignarModalLabel"><i class="fa-solid fa-lock me-2"></i>Confirmar Asignación</h5>
+                    <h5 class="modal-title" id="asignarModalLabel">
+                        <i class="fa-solid fa-lock me-2"></i>Confirmar Asignación
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p id="modalAsignarTexto">Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
-                    
+
                     <input type="hidden" id="asignarTiketInput">
-                    <input type="hidden" id="currentAssigneeInput"> 
-                    
+                    <input type="hidden" id="currentAssigneeInput">
+
                     <div class="mb-3">
                         <label for="usuarioPassword" id="passwordLabel" class="form-label">Tu Contraseña:</label>
                         <input type="password" id="usuarioPassword" class="form-control" required autocomplete="current-password">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-2"></i>Confirmar</button>
+                    <button type="button" class="btn maco-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn maco-btn-primary">
+                        <i class="fa-solid fa-check me-2"></i>Confirmar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-<div class="container-fluid">
-    <div class="header-panel mb-4 animate__animated animate__fadeInDown">
-        <div class="logo"><img src="../IMG/LOGO MC - NEGRO.png" alt="Logo"></div>
-        <h1>Bienvenido, <?php echo htmlspecialchars($_SESSION['usuario']); ?>!</h1>
-        <div><a href="../Logica/logout.php" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión</a></div>
-    </div>
 
-    <div class="table-container glass-panel animate__animated animate__fadeInUp">
-        <table id="tablaTickets" class="table table-bordered text-center">
-            <thead>
-                <tr>
-                    <th><i class="fa-solid fa-ticket me-2"></i>Ticket</th>
-                    <th><i class="fa-solid fa-user me-2"></i>Nombre</th>
-                    <th><i class="fa-solid fa-building me-2"></i>Empresa</th>
-                    <th><i class="fa-solid fa-info-circle me-2"></i>Estatus</th>
-                    <th><i class="fa-solid fa-user-check me-2"></i>Asignado A</th>
-                    <th>Asignar</th>
-                    <th>Despachar</th>
-                    <th>Retención</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-</div>
-
+<!-- Modal Despachar Ticket -->
 <div class="modal fade" id="facturaModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="formFactura">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa-solid fa-truck-fast me-2"></i>Despachar Ticket</h5>
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-truck-fast me-2"></i>Despachar Ticket
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="facturaTiket">
-                    <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" autocomplete="off">
-                    <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
 
-                    <div class="form-check form-switch mt-3">
+                    <div class="mb-3">
+                        <label for="facturaNumero" class="form-label">Número(s) de Factura</label>
+                        <input type="text" id="facturaNumero" class="form-control" placeholder="Ej: FT001122334;FT001122335" autocomplete="off">
+                        <small class="text-muted">Puede ingresar múltiples facturas separadas por punto y coma (;)</small>
+                    </div>
+
+                    <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" role="switch" id="seFueCheckbox" value="1">
-                        <label class="form-check-label" for="seFueCheckbox">Marcar como <strong>Se fue</strong></label>
+                        <label class="form-check-label" for="seFueCheckbox">
+                            Marcar como <strong>Se fue</strong>
+                        </label>
                     </div>
 
                     <div class="mt-3" id="codigoSeFueContainer" style="display:none;">
@@ -194,15 +226,19 @@ header("Expires: 0");
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" id="btnEnviarFactura" class="btn btn-success"><i class="fa-solid fa-paper-plane me-2"></i>Enviar</button>
+                    <button type="button" class="btn maco-btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnEnviarFactura" class="btn maco-btn-success">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Enviar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<?php
+$additionalJS = <<<'JS'
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function () {
     const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
@@ -215,9 +251,9 @@ $(document).ready(function () {
         }).get();
 
         $.ajax({
-            url: '../Logica/obtener_tickets.php', 
+            url: '../Logica/obtener_tickets.php',
             method: 'POST',
-            data: { 
+            data: {
                 since: lastCheckTimestamp,
                 current_ids: currentTicketIds
             },
@@ -258,7 +294,7 @@ $(document).ready(function () {
         $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
             if (!response.toLowerCase().includes('error')) {
                 delete timers[tiket];
-                actualizarTablaInteligentemente(); 
+                actualizarTablaInteligentemente();
             } else {
                 alert(response);
             }
@@ -282,7 +318,7 @@ $(document).ready(function () {
 
     $(document).on('click', '.btn-asignar', function() {
         if ($(this).is(':disabled')) return;
-        
+
         const tiket = $(this).data('tiket');
         const asignadoA = $(this).data('asignado-a') || '';
 
@@ -327,7 +363,7 @@ $(document).ready(function () {
             success: function(response) {
                 if (response.success) {
                     bootstrap.Modal.getInstance(document.getElementById('asignarModal')).hide();
-                    actualizarTablaInteligentemente(); 
+                    actualizarTablaInteligentemente();
                 } else {
                     alert('Error: ' + response.message);
                     $('#usuarioPassword').val('').focus();
@@ -353,7 +389,7 @@ $(document).ready(function () {
         $('#codigoSeFueContainer').hide();
         new bootstrap.Modal(document.getElementById('facturaModal')).show();
     });
-    
+
     $('#facturaNumero').on('input', function() {
         let valor = $(this).val();
         valor = valor.replace(/;/g, '');
@@ -366,10 +402,9 @@ $(document).ready(function () {
         }
     });
 
-    // Cambiamos el evento a un clic en el botón, no en el submit del formulario
     $('#btnEnviarFactura').on('click', function (e) {
-        e.preventDefault(); // Detiene el envío por defecto, aunque el botón es de tipo 'button'
-        
+        e.preventDefault();
+
         const tiket = $('#facturaTiket').val();
         const seFue = $('#seFueCheckbox').is(':checked');
         const facturas = $('#facturaNumero').val().trim();
@@ -389,7 +424,7 @@ $(document).ready(function () {
         if (!facturas) {
             return alert("Por favor ingrese al menos un número de factura.");
         }
-        
+
         myModal.hide();
         despacharTicket(tiket, facturas);
     });
@@ -405,7 +440,7 @@ $(document).ready(function () {
         $('#codigoSeFueContainer').toggle(isChecked);
         if(!isChecked) $('#codigoSeFue').val('');
     });
-    
+
     window.addEventListener('pageshow', function(event) {
         if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
             window.location.reload();
@@ -413,5 +448,7 @@ $(document).ready(function () {
     });
 });
 </script>
-</body>
-</html>
+JS;
+
+include __DIR__ . '/templates/footer.php';
+?>

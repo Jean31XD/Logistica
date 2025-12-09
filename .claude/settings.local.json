@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for file in Gestion_de_usuario.php Gestion_de_camiones.php Pantalla.php)",
+      "Bash(do sed -i 's/background: linear-gradient(-45deg, #E63946, #D62839, #457B9D, #1D3557);/background: var(--accent-dark);/g; s/background-size: 400% 400%;/background-size: 100% 100%;/g; s/animation: gradientBG [0-9]*s ease infinite;/animation: none;/g' \"$file\")",
+      "Bash(for file in Listo-etiquetas.php dashboard.php)",
+      "Bash(do sed -i 's/background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%);/background: var(--gray-100);/g' \"$file\")",
+      "Bash(for file in Listo-etiquetas.php)",
+      "Bash(do sed -i '/body::before {/,/}/d; /body::after {/,/}/d; /@keyframes float {/,/}/d' \"$file\")",
+      "Bash(find:*)",
+      "Bash(sqlcmd:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

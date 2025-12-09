@@ -15,9 +15,11 @@ function obtenerDatosDeTickets() {
     $conn = sqlsrv_connect($serverName, $connectionInfo);
     if ($conn === false) { return []; }
 
-    $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla
-            FROM log 
-            LEFT JOIN usuarios ON log.Asignar = usuarios.usuario";
+    $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla,
+                   DATEDIFF(SECOND, COALESCE(log.FechaCreacion, log.FechaModificacion, GETDATE()), GETDATE()) AS TiempoTranscurrido
+            FROM log
+            LEFT JOIN usuarios ON log.Asignar = usuarios.usuario
+            WHERE log.Estatus NOT IN ('Despachado', 'Se fue')";
     $stmt = sqlsrv_query($conn, $sql);
     if ($stmt === false) { sqlsrv_close($conn); return []; }
 
@@ -56,8 +58,8 @@ if (isset($_GET['ajax'])) {
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(-45deg, #751010ff, #bb1b1bff, #cb1717ef, #ff0000ff);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            background-size: 100% 100%;
+            animation: none;
             color: var(--gris-claro);
             overflow-x: hidden;
         }
@@ -128,20 +130,24 @@ if (isset($_GET['ajax'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const tiemposInicio = {};
+            const tiemposBase = {}; // Almacena el tiempo base de la BD y la marca de tiempo local
 
             function actualizarTiempos() {
                 document.querySelectorAll(".tiempo-celda").forEach(celda => {
                     const ticketID = celda.dataset.ticketId;
-                    if (!tiemposInicio[ticketID]) { tiemposInicio[ticketID] = Date.now(); }
 
-                    const diferencia = Math.floor((Date.now() - tiemposInicio[ticketID]) / 1000);
-                    const horas = Math.floor(diferencia / 3600);
-                    const minutos = Math.floor((diferencia % 3600) / 60);
-                    const segundos = diferencia % 60;
+                    if (tiemposBase[ticketID]) {
+                        // Calcular tiempo transcurrido desde que se recibió el dato de la BD
+                        const tiempoDesdeActualizacion = Math.floor((Date.now() - tiemposBase[ticketID].marcaTiempo) / 1000);
+                        const diferencia = tiemposBase[ticketID].tiempoBase + tiempoDesdeActualizacion;
 
-                    celda.textContent = 
-                        `${horas.toString().padStart(2, "0")}:${minutos.toString().padStart(2, "0")}:${segundos.toString().padStart(2, "0")}`;
+                        const horas = Math.floor(diferencia / 3600);
+                        const minutos = Math.floor((diferencia % 3600) / 60);
+                        const segundos = diferencia % 60;
+
+                        celda.textContent =
+                            `${horas.toString().padStart(2, "0")}:${minutos.toString().padStart(2, "0")}:${segundos.toString().padStart(2, "0")}`;
+                    }
                 });
             }
 
@@ -167,10 +173,23 @@ if (isset($_GET['ajax'])) {
                             const ticketID = String(ticket.Tiket);
                             ticketsActivos.add(ticketID);
 
+                            // Almacenar el tiempo base de la BD (en segundos)
+                            const tiempoTranscurrido = parseInt(ticket.TiempoTranscurrido) || 0;
+                            if (!tiemposBase[ticketID]) {
+                                tiemposBase[ticketID] = {
+                                    tiempoBase: tiempoTranscurrido,
+                                    marcaTiempo: Date.now()
+                                };
+                            } else {
+                                // Actualizar el tiempo base si viene de la BD
+                                tiemposBase[ticketID].tiempoBase = tiempoTranscurrido;
+                                tiemposBase[ticketID].marcaTiempo = Date.now();
+                            }
+
                             const estatus = ticket.Estatus;
                             let icono = 'fa-cogs';
                             let claseFila = '';
-                            
+
                             if (estatus === 'Facturación') {
                                 icono = 'fa-check-circle';
                                 claseFila = 'table-success';
@@ -193,11 +212,17 @@ if (isset($_GET['ajax'])) {
                                 if (claseFila) {
                                     fila.classList.add(claseFila);
                                 }
-                                
+
                             } else {
                                 const nuevaFila = tbody.insertRow();
                                 nuevaFila.className = `animate__animated animate__fadeIn ${claseFila}`;
                                 nuevaFila.dataset.ticket = ticketID;
+
+                                // Calcular el tiempo inicial para mostrar
+                                const horas = Math.floor(tiempoTranscurrido / 3600);
+                                const minutos = Math.floor((tiempoTranscurrido % 3600) / 60);
+                                const segundos = tiempoTranscurrido % 60;
+                                const tiempoInicial = `${horas.toString().padStart(2, "0")}:${minutos.toString().padStart(2, "0")}:${segundos.toString().padStart(2, "0")}`;
 
                                 nuevaFila.innerHTML = `
                                     <td>${ticketID}</td>
@@ -205,7 +230,7 @@ if (isset($_GET['ajax'])) {
                                     <td>${ticket.Empresa}</td>
                                     <td><i class="fas ${icono} me-2"></i>${estatus}</td>
                                     <td>${ventanillaHTML}</td>
-                                    <td class="tiempo-celda" data-ticket-id="${ticketID}">00:00:00</td>
+                                    <td class="tiempo-celda" data-ticket-id="${ticketID}">${tiempoInicial}</td>
                                 `;
                             }
                         });
@@ -215,7 +240,7 @@ if (isset($_GET['ajax'])) {
                                 fila.classList.remove('animate__fadeIn');
                                 fila.classList.add('animate__fadeOut');
                                 fila.addEventListener('animationend', () => fila.remove());
-                                delete tiemposInicio[ticketID];
+                                delete tiemposBase[ticketID];
                             }
                         });
 
