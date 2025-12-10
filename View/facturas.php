@@ -385,9 +385,20 @@ function cargarFacturas(pagina = 1) {
         method: 'POST',
         body: formData
     })
-    .then(res => res.text())
-    .then(html => {
-        document.getElementById('contenedorFacturas').innerHTML = html;
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('contenedorFacturas').innerHTML =
+                `<div class="alert alert-danger text-center">${data.error}</div>`;
+            return;
+        }
+        document.getElementById('contenedorFacturas').innerHTML = data.html;
+        document.getElementById('paginacion').innerHTML = data.paginacion;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('contenedorFacturas').innerHTML =
+            '<div class="alert alert-danger text-center">Error al cargar las facturas</div>';
     });
 }
 

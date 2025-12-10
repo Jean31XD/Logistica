@@ -122,113 +122,115 @@ $stmt = sqlsrv_query($conn, $sql, $params);
 
 // === Generar HTML ===
 ob_start();
-?>
-<h3 class='text-center mb-4' style='color: var(--primary); font-weight: 700;'>
-    Facturas <?= $transportista ? "de " . htmlspecialchars($transportista) : "Recibidas" ?>
-</h3>
 
-<div class='table-facturas'>
-    <table class='table table-hover align-middle text-center'>
-        <thead>
-            <tr>
-                <th>Factura</th>
-                <th>Fecha</th>
-                <th>Transportista</th>
-                <th>Estado</th>
-                <th>Fecha Recibido Logística</th>
-                <th>Usuario Logística</th>
-                <th>Fecha Recibido CxC</th>
-                <th>Usuario CxC</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            if ($stmt === false) {
-                echo "<tr><td colspan='8' class='text-center text-danger'>Error al cargar facturas</td></tr>";
-            } else {
-                $hayDatos = false;
-                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    $hayDatos = true;
-                    $factura = htmlspecialchars($row['Factura'] ?? '');
-                    $fecha = (isset($row['Fecha']) && is_object($row['Fecha'])) ? $row['Fecha']->format('Y-m-d') : ($row['Fecha'] ?? '');
-                    $validar = trim($row['Validar'] ?? '');
-                    $estadoNormalizado = strtolower($validar);
-                    $transportistaRow = htmlspecialchars($row['Transportista'] ?? '');
-                    $usuarioRow = htmlspecialchars($row['Usuario'] ?? '');
+$titulo = $transportista ? "Facturas de " . htmlspecialchars($transportista) : "Facturas Recibidas";
 
-                    $fechaScanner = !empty($row['Fecha_scanner']) ? (is_object($row['Fecha_scanner']) ? $row['Fecha_scanner']->format('Y-m-d') : $row['Fecha_scanner']) : '—';
-                    $recepcion = !empty($row['recepcion']) ? (is_object($row['recepcion']) ? $row['recepcion']->format('Y-m-d') : htmlspecialchars($row['recepcion'])) : '—';
-                    $usuarioRecepcion = htmlspecialchars($row['Usuario_de_recepcion'] ?? '—');
+echo "<h3 class='text-center mb-4' style='color: var(--primary); font-weight: 700;'>$titulo</h3>";
+echo "<div class='table-facturas'>";
+echo "<table class='table table-hover align-middle text-center'>";
+echo "<thead><tr>";
+echo "<th>Factura</th>";
+echo "<th>Fecha</th>";
+echo "<th>Transportista</th>";
+echo "<th>Estado</th>";
+echo "<th>Fecha Recibido Logística</th>";
+echo "<th>Usuario Logística</th>";
+echo "<th>Fecha Recibido CxC</th>";
+echo "<th>Usuario CxC</th>";
+echo "</tr></thead>";
+echo "<tbody>";
 
-                    $opciones = ['', 'RE'];
-                    $deshabilitar = ($estadoNormalizado === 'completada') ? 'disabled' : '';
+if ($stmt === false) {
+    echo "<tr><td colspan='8' class='text-center text-danger'>Error al cargar facturas</td></tr>";
+} else {
+    $hayDatos = false;
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $hayDatos = true;
+        $factura = htmlspecialchars($row['Factura'] ?? '');
+        $fecha = (isset($row['Fecha']) && is_object($row['Fecha'])) ? $row['Fecha']->format('Y-m-d') : ($row['Fecha'] ?? '');
+        $validar = trim($row['Validar'] ?? '');
+        $estadoNormalizado = strtolower($validar);
+        $transportistaRow = htmlspecialchars($row['Transportista'] ?? '');
+        $usuarioRow = htmlspecialchars($row['Usuario'] ?? '');
 
-                    $select = "<select class='form-select form-select-sm estado-validar' onchange=\"actualizarEstado('$factura', this.value)\" $deshabilitar>";
-                    foreach ($opciones as $op) {
-                        $sel = ($validar === $op) ? 'selected' : '';
-                        $label = $op ?: '--';
-                        $select .= "<option value='$op' $sel>$label</option>";
-                    }
-                    if ($estadoNormalizado === 'completada') {
-                        $select .= "<option value='completada' selected hidden>Completada</option>";
-                    }
-                    $select .= "</select>";
+        $fechaScanner = !empty($row['Fecha_scanner']) ? (is_object($row['Fecha_scanner']) ? $row['Fecha_scanner']->format('Y-m-d') : $row['Fecha_scanner']) : '—';
+        $recepcion = !empty($row['recepcion']) ? (is_object($row['recepcion']) ? $row['recepcion']->format('Y-m-d') : htmlspecialchars($row['recepcion'])) : '—';
+        $usuarioRecepcion = htmlspecialchars($row['Usuario_de_recepcion'] ?? '—');
 
-                    $class = ($estadoNormalizado === 'completada') ? 'table-success' : '';
-                    ?>
-                    <tr id='fila_<?= $factura ?>' class='<?= $class ?>'>
-                        <td><?= $factura ?></td>
-                        <td><?= $fecha ?></td>
-                        <td><?= $transportistaRow ?></td>
-                        <td class='celda-estado'><?= $select ?></td>
-                        <td class='fecha-scanner'><?= $fechaScanner ?></td>
-                        <td><?= $usuarioRow ?></td>
-                        <td><?= $recepcion ?></td>
-                        <td class='celda-usuario-recepcion'><?= $usuarioRecepcion ?></td>
-                    </tr>
-                    <?php
-                }
-                if (!$hayDatos) {
-                    echo "<tr><td colspan='8' class='text-center' style='padding: 3rem; color: var(--text-secondary);'>No se encontraron facturas con los filtros aplicados</td></tr>";
-                }
-            }
-            ?>
-        </tbody>
-    </table>
-</div>
-<?php
+        $opciones = ['', 'RE'];
+        $deshabilitar = ($estadoNormalizado === 'completada') ? 'disabled' : '';
+        $class = ($estadoNormalizado === 'completada') ? 'table-success' : '';
+
+        echo "<tr id='fila_$factura' class='$class'>";
+        echo "<td>$factura</td>";
+        echo "<td>$fecha</td>";
+        echo "<td>$transportistaRow</td>";
+
+        // Celda de estado con select
+        echo "<td class='celda-estado'>";
+        echo "<select class='form-select form-select-sm estado-validar' onchange=\"actualizarEstado('$factura', this.value)\" $deshabilitar>";
+        foreach ($opciones as $op) {
+            $sel = ($validar === $op) ? 'selected' : '';
+            $label = $op ?: '--';
+            echo "<option value='$op' $sel>$label</option>";
+        }
+        if ($estadoNormalizado === 'completada') {
+            echo "<option value='completada' selected>Completada</option>";
+        }
+        echo "</select>";
+        echo "</td>";
+
+        echo "<td class='fecha-scanner'>$fechaScanner</td>";
+        echo "<td>$usuarioRow</td>";
+        echo "<td>$recepcion</td>";
+        echo "<td class='celda-usuario-recepcion'>$usuarioRecepcion</td>";
+        echo "</tr>";
+    }
+    if (!$hayDatos) {
+        echo "<tr><td colspan='8' class='text-center' style='padding: 3rem; color: var(--text-secondary);'>No se encontraron facturas con los filtros aplicados</td></tr>";
+    }
+}
+
+echo "</tbody>";
+echo "</table>";
+echo "</div>";
+
 $html = ob_get_clean();
 
 // === Paginación ===
 ob_start();
-?>
-<div class='d-flex justify-content-center align-items-center gap-2'>
-    <?php if ($pagina > 1): ?>
-        <button class='btn btn-outline-primary' onclick='cargarFacturas(<?= $pagina - 1 ?>)'>
-            <i class='fas fa-chevron-left'></i> Anterior
-        </button>
-    <?php endif; ?>
 
-    <span class='mx-3' style='font-weight: 600;'>Página <?= $pagina ?> de <?= $totalPaginas ?></span>
+echo "<div class='d-flex justify-content-center align-items-center gap-2'>";
 
-    <?php if ($pagina < $totalPaginas): ?>
-        <button class='btn btn-outline-primary' onclick='cargarFacturas(<?= $pagina + 1 ?>)'>
-            Siguiente <i class='fas fa-chevron-right'></i>
-        </button>
-    <?php endif; ?>
-</div>
-<?php
+if ($pagina > 1) {
+    $prevPage = $pagina - 1;
+    echo "<button class='btn btn-outline-primary' onclick='cargarFacturas($prevPage)'>";
+    echo "<i class='fas fa-chevron-left'></i> Anterior";
+    echo "</button>";
+}
+
+echo "<span class='mx-3' style='font-weight: 600;'>Página $pagina de $totalPaginas</span>";
+
+if ($pagina < $totalPaginas) {
+    $nextPage = $pagina + 1;
+    echo "<button class='btn btn-outline-primary' onclick='cargarFacturas($nextPage)'>";
+    echo "Siguiente <i class='fas fa-chevron-right'></i>";
+    echo "</button>";
+}
+
+echo "</div>";
+
 $paginacion = ob_get_clean();
 
 // === Devolver JSON ===
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'html' => $html,
     'paginacion' => $paginacion,
     'totalFilas' => $totalFilas,
     'totalPaginas' => $totalPaginas,
     'paginaActual' => $pagina
-]);
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
 sqlsrv_close($conn);
 ?>

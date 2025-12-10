@@ -113,9 +113,10 @@ try {
 
             $response['tendenciaRegistros'] = [];
             $sqlTrends = $cte_facturas . "
-                SELECT 
-                    f.invoicedate as Dia, 
-                    COUNT(f.invoiceid) as Total
+                SELECT
+                    f.invoicedate as Dia,
+                    COUNT(f.invoiceid) as Total,
+                    SUM(f.invoiceamountmst) as TotalMonto
                 FROM Facturas_CTE f
                 WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd

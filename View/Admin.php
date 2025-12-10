@@ -20,7 +20,6 @@ if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
 
 $pageTitle = "Panel de Administración | MACO";
 $additionalCSS = <<<'CSS'
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 <style>
     .admin-container {
         max-width: 1600px;
@@ -203,50 +202,6 @@ $additionalCSS = <<<'CSS'
         letter-spacing: 0.5px;
     }
 
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
-        max-width: 100%;
-        width: 100%;
-    }
-
-    .stat-card {
-        background: linear-gradient(135deg, rgba(230, 57, 70, 0.05) 0%, rgba(230, 57, 70, 0.02) 100%);
-        border: 2px solid rgba(230, 57, 70, 0.1);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        text-align: center;
-        transition: all 0.3s ease;
-        box-sizing: border-box;
-        max-width: 100%;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--primary);
-    }
-
-    .stat-icon {
-        font-size: 3rem;
-        color: var(--primary);
-        margin-bottom: 1rem;
-    }
-
-    .stat-value {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: var(--primary);
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-        font-size: 1rem;
-        color: var(--text-secondary);
-        font-weight: 600;
-    }
 
     @media (max-width: 768px) {
         .admin-hero h1 {
@@ -272,7 +227,7 @@ include __DIR__ . '/templates/header.php';
 
 <div class="admin-container">
     <!-- Hero Section -->
-    <div class="admin-hero animate__animated animate__fadeIn">
+    <div class="admin-hero">
         <div class="admin-hero-content">
             <div class="admin-hero-icon">
                 <i class="fas fa-user-shield"></i>
@@ -282,51 +237,10 @@ include __DIR__ . '/templates/header.php';
         </div>
     </div>
 
-    <!-- Estadísticas Rápidas -->
-    <section>
-        <div class="section-title animate__animated animate__fadeInUp">
-            <h2><i class="fas fa-chart-line me-3" style="color: var(--primary);"></i>Visión General</h2>
-            <p>Estadísticas en tiempo real del sistema</p>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
-                <div class="stat-icon">
-                    <i class="fas fa-boxes"></i>
-                </div>
-                <div class="stat-value">8</div>
-                <div class="stat-label">Módulos Activos</div>
-            </div>
-
-            <div class="stat-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
-                <div class="stat-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-value">24/7</div>
-                <div class="stat-label">Sistema Disponible</div>
-            </div>
-
-            <div class="stat-card animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
-                <div class="stat-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div class="stat-value">100%</div>
-                <div class="stat-label">Seguro y Protegido</div>
-            </div>
-
-            <div class="stat-card animate__animated animate__fadeInUp" style="animation-delay: 0.4s;">
-                <div class="stat-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="stat-value">Fast</div>
-                <div class="stat-label">Rendimiento Óptimo</div>
-            </div>
-        </div>
-    </section>
 
     <!-- Módulos del Sistema -->
     <section>
-        <div class="section-title animate__animated animate__fadeInUp">
+        <div class="section-title">
             <h2><i class="fas fa-th-large me-3" style="color: var(--primary);"></i>Módulos del Sistema</h2>
             <p>Accede rápidamente a cualquier módulo del sistema</p>
         </div>
@@ -395,7 +309,7 @@ include __DIR__ . '/templates/header.php';
                 $delay = 0;
                 foreach ($modules as $module):
             ?>
-            <div class="module-card animate__animated animate__fadeInUp" style="animation-delay: <?= $delay ?>s;">
+            <div class="module-card">
                 <div class="module-card-icon">
                     <i class="fas <?= $module['icon'] ?>"></i>
                 </div>

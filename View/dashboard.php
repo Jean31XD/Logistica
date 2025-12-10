@@ -655,7 +655,10 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             
             <div id="view-trends" class="view-container">
                 <div class="card">
-                    <h2>Facturas Registradas por Día</h2>
+                    <h2>Tendencia de Facturas y Montos por Día</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem;">
+                        Visualiza la cantidad de facturas y el monto total facturado por día
+                    </p>
                     <div class="chart-container"><canvas id="trendsChart"></canvas></div>
                 </div>
             </div>
@@ -783,7 +786,135 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             // Tu función initializeCharts (sin cambios)
             const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
             statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(229, 62, 62, 0.7)' }] }, options: chartOptions });
-            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: 'rgba(229, 62, 62, 1)', tension: 0.1, fill: false }] }, options: chartOptions });
+
+            // Gráfico de tendencias con dos líneas (cantidad y monto)
+            const trendsOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            },
+                            padding: 15,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.datasetIndex === 1) {
+                                        // Formato de moneda para el monto
+                                        label += new Intl.NumberFormat('es-DO', {
+                                            style: 'currency',
+                                            currency: 'DOP'
+                                        }).format(context.parsed.y);
+                                    } else {
+                                        // Número normal para cantidad
+                                        label += context.parsed.y + ' facturas';
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cantidad de Facturas',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return Math.round(value);
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Monto Total (DOP)',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('es-DO', {
+                                    style: 'currency',
+                                    currency: 'DOP',
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0
+                                }).format(value);
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            };
+
+            trendsChart = new Chart(document.getElementById('trendsChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Cantidad de Facturas',
+                            data: [],
+                            borderColor: 'rgba(229, 62, 62, 1)',
+                            backgroundColor: 'rgba(229, 62, 62, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y',
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Monto Total',
+                            data: [],
+                            borderColor: 'rgba(49, 130, 206, 1)',
+                            backgroundColor: 'rgba(49, 130, 206, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y1',
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: trendsOptions
+            });
             
             const doughnutOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
             ncReasonsChart = new Chart(document.getElementById('ncReasonsChart').getContext('2d'), {
@@ -1038,10 +1169,13 @@ if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_
             } else if (view === 'trends' && data.tendenciaRegistros) {
                 const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
                 trendsChart.data.labels = data.tendenciaRegistros.map(d => {
-                    const fecha = new Date(d.Dia + 'T00:00:00'); 
+                    const fecha = new Date(d.Dia + 'T00:00:00');
                     return `${diasSemana[fecha.getDay()]} (${d.Dia.substring(5)})`;
                 });
+                // Dataset 0: Cantidad de facturas
                 trendsChart.data.datasets[0].data = data.tendenciaRegistros.map(d => d.Total);
+                // Dataset 1: Monto total
+                trendsChart.data.datasets[1].data = data.tendenciaRegistros.map(d => parseFloat(d.TotalMonto) || 0);
                 trendsChart.update();
             }
         };
