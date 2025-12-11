@@ -12,7 +12,10 @@ verificarAutenticacion([0, 2, 3, 5]);
 // Incluir conexión a BD
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
+$csrfToken = generarTokenCSRF();
+
 // Cargar transportistas
+$csrfToken = generarTokenCSRF();
 $query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";
 $result = sqlsrv_query($conn, $query);
 $transportistas = [];
@@ -289,6 +292,8 @@ $additionalJS = <<<'JS'
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 let paginaActual = 1;
+const csrfToken = '<?= $csrfToken ?>';
+const csrfToken = '<?= $csrfToken ?>';
 
 $(document).ready(function () {
     $('#listaTransportistas').select2({
@@ -373,6 +378,7 @@ function validarFactura() {
     const formData = new FormData();
     formData.append('factura', factura);
     formData.append('transportista', transportista);
+    formData.append('csrf_token', csrfToken);
 
     fetch('../Logica/Validar_factura.php', {
         method: 'POST',
