@@ -344,12 +344,15 @@ function validarFactura() {
         return;
     }
 
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('numeroFactura', numeroFactura);
     formData.append('csrf_token', csrfToken);
 
     fetch('../Logica/validar_factura_recepcion.php', {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
         body: formData,
         cache: 'no-cache'
     })
@@ -374,7 +377,6 @@ function validarFactura() {
         }
 
         if (data.success) {
-            alert(data.message);
             document.getElementById('inputFactura').value = '';
             cargarFacturas(paginaActual);
         } else {
