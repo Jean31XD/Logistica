@@ -147,7 +147,8 @@ function generarTokenCSRF() {
 function validarTokenCSRF($token) {
     if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
         http_response_code(403);
-        die('Token CSRF inválido');
+        header('Content-Type: application/json');
+        die(json_encode(['success' => false, 'message' => 'Token CSRF inválido']));
     }
     return true;
 }
