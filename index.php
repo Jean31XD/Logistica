@@ -3,7 +3,7 @@
  * Login - MACO Logística
  * Sistema de autenticación modernizado
  */
-
+session_start();
 // --- CONFIGURACIÓN DE SESIÓN Y CABECERAS ---
 require_once __DIR__ . '/conexionBD/session_config.php';
 
