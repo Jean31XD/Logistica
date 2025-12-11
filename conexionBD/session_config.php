@@ -4,6 +4,17 @@
  * Usar este archivo en TODOS los módulos
  */
 
+// Forzar HTTPS en producción (solo si no estamos en localhost)
+if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+    $isLocalhost = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1', '::1']);
+
+    if (!$isLocalhost && php_sapi_name() !== 'cli') {
+        $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        header('Location: ' . $redirectUrl, true, 301);
+        exit();
+    }
+}
+
 // Configuración de sesión segura
 if (session_status() === PHP_SESSION_NONE) {
     // Configuración de cookies de sesión
@@ -11,11 +22,15 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_samesite', 'Lax');  // Protección CSRF (Lax permite navegación normal)
     ini_set('session.use_strict_mode', 1);      // Rechazar IDs de sesión no inicializados
     ini_set('session.use_only_cookies', 1);     // Solo cookies, no URLs
-    
+
+    // Flag Secure solo en HTTPS (permite localhost sin HTTPS)
+    $isHTTPS = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    ini_set('session.cookie_secure', $isHTTPS ? 1 : 0);
+
     // Tiempo de vida de sesión: 30 minutos (1800 segundos)
     ini_set('session.gc_maxlifetime', 1800);
     ini_set('session.cookie_lifetime', 0);      // Cookie expira al cerrar navegador
-    
+
     // Iniciar sesión
     session_start();
 }
@@ -57,6 +72,22 @@ header("X-Content-Type-Options: nosniff");
 header("X-XSS-Protection: 1; mode=block");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 
+// Content Security Policy (CSP)
+$csp = "default-src 'self'; ";
+$csp .= "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com; ";
+$csp .= "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; ";
+$csp .= "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; ";
+$csp .= "img-src 'self' data: https://*.blob.core.windows.net https://catalogodeimagenes.blob.core.windows.net; ";
+$csp .= "connect-src 'self'; ";
+$csp .= "frame-ancestors 'none'; ";
+$csp .= "base-uri 'self'; ";
+$csp .= "form-action 'self';";
+header("Content-Security-Policy: " . $csp);
+
+// Permissions Policy (Feature Policy)
+$permissions = "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()";
+header("Permissions-Policy: " . $permissions);
+
 // Prevenir cache de páginas autenticadas
 header("Cache-Control: no-cache, no-store, must-revalidate, private");
 header("Pragma: no-cache");
@@ -68,11 +99,31 @@ function verificarAutenticacion($pantallasPermitidas = []) {
         header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
         exit();
     }
-    
+
     // Si se especifican pantallas permitidas, verificar permisos
     if (!empty($pantallasPermitidas) && !in_array($_SESSION['pantalla'], $pantallasPermitidas)) {
         header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
         exit();
+    }
+}
+
+// Función para regenerar ID de sesión al cambiar privilegios
+function regenerarSesionPorCambioPrivilegios($nuevoPrivilegio = null) {
+    // Regenerar ID de sesión
+    session_regenerate_id(true);
+
+    // Actualizar timestamp de regeneración
+    $_SESSION['ultimo_regenerate'] = time();
+
+    // Si se proporciona nuevo privilegio, actualizarlo
+    if ($nuevoPrivilegio !== null) {
+        $_SESSION['pantalla'] = $nuevoPrivilegio;
+    }
+
+    // Log del cambio
+    if (file_exists(__DIR__ . '/log_manager.php')) {
+        require_once __DIR__ . '/log_manager.php';
+        logWithRotation("Sesión regenerada por cambio de privilegios - Usuario: {$_SESSION['usuario']}", 'INFO', 'SECURITY');
     }
 }
 
@@ -91,5 +142,35 @@ function validarTokenCSRF($token) {
         die('Token CSRF inválido');
     }
     return true;
+}
+
+// Función helper para validar Content-Type en requests POST
+function validarContentType($allowedTypes = ['application/x-www-form-urlencoded', 'multipart/form-data', 'application/json']) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return true; // Solo validar POST requests
+    }
+
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+    // Extraer el tipo base (sin charset u otros parámetros)
+    $contentType = strtolower(trim(explode(';', $contentType)[0]));
+
+    // Permitir requests sin Content-Type explícito (PHP los maneja como form-urlencoded)
+    if (empty($contentType)) {
+        return true;
+    }
+
+    foreach ($allowedTypes as $allowedType) {
+        if ($contentType === strtolower($allowedType)) {
+            return true;
+        }
+    }
+
+    http_response_code(415); // Unsupported Media Type
+    header('Content-Type: application/json');
+    die(json_encode([
+        'error' => 'Content-Type no soportado',
+        'allowed' => $allowedTypes
+    ]));
 }
 ?>

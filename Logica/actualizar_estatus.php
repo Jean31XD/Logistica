@@ -2,6 +2,15 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
+// Validar CSRF token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validarTokenCSRF($csrf)) {
+        http_response_code(403);
+        die(json_encode(['error' => 'Token CSRF inválido']));
+    }
+}
+
 // Datos de conexión
 require_once __DIR__ . '/../conexionBD/conexion.php';
 

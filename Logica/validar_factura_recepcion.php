@@ -2,6 +2,24 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
+// Validar Content-Type
+validarContentType(['application/x-www-form-urlencoded', 'application/json']);
+
+// Rate limiting: máximo 20 validaciones por minuto
+require_once __DIR__ . '/../conexionBD/rate_limiter.php';
+if (!checkRateLimit('validar_factura_recepcion', 20, 60)) {
+    rateLimitExceeded('Demasiadas validaciones. Espere un momento.');
+}
+
+// Validar CSRF token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validarTokenCSRF($csrf)) {
+        http_response_code(403);
+        die(json_encode(['success' => false, 'message' => 'Token CSRF inválido']));
+    }
+}
+
 header('Content-Type: application/json');
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
@@ -32,9 +50,10 @@ $sqlVerificar = "SELECT Factura, Validar FROM custinvoicejour WHERE Factura = ?"
 $stmtVerificar = sqlsrv_query($conn, $sqlVerificar, [$numeroFactura]);
 
 if ($stmtVerificar === false) {
+    error_log("Error SQL en validar_factura_recepcion.php: " . print_r(sqlsrv_errors(), true));
     echo json_encode([
         'success' => false,
-        'message' => 'Error al consultar la factura: ' . print_r(sqlsrv_errors(), true)
+        'message' => 'Error al consultar la factura. Intente de nuevo.'
     ]);
     exit();
 }
@@ -44,7 +63,7 @@ $factura = sqlsrv_fetch_array($stmtVerificar, SQLSRV_FETCH_ASSOC);
 if (!$factura) {
     echo json_encode([
         'success' => false,
-        'message' => 'La factura ' . htmlspecialchars($numeroFactura) . ' no existe en el sistema'
+        'message' => 'La factura ingresada no se encuentra en el sistema.'
     ]);
     exit();
 }
@@ -70,9 +89,10 @@ $paramsActualizar = [$fechaActual, $usuario, $numeroFactura];
 $stmtActualizar = sqlsrv_query($conn, $sqlActualizar, $paramsActualizar);
 
 if ($stmtActualizar === false) {
+    error_log("Error SQL al actualizar factura en validar_factura_recepcion.php: " . print_r(sqlsrv_errors(), true));
     echo json_encode([
         'success' => false,
-        'message' => 'Error al actualizar la factura: ' . print_r(sqlsrv_errors(), true)
+        'message' => 'Error al actualizar la factura. Intente de nuevo.'
     ]);
     exit();
 }

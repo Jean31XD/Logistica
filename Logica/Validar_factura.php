@@ -2,6 +2,24 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
+// Validar Content-Type
+validarContentType(['application/x-www-form-urlencoded', 'application/json']);
+
+// Rate limiting: máximo 20 validaciones por minuto
+require_once __DIR__ . '/../conexionBD/rate_limiter.php';
+if (!checkRateLimit('validar_factura', 20, 60)) {
+    rateLimitExceeded('Demasiadas validaciones. Espere un momento.');
+}
+
+// Validar CSRF token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validarTokenCSRF($csrf)) {
+        http_response_code(403);
+        die(json_encode(['success' => false, 'error' => 'Token CSRF inválido']));
+    }
+}
+
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/conexion.php';

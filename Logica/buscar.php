@@ -2,6 +2,12 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
+// Rate limiting: máximo 30 búsquedas por minuto
+require_once __DIR__ . '/../conexionBD/rate_limiter.php';
+if (!checkRateLimit('buscar', 30, 60)) {
+    rateLimitExceeded('Demasiadas búsquedas. Espere un momento.');
+}
+
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $termino = trim($_GET["q"] ?? "");
