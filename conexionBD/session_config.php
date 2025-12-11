@@ -5,9 +5,15 @@
  */
 
 // Forzar HTTPS en producción (solo si no estamos en localhost)
-if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+// Azure App Service usa X-Forwarded-Proto para indicar el protocolo original
+$isHTTPS = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+           (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+           (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+
+if (!$isHTTPS) {
     $isLocalhost = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1', '::1']);
 
+    // Solo redirigir si NO estamos en localhost y NO estamos ya en HTTPS
     if (!$isLocalhost && php_sapi_name() !== 'cli') {
         $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
         header('Location: ' . $redirectUrl, true, 301);
@@ -23,9 +29,11 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_strict_mode', 1);      // Rechazar IDs de sesión no inicializados
     ini_set('session.use_only_cookies', 1);     // Solo cookies, no URLs
 
-    // Flag Secure solo en HTTPS (permite localhost sin HTTPS)
-    $isHTTPS = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-    ini_set('session.cookie_secure', $isHTTPS ? 1 : 0);
+    // Flag Secure solo en HTTPS (detecta Azure proxy)
+    $cookieSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                    (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+                    (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+    ini_set('session.cookie_secure', $cookieSecure ? 1 : 0);
 
     // Tiempo de vida de sesión: 30 minutos (1800 segundos)
     ini_set('session.gc_maxlifetime', 1800);

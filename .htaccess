@@ -1,0 +1,27 @@
+# MACO Logística - Configuración de Apache
+# Para Azure App Service
+
+# Deshabilitar redirección HTTPS en .htaccess (manejado por PHP)
+# Azure ya maneja HTTPS a nivel de proxy
+
+# Permitir override de headers
+<IfModule mod_headers.c>
+    # No forzar HTTPS aquí - Azure lo maneja
+    # Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# Protección de archivos sensibles
+<FilesMatch "^\.env|\.gitignore|\.git|composer\.json|composer\.lock">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevenir acceso a directorios
+Options -Indexes
+
+# PHP settings
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log /home/site/wwwroot/logs/php_errors.log
+</IfModule>
