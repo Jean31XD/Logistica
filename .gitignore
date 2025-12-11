@@ -2,8 +2,10 @@
 .env
 
 # Archivos de Log
-logs/
-*.log
+logs/*.log
+logs/*.log.gz
+!logs/.gitkeep
+!logs/.gitignore
 
 # Archivos temporales
 *.tmp
