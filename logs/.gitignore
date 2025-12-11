@@ -1,0 +1,7 @@
+# Ignorar todos los archivos de log
+*.log
+*.log.gz
+
+# Mantener este directorio en Git
+!.gitkeep
+!.gitignore

@@ -1,13 +1,26 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+
+// Validar Content-Type
+validarContentType(['application/x-www-form-urlencoded', 'application/json']);
+
+// Rate limiting: máximo 10 intentos por minuto
+require_once __DIR__ . '/../conexionBD/rate_limiter.php';
+if (!checkRateLimit('asignar_ticket', 10, 60)) {
+    rateLimitExceeded('Demasiados intentos de asignación. Espere un momento.');
+}
+
+// Validar CSRF token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validarTokenCSRF($csrf)) {
+        http_response_code(403);
+        die(json_encode(['success' => false, 'message' => 'Token CSRF inválido']));
+    }
+}
 
 header('Content-Type: application/json');
-
-if (!isset($_SESSION['usuario'])) {
-    echo json_encode(['success' => false, 'message' => 'Acceso denegado. Debes iniciar sesión.']);
-    exit();
-}
 
 // 1. Incluir la conexión. ESTO YA CREA LA VARIABLE $conn.
 require_once __DIR__ . '/../conexionBD/conexion.php';
@@ -59,7 +72,10 @@ if ($stmt_get_hash === false) {
 $row = sqlsrv_fetch_array($stmt_get_hash, SQLSRV_FETCH_ASSOC);
 
 if (!$row || !isset($row['password'])) {
-    echo json_encode(['success' => false, 'message' => "El usuario a verificar ('$user_to_check') no fue encontrado."]);
+    // No revelar si el usuario existe o no (prevenir enumeración)
+    require_once __DIR__ . '/../conexionBD/log_manager.php';
+    logWithRotation("Intento de asignación con usuario no encontrado: $user_to_check", 'WARNING', 'AUTH');
+    echo json_encode(['success' => false, 'message' => 'Error de autenticación. Verifique su contraseña.']);
     sqlsrv_close($conn);
     exit();
 }
@@ -74,13 +90,17 @@ if (password_verify($password, $hashed_password)) {
     $stmt_update = sqlsrv_query($conn, $sql_update, $params_update);
 
     if ($stmt_update && sqlsrv_rows_affected($stmt_update) > 0) {
-        echo json_encode(['success' => true, 'message' => 'Ticket asignado a ' . $sessionUser . ' correctamente.']);
+        // Regenerar sesión por cambio de privilegios (ahora tiene un ticket asignado)
+        regenerarSesionPorCambioPrivilegios();
+        echo json_encode(['success' => true, 'message' => 'Ticket asignado correctamente.']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Contraseña correcta, pero falló la asignación del ticket.']);
+        echo json_encode(['success' => false, 'message' => 'Error al asignar el ticket. Intente de nuevo.']);
     }
 } else {
-    // Contraseña incorrecta
-    echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
+    // Contraseña incorrecta - mismo mensaje que usuario no encontrado (prevenir enumeración)
+    require_once __DIR__ . '/../conexionBD/log_manager.php';
+    logWithRotation("Intento fallido de asignación para usuario: $user_to_check", 'WARNING', 'AUTH');
+    echo json_encode(['success' => false, 'message' => 'Error de autenticación. Verifique su contraseña.']);
 }
 
 sqlsrv_close($conn);

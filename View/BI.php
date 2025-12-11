@@ -1,17 +1,17 @@
 <?php
-ini_set('session.use_strict_mode', 1);
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+/**
+ * Business Intelligence - MACO Design System
+ * Dashboard de análisis y métricas
+ */
 
-if (!isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-include '../conexionBD/conexion.php';
+// Incluir configuración centralizada de sesión y conexión a BD
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion(); // Acceso general para usuarios autenticados
 
 
-// Obtenemos los datos para los SELECT la primera vez que carga la página
+require_once __DIR__ . '/../conexionBD/conexion.php';
+
+// Obtenemos los datos para los SELECT
 $transportistas = [];
 $tstmt = sqlsrv_query($conn, "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL AND Transportista NOT LIKE '%Contado%' ORDER BY Transportista");
 while ($t = sqlsrv_fetch_array($tstmt, SQLSRV_FETCH_ASSOC)) $transportistas[] = $t['Transportista'];
@@ -24,140 +24,505 @@ $zonas = [];
 $zstmt = sqlsrv_query($conn, "SELECT DISTINCT zona FROM custinvoicejour WHERE zona IS NOT NULL ORDER BY zona");
 while ($z = sqlsrv_fetch_array($zstmt, SQLSRV_FETCH_ASSOC)) $zonas[] = $z['zona'];
 
-// Valores iniciales de los filtros
+// Valores iniciales
 $filtroTransportista = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? date('Y-m-d');
 $hasta = $_GET['hasta'] ?? date('Y-m-d');
 $estado = $_GET['estado'] ?? '';
 $usuario = $_GET['usuario'] ?? '';
-$entregadasCC = isset($_GET['entregadasCC']);
 $buscarFactura = $_GET['factura'] ?? '';
 $prefijo = $_GET['prefijo'] ?? '';
 $zona = $_GET['zona'] ?? '';
+
+$pageTitle = "Business Intelligence | MACO";
+$containerClass = "maco-container-fluid";
+$additionalCSS = <<<'CSS'
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    :root {
+        --bi-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --bi-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --bi-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --bi-gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .bi-header {
+        background: var(--primary);
+        padding: 3rem 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+        box-shadow: var(--shadow-xl);
+    }
+
+    .bi-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .bi-header p {
+        font-size: 1.125rem;
+        opacity: 0.95;
+    }
+
+    .filters-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 2rem;
+    }
+
+    .filters-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .filters-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .filter-group label {
+        display: block;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .form-control, .form-select {
+        padding: 0.75rem;
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+    }
+
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 2px solid var(--gray-200) !important;
+        border-radius: var(--radius) !important;
+        padding: 0.5rem !important;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection:focus {
+        border-color: var(--primary) !important;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        transition: all 0.3s ease;
+        border-left: 5px solid;
+    }
+
+    .stat-card:nth-child(1) { border-left-color: #3b82f6; }
+    .stat-card:nth-child(2) { border-left-color: #10b981; }
+    .stat-card:nth-child(3) { border-left-color: #ef4444; }
+    .stat-card:nth-child(4) { border-left-color: #f59e0b; }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+
+    .stat-card:nth-child(1) .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .stat-card:nth-child(2) .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .stat-card:nth-child(3) .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .stat-card:nth-child(4) .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    .stat-info h5 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-info p {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .table-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .bi-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .bi-table thead th {
+        background: var(--primary);
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .bi-table thead th:first-child {
+        border-top-left-radius: var(--radius);
+    }
+
+    .bi-table thead th:last-child {
+        border-top-right-radius: var(--radius);
+    }
+
+    .bi-table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-200);
+        font-size: 0.95rem;
+    }
+
+    .bi-table tbody tr:hover {
+        background: var(--gray-50);
+    }
+
+    .factura-link {
+        color: var(--primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .factura-link:hover {
+        text-decoration: underline;
+    }
+
+    .badge-status {
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-completada {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .badge-re {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .badge-vacio {
+        background: rgba(107, 114, 128, 0.1);
+        color: #6b7280;
+    }
+
+    #loader {
+        display: none;
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--gray-200);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .pagination-custom {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .page-btn {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--gray-200);
+        background: white;
+        color: var(--text-primary);
+        border-radius: var(--radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .page-btn:hover:not(.active) {
+        background: var(--gray-100);
+        border-color: var(--gray-300);
+    }
+
+    .page-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+        .bi-header h1 {
+            font-size: 2rem;
+        }
+
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+CSS;
+include __DIR__ . '/templates/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dashboard de Facturación </title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <style>
-        :root {
-            --bs-body-bg: #1a1c23; --bs-body-color: #e2e8f0; --bs-border-color: #3e4452;
-            --bs-primary: #3b82f6; --bs-secondary: #475569; --bs-success: #22c55e;
-            --bs-danger: #ef4444; --bs-warning: #f59e0b; --bs-info: #38bdf8;
-            --bs-light: #334155; --bs-dark: #1e293b; --font-family-sans-serif: 'Inter', sans-serif;
-        }
-        body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: var(--font-family-sans-serif); }
-        .main-panel, .accordion-body { background-color: var(--bs-dark); border: 1px solid var(--bs-border-color); border-radius: 1rem; }
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-        .card-resumen { background-color: var(--bs-dark); border-radius: 0.75rem; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 5px solid var(--bs-primary); transition: background-color 0.2s ease-in-out; }
-        .card-resumen:hover { background-color: var(--bs-light); }
-        .card-resumen .icon { font-size: 1.75rem; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background-color: rgba(255,255,255,0.05); }
-        .card-resumen h5 { font-size: 0.9rem; font-weight: 500; margin: 0; color: #94a3b8; }
-        .card-resumen p { font-size: 1.75rem; font-weight: 700; margin: 0; }
-        .accordion-button { background-color: var(--bs-light); color: var(--bs-body-color); }
-        .accordion-button:not(.collapsed) { background-color: var(--bs-danger); color: #fff; }
-        .accordion-button:focus { box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.5); }
-        .form-control, .form-select, .select2-selection { background-color: var(--bs-secondary) !important; border: 1px solid var(--bs-border-color) !important; color: var(--bs-body-color) !important; }
-        .select2-dropdown { background-color: #2c3440; border-color: var(--bs-border-color); }
-        .select2-results__option { color: var(--bs-body-color); }
-        .select2-results__option--highlighted { background-color: var(--bs-danger); }
-        .table { min-width: 1000px; }
-        .table > :not(caption) > * > * { background-color: transparent; border-bottom-color: var(--bs-border-color); vertical-align: middle; }
-        .table thead th { font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 0.8rem; }
-        .table tbody td { font-size: 0.9rem; color: #fff; /* LETRAS DE LA TABLA EN BLANCO */ }
-        .table tbody tr:hover { background-color: rgba(255, 255, 255, 0.03); }
-        .factura-id { font-weight: 600; color: var(--bs-info); }
-        .badge-status { padding: 0.4em 0.7em; font-size: 0.75rem; font-weight: 600; }
-        .badge-completada { background-color: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); }
-        .badge-re { background-color: rgba(var(--bs-danger-rgb), 0.15); color: var(--bs-danger); }
-        .badge-vacio { background-color: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); }
-        #loader { display: none; text-align: center; padding: 2rem; }
-        @media (max-width: 992px) {
-            .table thead { display: none; }
-            .table, .table tbody, .table tr, .table td { display: block; width: 100% !important; }
-            .table tr { background-color: var(--bs-dark); border-radius: 0.75rem; margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--bs-border-color); }
-            .table td { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border: none; border-bottom: 1px dashed var(--bs-border-color); }
-            .table td:last-child { border-bottom: none; }
-            .table td::before { content: attr(data-label); font-weight: 600; color: #94a3b8; margin-right: 1rem; }
-        }
-    </style>
-</head>
-<body class="p-3 p-md-4">
-    <header class="dashboard-header">
-        <img src="../IMG/LOGO MC - BLANCO.png" alt="Logo" style="height: 100px;">
-        <a href="../Logica/logout.php" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión</a>
-    </header>
 
-    <main>
-        <div class="accordion mb-4" id="filtroAccordion">
-            <div class="accordion-item" style="border:0; background:transparent;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiltros" aria-expanded="true" aria-controls="collapseFiltros">
-                        <i class="fa-solid fa-filter me-2"></i> Opciones de Filtrado
-                    </button>
-                </h2>
-                <div id="collapseFiltros" class="accordion-collapse collapse show" data-bs-parent="#filtroAccordion">
-                    <div class="accordion-body p-4">
-                        <form id="filtroForm" method="get" autocomplete="off">
-                            <div class="row g-3">
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Desde</label><input type="date" name="desde" value="<?= htmlspecialchars($desde) ?>" class="form-control"></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Hasta</label><input type="date" name="hasta" value="<?= htmlspecialchars($hasta) ?>" class="form-control"></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Factura</label><input type="text" name="factura" value="<?= htmlspecialchars($buscarFactura) ?>" class="form-control"></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Estado</label><select name="estado" class="form-select"><option value="">Todos</option><option value="Completada" <?= $estado === 'Completada' ? 'selected' : '' ?>>Completada</option><option value="RE" <?= $estado === 'RE' ? 'selected' : '' ?>>RE</option><option value="vacio" <?= $estado === 'vacio' ? 'selected' : '' ?>>Sin Estado</option></select></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Transportista</label><select name="transportista" id="listaTransportistas" class="form-select"><option value="">Todos</option><?php foreach ($transportistas as $t): ?><option value="<?= htmlspecialchars($t) ?>" <?= $filtroTransportista === $t ? 'selected' : '' ?>><?= htmlspecialchars($t) ?></option><?php endforeach; ?></select></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Usuario ALM</label><select name="usuario" id="usuario" class="form-select"><option value="">Todos</option><?php foreach ($usuarios as $u): ?><option value="<?= htmlspecialchars($u) ?>" <?= $usuario === $u ? 'selected' : '' ?>><?= htmlspecialchars($u) ?></option><?php endforeach; ?></select></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Localización</label><select name="zona" id="zona" class="form-select"><option value="">Todas</option><?php foreach ($zonas as $z): ?><option value="<?= htmlspecialchars($z) ?>" <?= $zona === $z ? 'selected' : '' ?>><?= htmlspecialchars($z) ?></option><?php endforeach; ?></select></div>
-                                <div class="col-md-6 col-lg-3"><label class="form-label">Prefijo</label><select name="prefijo" class="form-select"><option value="">Todos</option><option value="NC" <?= $prefijo === 'NC' ? 'selected' : '' ?>>Solo NC</option><option value="FT" <?= $prefijo === 'FT' ? 'selected' : '' ?>>Solo FT</option></select></div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+<!-- Header BI -->
+<div class="bi-header animate__animated animate__fadeIn">
+    <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+    <h1>Business Intelligence</h1>
+    <p>Dashboard de análisis y métricas del sistema de facturación</p>
+</div>
+
+<!-- Filtros -->
+<div class="filters-card animate__animated animate__fadeInUp">
+    <div class="filters-header">
+        <i class="fas fa-filter" style="font-size: 1.5rem; color: var(--primary);"></i>
+        <h2>Filtros de Búsqueda</h2>
+    </div>
+
+    <form id="filtroForm" method="get" autocomplete="off">
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label><i class="fas fa-calendar me-2"></i>Desde</label>
+                <input type="date" name="desde" value="<?= htmlspecialchars($desde) ?>" class="form-control">
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-calendar me-2"></i>Hasta</label>
+                <input type="date" name="hasta" value="<?= htmlspecialchars($hasta) ?>" class="form-control">
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-file-invoice me-2"></i>Factura</label>
+                <input type="text" name="factura" value="<?= htmlspecialchars($buscarFactura) ?>" class="form-control" placeholder="Buscar factura...">
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-check-circle me-2"></i>Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Completada" <?= $estado === 'Completada' ? 'selected' : '' ?>>Completada</option>
+                    <option value="RE" <?= $estado === 'RE' ? 'selected' : '' ?>>RE</option>
+                    <option value="vacio" <?= $estado === 'vacio' ? 'selected' : '' ?>>Sin Estado</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-truck me-2"></i>Transportista</label>
+                <select name="transportista" id="listaTransportistas" class="form-select">
+                    <option value="">Todos</option>
+                    <?php foreach ($transportistas as $t): ?>
+                    <option value="<?= htmlspecialchars($t) ?>" <?= $filtroTransportista === $t ? 'selected' : '' ?>><?= htmlspecialchars($t) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-user me-2"></i>Usuario ALM</label>
+                <select name="usuario" id="usuario" class="form-select">
+                    <option value="">Todos</option>
+                    <?php foreach ($usuarios as $u): ?>
+                    <option value="<?= htmlspecialchars($u) ?>" <?= $usuario === $u ? 'selected' : '' ?>><?= htmlspecialchars($u) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-map-marker-alt me-2"></i>Localización</label>
+                <select name="zona" id="zona" class="form-select">
+                    <option value="">Todas</option>
+                    <?php foreach ($zonas as $z): ?>
+                    <option value="<?= htmlspecialchars($z) ?>" <?= $zona === $z ? 'selected' : '' ?>><?= htmlspecialchars($z) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label><i class="fas fa-tag me-2"></i>Prefijo</label>
+                <select name="prefijo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="NC" <?= $prefijo === 'NC' ? 'selected' : '' ?>>Solo NC</option>
+                    <option value="FT" <?= $prefijo === 'FT' ? 'selected' : '' ?>>Solo FT</option>
+                </select>
             </div>
         </div>
+    </form>
+</div>
 
-        <div class="row g-4 mb-4" id="resumen-container">
-            <div class="col-md-6 col-xl-3"><div class="card-resumen" style="border-color:var(--bs-info)"><div class="icon" style="color:var(--bs-info)"><i class="fa-solid fa-file-invoice-dollar"></i></div><div><h5>Total Facturas</h5><p id="total-facturas">0</p></div></div></div>
-            <div class="col-md-6 col-xl-3"><div class="card-resumen" style="border-color:var(--bs-success)"><div class="icon" style="color:var(--bs-success)"><i class="fa-solid fa-check-double"></i></div><div><h5>Completadas</h5><p id="total-completadas">0</p></div></div></div>
-            <div class="col-md-6 col-xl-3"><div class="card-resumen" style="border-color:var(--bs-danger)"><div class="icon" style="color:var(--bs-danger)"><i class="fa-solid fa-triangle-exclamation"></i></div><div><h5>No Completadas</h5><p id="total-no-completadas">0</p></div></div></div>
-            <div class="col-md-6 col-xl-3"><div class="card-resumen" style="border-color:var(--bs-warning)"><div class="icon" style="color:var(--bs-warning)"><i class="fa-solid fa-building-columns"></i></div><div><h5>Entregadas a CxC</h5><p id="total-entregadas-cxc">0</p></div></div></div>
+<!-- Estadísticas -->
+<div class="stats-grid animate__animated animate__fadeInUp">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
         </div>
+        <div class="stat-info">
+            <h5>Total Facturas</h5>
+            <p id="total-facturas">0</p>
+        </div>
+    </div>
 
-        <div class="main-panel p-4">
-            <div id="loader"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>
-            <div class="table-responsive" id="tabla-container">
-                <table class="table">
-                    <thead><tr><th>Factura</th><th>Fecha</th><th>Estado</th><th>Transportista</th><th>Usuario ALM</th><th>Usuario CC</th><th>Localización</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <nav class="d-flex justify-content-center pt-4" id="paginacion-container"></nav>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-check-double"></i>
         </div>
-    </main>
+        <div class="stat-info">
+            <h5>Completadas</h5>
+            <p id="total-completadas">0</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div class="stat-info">
+            <h5>No Completadas</h5>
+            <p id="total-no-completadas">0</p>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-building-columns"></i>
+        </div>
+        <div class="stat-info">
+            <h5>Entregadas CxC</h5>
+            <p id="total-entregadas-cxc">0</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="table-card animate__animated animate__fadeInUp">
+    <div class="table-header">
+        <h2><i class="fas fa-table me-2"></i>Listado de Facturas</h2>
+    </div>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem; color: var(--text-secondary);">Cargando datos...</p>
+    </div>
+
+    <div class="table-responsive" id="tabla-container">
+        <table class="bi-table">
+            <thead>
+                <tr>
+                    <th>Factura</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Transportista</th>
+                    <th>Usuario ALM</th>
+                    <th>Usuario CC</th>
+                    <th>Localización</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="pagination-custom" id="paginacion-container"></div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function() {
-    // --- INICIALIZACIÓN ---
-    initializeSelect2('#listaTransportistas', 'Seleccionar transportista...');
-    initializeSelect2('#usuario', 'Seleccionar usuario...');
-    initializeSelect2('#zona', 'Seleccionar localización...');
+    // Inicializar Select2
+    $('#listaTransportistas, #usuario, #zona').select2({
+        placeholder: 'Seleccionar...',
+        allowClear: true,
+        theme: 'bootstrap-5',
+        width: '100%'
+    });
 
-    let currentRequest = null; // Para manejar peticiones múltiples
+    let currentRequest = null;
 
-    // --- FUNCIÓN PRINCIPAL DE AJAX ---
     function aplicarFiltros(page = 1) {
         $('#loader').show();
         $('#tabla-container').hide();
 
-        // Abortar la petición anterior si existe
         if (currentRequest) {
             currentRequest.abort();
         }
@@ -171,13 +536,11 @@ $(document).ready(function() {
             data: formData,
             dataType: 'json',
             success: function(response) {
-                // Actualizar tarjetas de resumen
                 $('#total-facturas').text(new Intl.NumberFormat().format(response.resumen.TotalFacturas || 0));
                 $('#total-completadas').text(new Intl.NumberFormat().format(response.resumen.Completadas || 0));
                 $('#total-no-completadas').text(new Intl.NumberFormat().format(response.resumen.NoCompletadas || 0));
                 $('#total-entregadas-cxc').text(new Intl.NumberFormat().format(response.resumen.EntregadasCC || 0));
 
-                // Actualizar tabla y paginación
                 $('#tabla-container tbody').html(response.tablaHtml);
                 $('#paginacion-container').html(response.paginacionHtml);
 
@@ -188,17 +551,17 @@ $(document).ready(function() {
                 if (textStatus !== 'abort') {
                     $('#loader').hide();
                     $('#tabla-container').show();
-                    $('#tabla-container tbody').html('<tr><td colspan="8" class="text-center text-danger py-5">Error al cargar los datos. Por favor, intente de nuevo.</td></tr>');
+                    $('#tabla-container tbody').html('<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:3rem;">Error al cargar los datos. Por favor, intente de nuevo.</td></tr>');
                     console.error("Error en AJAX:", textStatus, errorThrown);
                 }
             },
             complete: function() {
-                currentRequest = null; // Limpiar la petición actual
+                currentRequest = null;
             }
         });
     }
 
-    // --- MANEJADORES DE EVENTOS ---
+    // Event handlers
     $('#filtroForm select, #filtroForm input[type="date"]').on('change', function() {
         aplicarFiltros(1);
     });
@@ -211,29 +574,17 @@ $(document).ready(function() {
         }, 500);
     });
 
-    // Manejador para la paginación
-    $(document).on('click', '#paginacion-container .page-link', function(e) {
+    $(document).on('click', '.page-btn', function(e) {
         e.preventDefault();
-        if (!$(this).parent().hasClass('disabled') && !$(this).parent().hasClass('active')) {
+        if (!$(this).hasClass('active')) {
             const page = $(this).data('page');
             aplicarFiltros(page);
         }
     });
 
-    // --- CARGA INICIAL ---
+    // Carga inicial
     aplicarFiltros(1);
-
 });
-
-// --- Funciones auxiliares ---
-function initializeSelect2(selector, placeholderText) {
-    $(selector).select2({
-        placeholder: placeholderText,
-        allowClear: true,
-        theme: 'bootstrap-5',
-        width: '100%'
-    });
-}
 </script>
-</body>
-</html>
+
+<?php include __DIR__ . '/templates/footer.php'; ?>

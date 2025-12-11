@@ -1,366 +1,327 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+/**
+ * Panel de Administración - MACO Design System
+ */
 
-// --- INICIO DEL CÓDIGO PHP (LÓGICA MEJORADA Y SEGURA) ---
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-
-if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
-    header("Location: ../index.php");
-    exit();
-}
-
+// Incluir configuración centralizada de sesión y conexión a BD
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([0]); // Solo pantalla 0 (Admin) puede acceder
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-function verificarCSRF($tokenEnviado, $tokenSesion) {
-    return is_string($tokenEnviado) && is_string($tokenSesion) && hash_equals($tokenSesion, $tokenEnviado);
-}
-
-$mensajeCrear = $alertCrear = "";
-$mensajeEliminar = $alertEliminar = "";
-$mensajeModificar = $alertModificar = "";
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $accion = $_POST['accion'] ?? '';
-    $csrf = $_POST['csrf_token'] ?? '';
-
-    if (!verificarCSRF($csrf, $_SESSION['csrf_token'])) {
-        die("Error: Token CSRF inválido.");
+$pageTitle = "Panel de Administración | MACO";
+$additionalCSS = <<<'CSS'
+<style>
+    .admin-container {
+        max-width: 1600px;
+        margin: 0 auto;
     }
 
-    switch ($accion) {
-        case 'crear':
-            $usuario = trim($_POST['usuario'] ?? '');
-            $password = trim($_POST['password'] ?? '');
-            // Corrección: El rango máximo debe ser 6 para incluir todas las opciones.
-            $pantalla = filter_var($_POST['pantalla'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 6]]);
-
-            if (!$usuario || !$password || $pantalla === false) {
-                $mensajeCrear = "⚠️ Todos los campos son obligatorios y válidos.";
-                $alertCrear = "alert-warning";
-                break;
-            }
-
-            if (!preg_match('/^[a-zA-Z0-9_]{3,20}$/', $usuario)) {
-                $mensajeCrear = "❌ Usuario inválido (letras, números, guiones bajos, 3-20 caracteres).";
-                $alertCrear = "alert-danger";
-                break;
-            }
-
-            $stmtCheck = sqlsrv_prepare($conn, "SELECT usuario FROM usuarios WHERE usuario = ?", [$usuario]);
-            if (!$stmtCheck || !sqlsrv_execute($stmtCheck)) {
-                $mensajeCrear = "❌ Error al verificar usuario.";
-                $alertCrear = "alert-danger";
-            } elseif (sqlsrv_fetch($stmtCheck)) {
-                $mensajeCrear = "❌ El usuario ya existe.";
-                $alertCrear = "alert-danger";
-            } else {
-                $hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmtInsert = sqlsrv_prepare($conn, "INSERT INTO usuarios (usuario, password, pantalla) VALUES (?, ?, ?)", [$usuario, $hash, $pantalla]);
-                if ($stmtInsert && sqlsrv_execute($stmtInsert)) {
-                    $mensajeCrear = "✅ Usuario <strong>$usuario</strong> creado exitosamente.";
-                    $alertCrear = "alert-success";
-                } else {
-                    $mensajeCrear = "❌ Error al crear usuario.";
-                    $alertCrear = "alert-danger";
-                }
-            }
-            break;
-
-        case 'eliminar':
-            $usuarioEliminar = trim($_POST['usuario_eliminar'] ?? '');
-            if ($usuarioEliminar === $_SESSION['usuario']) {
-                $mensajeEliminar = "❌ No puede eliminar su propio usuario.";
-                $alertEliminar = "alert-danger";
-            } elseif (!$usuarioEliminar) {
-                $mensajeEliminar = "⚠️ Especifique el usuario a eliminar.";
-                $alertEliminar = "alert-warning";
-            } else {
-                $stmtDelete = sqlsrv_prepare($conn, "DELETE FROM usuarios WHERE usuario = ?", [$usuarioEliminar]);
-                $rows_affected = sqlsrv_rows_affected($stmtDelete);
-                if ($stmtDelete && sqlsrv_execute($stmtDelete) && $rows_affected > 0) {
-                    $mensajeEliminar = "✅ Usuario <strong>$usuarioEliminar</strong> eliminado.";
-                    $alertEliminar = "alert-success";
-                } else {
-                    $mensajeEliminar = "❌ Error al eliminar o el usuario no existe.";
-                    $alertEliminar = "alert-danger";
-                }
-            }
-            break;
-
-        case 'modificar':
-            $usuarioMod = trim($_POST['usuario_modificar'] ?? '');
-            $nuevaClave = trim($_POST['password_nuevo'] ?? '');
-            // Lógica mejorada para manejar la opción "Sin cambio".
-            $pantallaNuevaInput = $_POST['pantalla_nuevo'] ?? '-1';
-            $pantallaNueva = ($pantallaNuevaInput !== '-1') ? filter_var($pantallaNuevaInput, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 6]]) : false;
-
-            if (!$usuarioMod) {
-                $mensajeModificar = "⚠️ Especifique el usuario a modificar.";
-                $alertModificar = "alert-warning";
-                break;
-            }
-
-            $updates = [];
-            $params = [];
-
-            if ($nuevaClave) {
-                $updates[] = "password = ?";
-                $params[] = password_hash($nuevaClave, PASSWORD_DEFAULT);
-            }
-
-            if ($pantallaNueva !== false) {
-                $updates[] = "pantalla = ?";
-                $params[] = $pantallaNueva;
-            }
-
-            if (!$updates) {
-                $mensajeModificar = "⚠️ No se ingresaron cambios para modificar.";
-                $alertModificar = "alert-warning";
-                break;
-            }
-
-            $params[] = $usuarioMod;
-            $sql = "UPDATE usuarios SET " . implode(", ", $updates) . " WHERE usuario = ?";
-            $stmtUpdate = sqlsrv_prepare($conn, $sql, $params);
-
-            if ($stmtUpdate && sqlsrv_execute($stmtUpdate)) {
-                if(sqlsrv_rows_affected($stmtUpdate) > 0) {
-                    $mensajeModificar = "✅ Usuario <strong>$usuarioMod</strong> modificado.";
-                    $alertModificar = "alert-success";
-                } else {
-                    $mensajeModificar = "🤷 El usuario no existe o no se aplicaron cambios.";
-                    $alertModificar = "alert-info";
-                }
-            } else {
-                $mensajeModificar = "❌ Error al modificar usuario.";
-                $alertModificar = "alert-danger";
-            }
-            break;
+    .admin-hero {
+        background: var(--primary);
+        padding: 4rem 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 3rem;
+        color: white;
+        text-align: center;
+        box-shadow: var(--shadow-xl);
+        position: relative;
+        overflow: hidden;
     }
-}
+
+    .admin-hero::before {
+        content: '';
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        top: -200px;
+        right: -200px;
+    }
+
+    .admin-hero::after {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        bottom: -150px;
+        left: -150px;
+    }
+
+    .admin-hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .admin-hero-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .admin-hero h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-hero p {
+        font-size: 1.25rem;
+        opacity: 0.95;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .section-title {
+        text-align: center;
+        margin: 4rem 0 3rem 0;
+    }
+
+    .section-title h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .section-title p {
+        font-size: 1.125rem;
+        color: var(--text-secondary);
+    }
+
+    .module-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 4rem;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .module-card {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: 2.5rem;
+        box-shadow: var(--shadow-lg);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .module-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--primary);
+        transform: scaleX(0);
+        transition: transform 0.4s ease;
+    }
+
+    .module-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .module-card:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--primary);
+    }
+
+    .module-card-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: var(--radius-xl);
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 24px rgba(230, 57, 70, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .module-card:hover .module-card-icon {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 12px 32px rgba(230, 57, 70, 0.4);
+    }
+
+    .module-card h3 {
+        font-size: 1.375rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.75rem;
+    }
+
+    .module-card p {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+
+    .module-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 1.25rem;
+        border-top: 2px solid var(--gray-100);
+    }
+
+    .module-badge {
+        padding: 0.375rem 0.875rem;
+        background: rgba(230, 57, 70, 0.1);
+        color: var(--primary);
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+
+    @media (max-width: 768px) {
+        .admin-hero h1 {
+            font-size: 2rem;
+        }
+
+        .admin-hero p {
+            font-size: 1rem;
+        }
+
+        .module-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+        }
+    }
+</style>
+CSS;
+include __DIR__ . '/templates/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Panel de Administración ✨</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #0dcaf0;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #cf8888ff,  #6d5656ff, #6d5656ff,  #6d5656ff);
-            background-size: 400% 400%;
-            animation: gradientBG 20s ease infinite;
-            min-height: 100vh;
-            color: #fff;
-            padding-top: 100px;
-            padding-bottom: 3rem;
-        }
-
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .floating-header {
-            position: fixed;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 95%;
-            max-width: 800px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 10px 25px;
-            border-radius: 50px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            z-index: 1100;
-        }
-
-        /* Estilo para hacer visible el logo negro */
-        .floating-header .logo img {
-            height: 48px;
-            background-color: rgba(255, 255, 255, 0.85);
-            border-radius: 50%;
-            padding: 5px;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-
-        .floating-header .username {
-            font-weight: 600;
-            font-size: 1.1rem;
-            text-shadow: 1px 1px 5px rgba(0,0,0,0.2);
-        }
-
-        .floating-header .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            padding: 8px 20px;
-            border: none;
-        }
-        .floating-header .logout-btn:hover { background-color: rgba(220, 53, 69, 0.8); }
-
-        .main-title, .section-title {
-            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
-            font-weight: 700;
-            text-align: center;
-        }
-        .section-title { font-size: 1.8rem; margin-top: 3rem; margin-bottom: 2rem; }
-        
-        .cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 1rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-        }
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.3);
-        }
-        .card-header {
-            background: transparent;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            font-weight: 600;
-            font-size: 1.2rem;
-            text-align: center;
-        }
-        .card-body { padding: 1.5rem; flex-grow: 1; }
-        .card-body p, .card-body .form-label {
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-        }
-        
-        .form-control, .form-select {
-            background-color: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff;
-            border-radius: 0.5rem;
-        }
-        .form-control::placeholder { color: rgba(255, 255, 255, 0.6); }
-        .form-control:focus, .form-select:focus {
-            background-color: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.3);
-        }
-        select.form-select option { background: #333; color: #fff; }
-
-        .btn {
-            font-weight: 600;
-            border-radius: 0.5rem;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border: none;
-        }
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        .alert {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid;
-            color: #fff;
-        }
-        .alert-success { border-color: var(--success-color); }
-        .alert-danger { border-color: var(--danger-color); }
-        .alert-warning { border-color: var(--warning-color); color: #000; }
-        .alert-info { border-color: var(--info-color); }
-    </style>
-</head>
-<body>
-
-<header class="floating-header animate__animated animate__fadeInDown" role="banner">
-    <div class="logo" aria-hidden="true">
-        <img src="../IMG/LOGO MC - NEGRO.png" alt="Logo de la empresa" />
+<div class="admin-container">
+    <!-- Hero Section -->
+    <div class="admin-hero">
+        <div class="admin-hero-content">
+            <div class="admin-hero-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h1>Panel de Administración</h1>
+            <p>Centro de control total del sistema MACO Logística. Accede a todos los módulos desde aquí.</p>
+        </div>
     </div>
-    <div class="username" aria-live="polite">
-        <i class="fa-solid fa-user-shield me-2"></i><?= htmlspecialchars($_SESSION['usuario']) ?>
-    </div>
-    <a href="../Logica/logout.php" class="logout-btn" role="button">
-        <i class="fa-solid fa-right-from-bracket me-1"></i>Cerrar Sesión
-    </a>
-</header>
 
-<main class="container-fluid" role="main">
-    <h1 class="main-title mb-4 animate__animated animate__fadeInDown" style="animation-delay: 0.2s;">Panel de Administración</h1>
 
-    <section aria-labelledby="acceso-rapido-title">
-        <h2 id="acceso-rapido-title" class="section-title animate__animated animate__fadeInUp">Acceso Rápido</h2>
-        <div class="cards-container mb-5">
-            <?php 
-                $cards = [
-                    ['title' => 'Despacho de Factura', 'desc' => 'Gestiona los envíos y entregas.', 'link' => '../View/Inicio.php', 'icon' => 'fa-truck-fast'],
-                    ['title' => 'Validación', 'desc' => 'Valida facturas escaneadas.', 'link' => '../View/facturas.php', 'icon' => 'fa-check-double'],
-                    ['title' => 'Recepción', 'desc' => 'Control de recepción de documentos.', 'link' => '../View/facturas-recepcion.php', 'icon' => 'fa-inbox'],
-                    ['title' => 'Reporte de Facturas', 'desc' => 'Reporte por Transportista.', 'link' => '../View/Reporte.php', 'icon' => 'fa-chart-pie'],
-                    ['title' => 'Reporte Facturas CXC', 'desc' => 'Reporte de Facturas faltantes.', 'link' => '../View/BI.php', 'icon' => 'fa-file-invoice-dollar'],
-                    // --- TARJETA NUEVA AÑADIDA AQUÍ ---
-                    ['title' => 'Etiquetado', 'desc' => 'Crea, modifica y elimina etiquetas.', 'link' => '../View/Listo-etiquetas.php', 'icon' => 'fa-tags'],
-                    ['title' => 'Gestión de Usuarios', 'desc' => 'Crea, modifica y elimina usuarios.', 'link' => '../View/Gestion_de_usuario.php', 'icon' => 'fa-users-cog'],
-                    ['title' => 'Dashboard', 'desc' => 'Visión general de la gestión.', 'link' => '../View/dashboard.php', 'icon' => 'fa-tachometer-alt']
+    <!-- Módulos del Sistema -->
+    <section>
+        <div class="section-title">
+            <h2><i class="fas fa-th-large me-3" style="color: var(--primary);"></i>Módulos del Sistema</h2>
+            <p>Accede rápidamente a cualquier módulo del sistema</p>
+        </div>
 
+        <div class="module-grid">
+            <?php
+                $modules = [
+                    [
+                        'title' => 'Despacho de Factura',
+                        'desc' => 'Gestiona envíos y entregas en tiempo real. Control completo de tickets y asignaciones.',
+                        'link' => '../View/Inicio.php',
+                        'icon' => 'fa-truck-fast',
+                        'badge' => 'Operativo'
+                    ],
+                    [
+                        'title' => 'Validación de Facturas',
+                        'desc' => 'Valida y procesa facturas escaneadas. Sistema de verificación automática.',
+                        'link' => '../View/facturas.php',
+                        'icon' => 'fa-check-double',
+                        'badge' => 'Activo'
+                    ],
+                    [
+                        'title' => 'Recepción de Documentos',
+                        'desc' => 'Control de recepción de documentos. Registro y seguimiento completo.',
+                        'link' => '../View/facturas-recepcion.php',
+                        'icon' => 'fa-inbox',
+                        'badge' => 'Disponible'
+                    ],
+                    [
+                        'title' => 'Reportes por Transportista',
+                        'desc' => 'Reportes detallados y análisis por transportista. Exportación a Excel disponible.',
+                        'link' => '../View/Reporte.php',
+                        'icon' => 'fa-chart-pie',
+                        'badge' => 'Analytics'
+                    ],
+                    [
+                        'title' => 'Business Intelligence',
+                        'desc' => 'Dashboard de métricas y KPIs. Análisis avanzado de facturas y operaciones.',
+                        'link' => '../View/BI.php',
+                        'icon' => 'fa-file-invoice-dollar',
+                        'badge' => 'BI'
+                    ],
+                    [
+                        'title' => 'Sistema de Etiquetado',
+                        'desc' => 'Gestión completa de etiquetas. Crea, modifica y elimina etiquetas del sistema.',
+                        'link' => '../View/Listo-etiquetas.php',
+                        'icon' => 'fa-tags',
+                        'badge' => 'Gestión'
+                    ],
+                    [
+                        'title' => 'Gestión de Usuarios',
+                        'desc' => 'Administración completa de usuarios. Crea, modifica permisos y roles.',
+                        'link' => '../View/Gestion_de_usuario.php',
+                        'icon' => 'fa-users-cog',
+                        'badge' => 'Admin'
+                    ],
+                    [
+                        'title' => 'Dashboard General',
+                        'desc' => 'Visión general del sistema. Métricas consolidadas y estadísticas globales.',
+                        'link' => '../View/dashboard.php',
+                        'icon' => 'fa-tachometer-alt',
+                        'badge' => 'Overview'
+                    ],
+                    [
+                        'title' => 'Listo de Inventario',
+                        'desc' => 'Inventario de Listo ferreteria.',
+                        'link' => '../View/Listo_inventario.php',
+                        'icon' => 'fa-warehouse',
+                        'badge' => 'Overview'
+                    ]
                 ];
-                $delay = 0.2;
-                foreach ($cards as $card):
+
+                $delay = 0;
+                foreach ($modules as $module):
             ?>
-            <article class="card animate__animated animate__zoomIn" style="animation-delay: <?= $delay ?>s;">
-                <div class="card-header"><i class="fa-solid <?= $card['icon'] ?> me-2"></i><?= $card['title'] ?></div>
-                <div class="card-body d-flex flex-column justify-content-between">
-                    <p><?= $card['desc'] ?></p>
-                    <a href="<?= $card['link'] ?>" class="btn btn-outline-light w-100 mt-3" role="link">Ingresar</a>
+            <div class="module-card">
+                <div class="module-card-icon">
+                    <i class="fas <?= $module['icon'] ?>"></i>
                 </div>
-            </article>
-            <?php $delay += 0.1; endforeach; ?>
+                <h3><?= $module['title'] ?></h3>
+                <p><?= $module['desc'] ?></p>
+                <div class="module-card-footer">
+                    <span class="module-badge"><?= $module['badge'] ?></span>
+                    <a href="<?= $module['link'] ?>" class="maco-btn maco-btn-primary maco-btn-sm">
+                        Acceder <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+            <?php $delay += 0.05; endforeach; ?>
         </div>
     </section>
 
-
-
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+   
+<?php include __DIR__ . '/templates/footer.php'; ?>

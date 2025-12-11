@@ -1,18 +1,10 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
-
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(403);
-    die(json_encode(["error" => "Acceso no autorizado."]));
-}
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
-
-$connectionInfo = ["Database" => $database, "UID" => $username, "PWD" => $password, "TrustServerCertificate" => true];
-$conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if (!$conn) {
     http_response_code(500);

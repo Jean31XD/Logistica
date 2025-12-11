@@ -1,14 +1,9 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-if (!isset($_SESSION['usuario'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['error' => 'Acceso no autorizado']);
-    exit();
-}
 
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 if (!$conn) {
     header('HTTP/1.1 500 Internal Server Error');
     echo json_encode(['error' => 'Error de conexión a la base de datos']);
@@ -60,6 +55,11 @@ SELECT
     SUM(CASE WHEN Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC
 FROM custinvoicejour $where";
 $resumen_stmt = sqlsrv_query($conn, $resumen_sql, $params);
+if ($resumen_stmt === false) {
+    header('HTTP/1.1 500 Internal Server Error');
+    echo json_encode(['error' => 'Error en consulta resumen', 'sql_errors' => sqlsrv_errors()]);
+    exit();
+}
 $resumen = sqlsrv_fetch_array($resumen_stmt, SQLSRV_FETCH_ASSOC);
 $resumen['NoCompletadas'] = ($resumen['RE'] ?? 0) + ($resumen['SinEstado'] ?? 0);
 $total_rows = $resumen['TotalFacturas'] ?? 0;
@@ -69,8 +69,15 @@ $total_pages = $total_rows > 0 ? ceil($total_rows / $limit) : 1;
 $sql = "
 SELECT Factura, Fecha, Validar AS Estado, Transportista, Fecha_scanner AS Recepcion_ALM,
        Usuario AS Usuario_ALM, recepcion AS Recepcion_CC, Usuario_de_recepcion AS Usuario_CC, zona AS Localizacion
-FROM custinvoicejour $where ORDER BY Fecha DESC OFFSET $offset ROWS FETCH NEXT $limit ROWS ONLY";
+FROM custinvoicejour $where ORDER BY Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+$params[] = $offset;
+$params[] = $limit;
 $stmt = sqlsrv_query($conn, $sql, $params);
+if ($stmt === false) {
+    header('HTTP/1.1 500 Internal Server Error');
+    echo json_encode(['error' => 'Error en consulta tabla', 'sql_errors' => sqlsrv_errors()]);
+    exit();
+}
 
 // --- Generar HTML de la tabla ---
 ob_start();
@@ -82,36 +89,44 @@ if ($stmt && $total_rows > 0) {
         else $estadoClase = 'badge-vacio';
         ?>
         <tr>
-            <td data-label="Factura"><span class="factura-id"><?= htmlspecialchars($row['Factura'] ?? '') ?></span></td>
-            <td data-label="Fecha"><?= date('d/m/Y', strtotime($row['Fecha']->format('Y-m-d'))) ?></td>
-            <td data-label="Estado"><span class="badge-status <?= $estadoClase ?>"><?= htmlspecialchars($row['Estado'] ?: 'Sin Estado') ?></span></td>
-            <td data-label="Transportista"><?= htmlspecialchars($row['Transportista'] ?? '') ?></td>
-            <td data-label="Usuario ALM"><?= htmlspecialchars($row['Usuario_ALM'] ?? '—') ?></td>
-            <td data-label="Usuario CC"><?= htmlspecialchars($row['Usuario_CC'] ?? '—') ?></td>
-            <td data-label="Localización"><?= htmlspecialchars($row['Localizacion'] ?? '—') ?></td>
+            <td><a href="#" class="factura-link"><?= htmlspecialchars($row['Factura'] ?? '') ?></a></td>
+            <td><?= $row['Fecha'] ? $row['Fecha']->format('d/m/Y') : '—' ?></td>
+            <td><span class="badge-status <?= $estadoClase ?>"><?= htmlspecialchars($row['Estado'] ?: 'Sin Estado') ?></span></td>
+            <td><?= htmlspecialchars($row['Transportista'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($row['Usuario_CC'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($row['Localizacion'] ?? '—') ?></td>
         </tr>
         <?php
     }
 } else {
-    echo '<tr><td colspan="8" class="text-center py-5">No se encontraron resultados.</td></tr>';
+    echo '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-secondary);">No se encontraron resultados con los filtros aplicados.</td></tr>';
 }
 $tablaHtml = ob_get_clean();
 
 // --- Generar HTML de la paginación ---
 ob_start();
-if ($total_pages > 1) { ?>
-    <ul class="pagination">
-        <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-            <a class="page-link" href="#" data-page="<?= $page - 1 ?>">&laquo;</a>
-        </li>
-        <li class="page-item active" aria-current="page">
-            <span class="page-link"><?= $page ?> de <?= $total_pages ?></span>
-        </li>
-        <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
-            <a class="page-link" href="#" data-page="<?= $page + 1 ?>">&raquo;</a>
-        </li>
-    </ul>
-<?php }
+if ($total_pages > 1) {
+    // Mostrar páginas alrededor de la actual
+    $start = max(1, $page - 2);
+    $end = min($total_pages, $page + 2);
+
+    // Botón anterior
+    if ($page > 1) {
+        echo '<button class="page-btn" data-page="' . ($page - 1) . '">← Anterior</button>';
+    }
+
+    // Páginas numeradas
+    for ($i = $start; $i <= $end; $i++) {
+        $active = ($i == $page) ? 'active' : '';
+        echo '<button class="page-btn ' . $active . '" data-page="' . $i . '">' . $i . '</button>';
+    }
+
+    // Botón siguiente
+    if ($page < $total_pages) {
+        echo '<button class="page-btn" data-page="' . ($page + 1) . '">Siguiente →</button>';
+    }
+}
 $paginacionHtml = ob_get_clean();
 
 

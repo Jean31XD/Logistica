@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/conexion.php'; // aquí ya se crea $conn

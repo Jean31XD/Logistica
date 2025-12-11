@@ -1,68 +1,45 @@
 <?php
-// --- CONFIGURACIÓN DE SESIÓN Y CABECERAS ---
-ini_set('session.cookie_lifetime', 0); // La cookie de sesión dura hasta que se cierra el navegador
-ini_set('session.gc_maxlifetime', 1800); // La sesión en el servidor dura 30 minutos
-
+/**
+ * Login - MACO Logística
+ * Sistema de autenticación modernizado
+ */
 session_start();
+// --- CONFIGURACIÓN DE SESIÓN Y CABECERAS ---
+require_once __DIR__ . '/conexionBD/session_config.php';
 
-// --- CABECERAS PARA EVITAR CACHÉ ---
-header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
-header("Pragma: no-cache"); // HTTP 1.0.
-header("Expires: 0"); // Proxies.
+// --- CSRF TOKEN ---
+$csrfToken = generarTokenCSRF();
 
-// --- FUNCIÓN DE CONEXIÓN A LA BASE DE DATOS ---
-function conectarBD()
-{
-    // Es recomendable mover estas credenciales a variables de entorno o un archivo de configuración no accesible públicamente.
-    $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
-    $database   = "db-apptransportistas-maco";
-    $username   = "ServiceAppTrans";
-    $password   = "⁠nZ(#n41LJm)iLmJP"; 
-
-    $connectionInfo = array(
-        "Database" => $database,
-        "UID" => $username,
-        "PWD" => $password,
-        "TrustServerCertificate" => true, // Necesario para Azure SQL
-        "CharacterSet" => "UTF-8"
-    );
-
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) {
-        // En un entorno de producción, registra el error en un log en lugar de mostrarlo.
-        error_log(print_r(sqlsrv_errors(), true));
-        // Muestra un mensaje genérico al usuario.
-        die("<div class='alert alert-danger'>❌ Error de conexión con el servidor. Por favor, contacte al administrador.</div>");
-    }
-    return $conn;
-}
-
-$conn = conectarBD();
+// --- CONEXIÓN A LA BASE DE DATOS ---
+require_once __DIR__ . '/conexionBD/conexion.php';
 $errorLogin = "";
-$tiempo_espera = 1 * 60; // 1 minuto de espera
+$tiempo_espera = 1 * 60;
 
 // --- LÓGICA DE BLOQUEO POR INTENTOS FALLIDOS ---
-if (!isset($_SESSION['intentos_login'])) {
-    $_SESSION['intentos_login'] = 0;
-}
+$ip = $_SERVER['REMOTE_ADDR'];
+$max_intentos = 5;
+$tiempo_bloqueo = 15; // en minutos
 
-if ($_SESSION['intentos_login'] >= 5) {
-    $ultimo_intento = $_SESSION['ultimo_intento'] ?? 0;
-    $tiempo_transcurrido = time() - $ultimo_intento;
+$sql_check_attempts = "SELECT COUNT(*) as attempts, MIN(fecha_hora) as first_attempt_time FROM log_accesos WHERE ip = ? AND tipo_intento = 'login' AND exito = 0 AND fecha_hora > DATEADD(minute, -?, GETDATE())";
+$params_check_attempts = [$ip, $tiempo_bloqueo];
+$stmt_check_attempts = sqlsrv_query($conn, $sql_check_attempts, $params_check_attempts);
+if ($stmt_check_attempts === false) {
+    // Si la consulta falla, es más seguro bloquear temporalmente que permitir el acceso.
+    $errorLogin = "Error del servicio de seguridad. Intente más tarde.";
+} else {
+    $attempts_row = sqlsrv_fetch_array($stmt_check_attempts, SQLSRV_FETCH_ASSOC);
+    $intentos_fallidos = $attempts_row['attempts'] ?? 0;
 
-    if ($tiempo_transcurrido < $tiempo_espera) {
-        $seg_rest = $tiempo_espera - $tiempo_transcurrido;
-        $errorLogin = "Demasiados intentos fallidos. Espera $seg_rest segundos para volver a intentar.";
-    } else {
-        // Si ya pasó el tiempo, resetea los intentos
-        $_SESSION['intentos_login'] = 0;
-        unset($_SESSION['ultimo_intento']);
+    if ($intentos_fallidos >= $max_intentos) {
+        $errorLogin = "Demasiados intentos fallidos. Por favor, espere $tiempo_bloqueo minutos antes de volver a intentar.";
     }
 }
-
 
 // --- PROCESAMIENTO DEL FORMULARIO DE LOGIN ---
 if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
+    if (!validarTokenCSRF($_POST['csrf_token'] ?? '')) {
+        $errorLogin = "Error de validación de seguridad. Por favor, intente de nuevo.";
+    } else {
     $usuario = trim($_POST['usuario'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -74,18 +51,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
         $errorLogin = "Error en la consulta a la base de datos.";
     } else {
         if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            // Verifica la contraseña hasheada
             if (password_verify($password, $row['password'])) {
-                // --- AUTENTICACIÓN EXITOSA ---
-                session_regenerate_id(true); // Previene la fijación de sesión
+                session_regenerate_id(true);
                 $_SESSION['usuario'] = $row['usuario'];
                 $_SESSION['pantalla'] = $row['pantalla'];
 
-                // Limpia los contadores de intentos
+                // Limpiar intentos de login fallidos para esta IP
+                $sqlClear = "DELETE FROM log_accesos WHERE ip = ? AND tipo_intento = 'login'";
+                sqlsrv_query($conn, $sqlClear, [$ip]);
+
                 unset($_SESSION['intentos_login']);
                 unset($_SESSION['ultimo_intento']);
 
-                // Redirige según el perfil del usuario
+                // Sincronizar facturas al iniciar sesión
+                $sqlSync = "{CALL SyncCustinvoicejour}";
+                $stmtSync = sqlsrv_query($conn, $sqlSync);
+                if ($stmtSync === false) {
+                    error_log("Error al sincronizar facturas en login: " . print_r(sqlsrv_errors(), true));
+                    // Continuar con el login aunque falle la sincronización
+                } else {
+                    sqlsrv_free_stmt($stmtSync);
+                }
+
                 switch ($row['pantalla']) {
                     case 0: header("Location: View/Admin.php"); break;
                     case 1: header("Location: View/Inicio_gestion.php"); break;
@@ -96,182 +83,469 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                     case 6: header("Location: View/BI.php"); break;
                     case 8: header("Location: View/Listo-etiquetas.php"); break;
                     case 9: header("Location: View/dashboard.php"); break;
-
-                    default: header("Location: View/Inicio.php"); break; // Redirección por defecto
+                    case 10: header("Location: View/Listo_inventario.php"); break;
+                    default: header("Location: View/Inicio.php"); break;
                 }
-                exit(); // Termina el script después de la redirección
+                exit();
             } else {
-                // Contraseña incorrecta
-                $_SESSION['intentos_login']++;
-                $_SESSION['ultimo_intento'] = time();
+                $sqlLog = "INSERT INTO log_accesos (ip, username, exito, tipo_intento) VALUES (?, ?, 0, 'login')";
+                sqlsrv_query($conn, $sqlLog, [$ip, $usuario]);
                 $errorLogin = "Usuario o contraseña incorrectos.";
             }
         } else {
-            // Usuario no encontrado
-            $_SESSION['intentos_login']++;
-            $_SESSION['ultimo_intento'] = time();
+            $sqlLog = "INSERT INTO log_accesos (ip, username, exito, tipo_intento) VALUES (?, ?, 0, 'login')";
+            sqlsrv_query($conn, $sqlLog, [$ip, $usuario]);
             $errorLogin = "Usuario o contraseña incorrectos.";
         }
         sqlsrv_free_stmt($stmt);
     }
     sqlsrv_close($conn);
+    }
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Iniciar Sesión </title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    
+    <title>Iniciar Sesión | MACO Logística</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --primary-color: #0d6efd;
-            --danger-color: #dc3545;
+            --primary: #E63946;
+            --primary-dark: #D62839;
+            --accent: #457B9D;
+            --accent-dark: #1D3557;
+            --text-dark: #1a202c;
+            --text-light: #f7fafc;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--accent-dark);
+            min-height: 100vh;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Partículas de fondo animadas */
+
+        @keyframes particles {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.5),
+                        0 30px 60px -30px rgba(0, 0, 0, 0.4);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Panel izquierdo - Branding */
+        .branding-panel {
+            background: var(--primary);
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            color: #fff;
-            /* Fondo animado de gradiente */
-            background: linear-gradient(-45deg, #ff0000ff, #cb1717ef, #bb1b1bff, #751010ff);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            color: white;
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Estilo Glassmorphism para el contenedor de login */
-        .login-container {
-            width: 100%;
-            max-width: 450px;
-            padding: 3rem 2.5rem;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease;
-        }
-
-        .login-container:hover {
-            transform: translateY(-5px);
-        }
-        
-        .login-title {
-            font-weight: 700;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-control {
-            background-color: rgba(255, 255, 255, 0.2) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            color: #fff !important;
-            border-radius: 0.5rem;
-            padding-left: 2.5rem; /* Espacio para el ícono */
-        }
-
-        .form-control::placeholder {
-            color: rgba(0, 0, 0, 0.7);
-        }
-
-        .form-control:focus {
-            background-color: rgba(255, 255, 255, 0.3) !important;
-            color: #fff !important;
-            border-color: var(--primary-color) !important;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.3);
-        }
-
-        /* Contenedor para el ícono dentro del input */
-        .input-group-text {
-            background-color: transparent !important;
-            border: none !important;
+        .branding-panel::before {
+            content: '';
             position: absolute;
-            left: 10px;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -100px;
+            right: -100px;
+        }
+
+        .branding-panel::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            bottom: -80px;
+            left: -80px;
+        }
+
+        .logo-container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-container img {
+            max-width: 280px;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .branding-text {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .branding-text h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .branding-text p {
+            font-size: 1.125rem;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+
+        .features {
+            position: relative;
+            z-index: 2;
+            margin-top: 50px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* Panel derecho - Formulario */
+        .login-panel {
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-header {
+            margin-bottom: 40px;
+        }
+
+        .login-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .error-alert {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            border-left: 4px solid #dc2626;
+            color: #991b1b;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            z-index: 10;
-            color: rgba(255, 255, 255, 0.8);
+            color: #94a3b8;
+            font-size: 1.1rem;
+            z-index: 2;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: white;
+            color: var(--text-dark);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #cbd5e1;
         }
 
         .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 600;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            background-color: white;
-            border-color: white;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px -10px var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            display: none;
+            transition: left 0.5s;
+        }
+
+        .btn-login:hover::before {
+            left: 100%;
         }
 
         .btn-login:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px -10px var(--primary);
         }
 
-        .alert-custom {
-            background: rgba(220, 53, 69, 0.25); /* Rojo semi-transparente */
-            border: 1px solid rgba(220, 53, 69, 0.5);
-            color: #fff;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
+        .btn-login:active {
+            transform: translateY(0);
         }
 
+        .btn-login i {
+            margin-right: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .login-wrapper {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+            }
+
+            .branding-panel {
+                display: none;
+            }
+
+            .login-panel {
+                padding: 40px 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-panel {
+                padding: 30px 20px;
+            }
+
+            .branding-text h1 {
+                font-size: 2rem;
+            }
+
+            .login-header h2 {
+                font-size: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
-    
-<div class="login-container animate__animated animate__fadeInUp">
-    <form method="POST" action="">
-        <div class="text-center mb-4">
-             <img src="IMG/LOGO MC - BLANCO.png" class="img-fluid mb-3" alt="LOGO" style="max-width: 300px;">
-             <h1 class="h3 mb-3 login-title">Bienvenido</h1>
+
+<div class="login-wrapper">
+    <!-- Panel de Branding -->
+    <div class="branding-panel">
+        <div class="logo-container">
+            <img src="IMG/LOGO MC - BLANCO.png" alt="MACO Logo">
+        </div>
+
+        <div class="branding-text">
+            <h1>MACO Logística</h1>
+            <p>Sistema de Gestión Integral</p>
+        </div>
+
+        <div class="features">
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <div>
+                    <strong>Gestión en Tiempo Real</strong>
+                    <p style="font-size: 0.9rem; opacity: 0.9; margin: 4px 0 0 0;">
+                        Control total de operaciones
+                    </p>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <strong>Reportes Inteligentes</strong>
+                    <p style="font-size: 0.9rem; opacity: 0.9; margin: 4px 0 0 0;">
+                        Análisis y métricas avanzadas
+                    </p>
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                    <strong>Seguridad Garantizada</strong>
+                    <p style="font-size: 0.9rem; opacity: 0.9; margin: 4px 0 0 0;">
+                        Protección de datos empresariales
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de Login -->
+    <div class="login-panel">
+        <div class="login-header">
+            <h2>Bienvenido de nuevo</h2>
+            <p>Ingresa tus credenciales para continuar</p>
         </div>
 
         <?php if (!empty($errorLogin)): ?>
-            <div class="alert alert-custom text-center" role="alert">
-                <i class="fa-solid fa-circle-exclamation me-2"></i><?= htmlspecialchars($errorLogin) ?>
-            </div>
+        <div class="error-alert">
+            <i class="fas fa-exclamation-circle" style="font-size: 1.25rem;"></i>
+            <span><?= htmlspecialchars($errorLogin) ?></span>
+        </div>
         <?php endif; ?>
 
-        <div class="position-relative mb-3">
-            <i class="fa fa-user input-group-text"></i>
-            <input type="text" name="usuario" class="form-control" placeholder="Usuario" required autocomplete="username" />
-        </div>
-        
-        <div class="position-relative mb-4">
-            <i class="fa fa-lock input-group-text"></i>
-            <input type="password" name="password" class="form-control" placeholder="Contraseña" required autocomplete="current-password" />
-        </div>
-        
-        <button type="submit" class="btn btn-login w-100">
-            <i class="fa-solid fa-right-to-bracket me-2"></i>Iniciar sesión
-        </button>
-    </form>
+        <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <div class="input-group">
+                <label class="input-label">Usuario</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" name="usuario" class="form-input"
+                           placeholder="Ingresa tu usuario" required autocomplete="username">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Contraseña</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" name="password" class="form-input"
+                           placeholder="Ingresa tu contraseña" required autocomplete="current-password">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i>
+                Iniciar Sesión
+            </button>
+        </form>
+    </div>
 </div>
 
 <script>
-    // Script para forzar la recarga de la página y evitar problemas de caché al usar el botón "atrás" del navegador.
     window.addEventListener("pageshow", function(event) {
-        var historyTraversal = event.persisted || 
-                               (typeof window.performance != "undefined" && 
+        var historyTraversal = event.persisted ||
+                               (typeof window.performance != "undefined" &&
                                 window.performance.navigation.type === 2);
         if (historyTraversal) {
             window.location.reload(true);
@@ -279,6 +553,5 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
     });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

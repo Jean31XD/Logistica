@@ -1,5 +1,8 @@
 <?php 
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $filtro = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? date('Y-m-d');
@@ -8,7 +11,7 @@ $hasta = $_GET['hasta'] ?? date('Y-m-d');
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename=detalle_facturas_transportistas.csv');
 
-echo "\xEF\xBB\xBF"; // BOM para Excel
+echo "xEFxBBxBF"; // BOM para Excel
 $output = fopen('php://output', 'w');
 
 // Encabezado actualizado

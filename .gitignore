@@ -1,0 +1,48 @@
+# Variables de Entorno - NO SUBIR AL REPOSITORIO
+.env
+
+# Archivos de Log
+logs/*.log
+logs/*.log.gz
+!logs/.gitkeep
+!logs/.gitignore
+
+# Archivos temporales
+*.tmp
+*.temp
+*.cache
+
+# Configuraciones locales de IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups
+*.bak
+*.backup
+*~
+
+# Archivos de prueba
+test/
+tests/
+*.test.php
+
+# Dependencias (si usas Composer)
+/vendor/
+composer.lock
+
+# Archivos de sesión PHP
+/tmp/
+/sessions/
+
+# Archivos de caché
+/cache/
+
+# Archivos subidos por usuarios (si aplica)
+/uploads/
+!/uploads/.gitkeep

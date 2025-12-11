@@ -1,6 +1,5 @@
 <?php
-session_start();
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
 
 $_SESSION = [];
 session_destroy();
@@ -17,3 +16,5 @@ if (ini_get("session.use_cookies")) {
 // Redirigir al login
 header("Location: ../index.php");
 exit();
+
+// ¡LA LLAVE "}" EXTRA QUE ESTABA AQUÍ FUE ELIMINADA!

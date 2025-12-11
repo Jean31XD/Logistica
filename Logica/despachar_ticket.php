@@ -1,27 +1,35 @@
-<?php  
-session_start();
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
+<?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-if (!isset($_SESSION['usuario'])) {
-    die("Acceso no autorizado.");
+// Validar CSRF token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validarTokenCSRF($csrf)) {
+        http_response_code(403);
+        die(json_encode(['error' => 'Token CSRF inválido']));
+    }
 }
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-$connectionInfo = array(
-    "Database" => $database,
-    "UID" => $username,
-    "PWD" => $password,
-    "TrustServerCertificate" => true
-);
-
-$conn = sqlsrv_connect($serverName, $connectionInfo);
 if (!$conn) {
-    die("Conexión fallida: " . print_r(sqlsrv_errors(), true));
+    die("Conexión fallida a la base de datos.");
 }
 
 $tiket = $_POST['tiket'];
 $facturasRaw = trim($_POST['factura']);
+
+// Validación del código para "Se fue" en el servidor
+if ($facturasRaw === "Se fue") {
+    $codigoSeFue = $_POST['codigo'] ?? '';
+    if ($codigoSeFue !== getenv('SE_FUE_CODE')) {
+        http_response_code(403);
+        echo "Error: Código incorrecto para despachar como 'Se fue'.";
+        sqlsrv_close($conn);
+        exit();
+    }
+}
 
 // Si la factura es distinta de "Se fue", validar duplicados y longitud
 if ($facturasRaw !== "Se fue") {
@@ -34,7 +42,8 @@ if ($facturasRaw !== "Se fue") {
         $stmtCheck = sqlsrv_query($conn, $sqlCheck, $paramsCheck);
 
         if ($stmtCheck === false) {
-            echo "Error al verificar duplicado de factura: " . print_r(sqlsrv_errors(), true);
+            error_log("Error SQL en despachar_ticket.php (verificar duplicado): " . print_r(sqlsrv_errors(), true));
+            echo "Error interno del servidor al verificar facturas.";
             sqlsrv_close($conn);
             exit();
         }
@@ -68,7 +77,9 @@ $paramsUpdate = [$facturasConcatenadas, $tiket];
 $stmtUpdate = sqlsrv_query($conn, $sqlUpdate, $paramsUpdate);
 
 if (!$stmtUpdate) {
-    echo "Error al actualizar el ticket: " . print_r(sqlsrv_errors(), true);
+    error_log("Error SQL en despachar_ticket.php (actualizar ticket): " . print_r(sqlsrv_errors(), true));
+    http_response_code(500);
+    echo "Error interno del servidor al actualizar el ticket.";
     sqlsrv_close($conn);
     exit();
 }
@@ -79,7 +90,8 @@ $paramsSP = [$tiket];
 $stmtSP = sqlsrv_query($conn, $sqlSP, $paramsSP);
 
 if ($stmtSP === false) {
-    echo "Ticket despachado, pero error al ejecutar SP_Insertar_Analisis2: " . print_r(sqlsrv_errors(), true);
+    error_log("Error SQL en despachar_ticket.php (SP_Insertar_Analisis2): " . print_r(sqlsrv_errors(), true));
+    echo "Ticket despachado, pero error al insertar análisis.";
 } else {
     echo "Ticket despachado y análisis insertado correctamente.";
 }

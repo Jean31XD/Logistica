@@ -1,10 +1,14 @@
-<?php 
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+<?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-if (!isset($_SESSION['usuario'])) {
-    echo json_encode(['success' => false, 'error' => 'Acceso no autorizado.']);
-    exit();
+// Validar CSRF token
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!validarTokenCSRF($csrf)) {
+        http_response_code(403);
+        die(json_encode(['success' => false, 'error' => 'Token CSRF inválido']));
+    }
 }
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
@@ -22,9 +26,11 @@ $params = [$nuevoEstado, $factura];
 $stmt = sqlsrv_query($conn, $sql, $params);
 
 if ($stmt === false) {
+    error_log("Error SQL en actualizar_estado.php: " . print_r(sqlsrv_errors(), true));
+    http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'Error al actualizar el estado: ' . print_r(sqlsrv_errors(), true)
+        'error' => 'Error interno del servidor'
     ]);
     exit();
 }

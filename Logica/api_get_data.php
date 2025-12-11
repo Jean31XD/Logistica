@@ -1,4 +1,19 @@
 <?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+
+// 1. Debe haber pasado el login del dashboard
+if (!isset($_SESSION['dashboard_access_granted']) || $_SESSION['dashboard_access_granted'] !== true) {
+    http_response_code(401); // 401 Unauthorized
+    echo json_encode(['error' => 'No autorizado para acceder al dashboard.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// 2. Obtener datos de la sesión del DASHBOARD
+$USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
+$USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
+
+
 // Requerir la conexión a la base de datos
 require '../conexionBD/conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
@@ -7,8 +22,6 @@ header('Content-Type: application/json; charset=utf-8');
 // --- Inicialización de variables ---
 $response = []; 
 $http_code = 200; 
-
-// Ya no se necesita la constante ITBIS_RATE, pero la dejamos por si se usa en otro lado.
 
 
 try {
@@ -21,14 +34,24 @@ try {
     $fecha_inicio = $_GET['fecha_inicio'] ?? '';
     $fecha_fin = $_GET['fecha_fin'] ?? '';
     $view = $_GET['view'] ?? 'overview';
-    $almacen = $_GET['almacen'] ?? '';
+    $almacen_param = $_GET['almacen'] ?? ''; // Parámetro del GET
+
+    // --- MODIFICACIÓN: Forzar almacén según sesión ---
+    $almacen = '';
+    if ($USER_TYPE === 'admin') {
+        $almacen = $almacen_param; // Admin puede usar el filtro que quiera
+    } else {
+        // Usuario no-admin USA SU PROPIO ALMACÉN, ignorando el parámetro del GET
+        $almacen = $USER_WAREHOUSE; 
+    }
+    // ----------------------------------------------
 
     if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
     if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
     // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS ---
-    // Se ha modificado para usar la columna lineamounttax.
-  $cte_facturas = "
+    // (Tu CTE original no necesita cambios)
+    $cte_facturas = "
     WITH Facturas_CTE AS (
         SELECT
             fl.invoiceid,
@@ -43,9 +66,10 @@ try {
         -- Se agrupa por factura Y por almacén para tratar cada parte por separado
         GROUP BY fl.invoiceid, fl.inventlocationid 
     )
-";
+    ";
 
     // --- 3. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
+    // (Esta lógica ahora usa el $almacen forzado por la sesión)
     $almacenParams = [];
     $almacenSqlAnd = '';
     if (!empty($almacen)) {
@@ -56,6 +80,11 @@ try {
     // --- 4. PROCESAMIENTO DE LA VISTA SOLICITADA ---
     switch ($view) {
         case 'almacenes':
+            // --- MODIFICACIÓN: Esta vista solo debe ser para admins ---
+            if ($USER_TYPE !== 'admin') {
+                 throw new Exception('Acceso denegado a esta función.', 403); // 403 Forbidden
+            }
+            
             $sqlAlmacenes = "
                 SELECT DISTINCT inventlocationid 
                 FROM Facturas_lineas 
@@ -71,6 +100,10 @@ try {
             }
             break;
 
+        // El resto de tus 'case' (trends, details, financial, performance, overview)
+        // no necesitan cambios, ya que la variable $almacenSqlAnd y $almacenParams
+        // ya están correctamente filtradas por la lógica de sesión del inicio.
+        
         case 'trends':
             if (empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros de fecha para consultar tendencias.', 400);
@@ -78,9 +111,10 @@ try {
 
             $response['tendenciaRegistros'] = [];
             $sqlTrends = $cte_facturas . "
-                SELECT 
-                    f.invoicedate as Dia, 
-                    COUNT(f.invoiceid) as Total
+                SELECT
+                    f.invoicedate as Dia,
+                    COUNT(f.invoiceid) as Total,
+                    SUM(f.invoiceamountmst) as TotalMonto
                 FROM Facturas_CTE f
                 WHERE f.invoicedate BETWEEN ? AND ?
                 $almacenSqlAnd
@@ -283,22 +317,142 @@ try {
 
             $sqlTrucks = $cte_facturas . "
                 SELECT TOP 5
-                    m.Camion,
+                    m.Entregado_por AS Camion,
                     COUNT(m.No_Factura) as TotalEntregas,
                     AVG(CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT)) AS AvgDeliveryTime
                 FROM Factura_Programa_Despacho_MACOR m
                 JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
                 WHERE m.Estado = 'ENTREGado' 
-                    AND m.Camion IS NOT NULL AND m.Camion <> ''
+                    AND m.Entregado_por IS NOT NULL AND m.Entregado_por <> ''
                     AND f.invoicedate BETWEEN ? AND ?
                     $almacenSqlAnd
-                GROUP BY m.Camion
+                GROUP BY m.Entregado_por
                 ORDER BY TotalEntregas DESC
             ";
             $stmtTrucks = sqlsrv_query($conn, $sqlTrucks, $baseParams);
             if ($stmtTrucks === false) throw new Exception('Error al analizar rendimiento de camiones.');
             while($row = sqlsrv_fetch_array($stmtTrucks, SQLSRV_FETCH_ASSOC)) {
                 $response['truckPerformance'][] = $row;
+            }
+            break;
+
+        case 'delivery_details':
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para consultar detalles de entregas.', 400);
+            }
+
+            $sqlDetails = $cte_facturas . "
+                SELECT
+                    f.invoiceid AS Factura,
+                    f.invoicingname AS Cliente,
+                    m.Entregado_por AS Camion,
+                    m.Fecha_de_Despacho AS FechaDespacho,
+                    m.Despachado_por AS DespachadoPor,
+                    m.Fecha_de_Entregado AS FechaEntregado,
+                    CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT) AS DeliveryTimeHours
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                WHERE m.Estado = 'ENTREGado'
+                    AND m.Entregado_por IS NOT NULL AND m.Entregado_por <> ''
+                    AND m.Fecha_de_Despacho IS NOT NULL
+                    AND m.Fecha_de_Entregado IS NOT NULL
+                    AND f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+                ORDER BY m.Entregado_por, m.Fecha_de_Entregado
+            ";
+
+            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtDetails = sqlsrv_query($conn, $sqlDetails, $baseParams);
+
+            if ($stmtDetails === false) {
+                throw new Exception('Error al consultar detalles de entregas.');
+            }
+
+            $response = [];
+            while ($row = sqlsrv_fetch_array($stmtDetails, SQLSRV_FETCH_ASSOC)) {
+                // Convertir objetos DateTime a strings
+                if ($row['FechaDespacho'] instanceof DateTime) {
+                    $row['FechaDespacho'] = $row['FechaDespacho']->format('Y-m-d H:i:s');
+                }
+                if ($row['FechaEntregado'] instanceof DateTime) {
+                    $row['FechaEntregado'] = $row['FechaEntregado']->format('Y-m-d H:i:s');
+                }
+                $response[] = $row;
+            }
+            break;
+
+        case 'drivers_list':
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para consultar la lista de choferes.', 400);
+            }
+
+            $sqlDrivers = $cte_facturas . "
+                SELECT 
+                    m.Entregado_por AS DriverName,
+                    COUNT(m.No_Factura) as TotalDeliveries
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                WHERE m.Estado = 'ENTREGado' 
+                    AND m.Entregado_por IS NOT NULL AND m.Entregado_por <> ''
+                    AND f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+                GROUP BY m.Entregado_por
+                ORDER BY TotalDeliveries DESC
+            ";
+            
+            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtDrivers = sqlsrv_query($conn, $sqlDrivers, $baseParams);
+            if ($stmtDrivers === false) {
+                throw new Exception('Error al consultar la lista de choferes.');
+            }
+            
+            $response = [];
+            while($row = sqlsrv_fetch_array($stmtDrivers, SQLSRV_FETCH_ASSOC)) {
+                $response[] = $row;
+            }
+            break;
+
+        case 'driver_deliveries':
+            $driver_id = $_GET['driver_id'] ?? '';
+            if (empty($driver_id) || empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros (driver_id, fecha_inicio, fecha_fin) para obtener las entregas.', 400);
+            }
+
+            $sqlDeliveries = $cte_facturas . "
+                SELECT
+                    f.invoiceid AS Factura,
+                    f.invoicingname AS Cliente,
+                    m.Fecha_de_Despacho AS FechaDespacho,
+                    m.Despachado_por AS DespachadoPor,
+                    m.Fecha_de_Entregado AS FechaEntregado,
+                    CAST(DATEDIFF(hour, m.Fecha_de_Despacho, m.Fecha_de_Entregado) AS FLOAT) AS DeliveryTimeHours
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                WHERE m.Entregado_por = ?
+                    AND m.Estado = 'ENTREGado'
+                    AND m.Fecha_de_Despacho IS NOT NULL
+                    AND m.Fecha_de_Entregado IS NOT NULL
+                    AND f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+                ORDER BY m.Fecha_de_Entregado DESC
+            ";
+
+            $deliveriesParams = array_merge([$driver_id, $fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtDeliveries = sqlsrv_query($conn, $sqlDeliveries, $deliveriesParams);
+
+            if ($stmtDeliveries === false) {
+                throw new Exception('Error al consultar las entregas del chofer.');
+            }
+
+            $response = [];
+            while ($row = sqlsrv_fetch_array($stmtDeliveries, SQLSRV_FETCH_ASSOC)) {
+                if ($row['FechaDespacho'] instanceof DateTime) {
+                    $row['FechaDespacho'] = $row['FechaDespacho']->format('Y-m-d H:i:s');
+                }
+                if ($row['FechaEntregado'] instanceof DateTime) {
+                    $row['FechaEntregado'] = $row['FechaEntregado']->format('Y-m-d H:i:s');
+                }
+                $response[] = $row;
             }
             break;
 
@@ -320,9 +474,12 @@ try {
             ";
             
             $overviewParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            error_log("DEBUG: SQL Query for overview: " . $sqlOverview);
+            error_log("DEBUG: SQL Params for overview: " . print_r($overviewParams, true));
             $stmtOverview = sqlsrv_query($conn, $sqlOverview, $overviewParams);
 
             if ($stmtOverview === false) {
+                error_log("DEBUG: SQL Error in overview: " . print_r(sqlsrv_errors(), true));
                 throw new Exception('Error al consultar el resumen de estados.');
             }
 
@@ -339,6 +496,7 @@ try {
                     $response['estadosData'][] = ['Estado' => $row['Estado'], 'Total' => $total];
                 }
             }
+            error_log("DEBUG: Final response for overview: " . print_r($response, true));
             break;
     }
 } catch (Exception $e) {
