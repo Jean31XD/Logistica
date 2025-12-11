@@ -84,7 +84,7 @@ header("Referrer-Policy: strict-origin-when-cross-origin");
 $csp = "default-src 'self'; ";
 $csp .= "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com; ";
 $csp .= "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; ";
-$csp .= "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; ";
+$csp .= "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; ";
 $csp .= "img-src 'self' data: https://*.blob.core.windows.net https://catalogodeimagenes.blob.core.windows.net; ";
 $csp .= "connect-src 'self'; ";
 $csp .= "frame-ancestors 'none'; ";

@@ -33,7 +33,7 @@ if (!isset($_POST['numeroFactura']) || empty($_POST['numeroFactura'])) {
 $numeroFactura = trim($_POST['numeroFactura']);
 logWithRotation("Intento de validación de factura en recepción: " . $numeroFactura, 'INFO', 'RECEPCION');
 $usuario = $_SESSION['usuario'];
-$fechaActual = date('Y-m-d H:i:s');
+$fechaActual = date('Y-m-d');
 
 // Validar que la factura tiene 11 dígitos
 if (strlen($numeroFactura) !== 11) {
@@ -45,7 +45,7 @@ if (strlen($numeroFactura) !== 11) {
 }
 
 // Verificar si la factura existe en la base de datos
-$sqlVerificar = "SELECT Factura, Validar FROM custinvoicejour WHERE Factura = ?";
+$sqlVerificar = "SELECT Factura, Validar, recepcion, Usuario_de_recepcion FROM custinvoicejour WHERE Factura = ?";
 $stmtVerificar = sqlsrv_query($conn, $sqlVerificar, [$numeroFactura]);
 
 if ($stmtVerificar === false) {
@@ -68,13 +68,13 @@ if (!$factura) {
     exit();
 }
 
-// Verificar el estado actual
-$estadoActual = trim($factura['Validar'] ?? '');
-
-if (strtolower($estadoActual) === 'completada') {
+// Verificar si ya fue recibida en CxC
+if (!empty($factura['recepcion'])) {
+    $usuarioRecepcion = $factura['Usuario_de_recepcion'] ?? 'usuario desconocido';
+    $fechaRecepcion = is_object($factura['recepcion']) ? $factura['recepcion']->format('Y-m-d') : $factura['recepcion'];
     echo json_encode([
         'success' => false,
-        'message' => 'La factura ' . htmlspecialchars($numeroFactura) . ' ya fue completada anteriormente'
+        'message' => 'La factura ' . htmlspecialchars($numeroFactura) . ' ya fue recibida en CxC el ' . $fechaRecepcion . ' por ' . htmlspecialchars($usuarioRecepcion)
     ]);
     exit();
 }
