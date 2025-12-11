@@ -3,6 +3,8 @@ require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion([0, 3, 5]); // Solo pantallas 0, 3, 5
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
+$csrfToken = generarTokenCSRF();
+
 // Consultar transportistas
 $query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";
 $result = sqlsrv_query($conn, $query);
@@ -256,6 +258,7 @@ include __DIR__ . '/templates/header.php';
 <script>
 let paginaActual = 1;
 let temporizador;
+const csrfToken = '<?= $csrfToken ?>';
 
 $(document).ready(function () {
     $('#listaTransportistas').select2({
@@ -343,6 +346,7 @@ function validarFactura() {
 
     const formData = new FormData();
     formData.append('numeroFactura', numeroFactura);
+    formData.append('csrf_token', csrfToken);
 
     fetch('../Logica/validar_factura_recepcion.php', {
         method: 'POST',

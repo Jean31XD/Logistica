@@ -14,14 +14,12 @@ if (!checkRateLimit('validar_factura_recepcion', 20, 60)) {
 // Validar CSRF token
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validarTokenCSRF($csrf)) {
-        http_response_code(403);
-        die(json_encode(['success' => false, 'message' => 'Token CSRF inválido']));
-    }
+    validarTokenCSRF($csrf);
 }
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/log_manager.php';
 
 // Validar que se recibió el número de factura
 if (!isset($_POST['numeroFactura']) || empty($_POST['numeroFactura'])) {
@@ -33,6 +31,7 @@ if (!isset($_POST['numeroFactura']) || empty($_POST['numeroFactura'])) {
 }
 
 $numeroFactura = trim($_POST['numeroFactura']);
+logWithRotation("Intento de validación de factura en recepción: " . $numeroFactura, 'INFO', 'RECEPCION');
 $usuario = $_SESSION['usuario'];
 $fechaActual = date('Y-m-d H:i:s');
 
@@ -61,6 +60,7 @@ if ($stmtVerificar === false) {
 $factura = sqlsrv_fetch_array($stmtVerificar, SQLSRV_FETCH_ASSOC);
 
 if (!$factura) {
+    logWithRotation("Factura no encontrada en recepción: " . $numeroFactura, 'WARNING', 'RECEPCION');
     echo json_encode([
         'success' => false,
         'message' => 'La factura ingresada no se encuentra en el sistema.'
