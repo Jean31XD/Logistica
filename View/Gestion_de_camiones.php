@@ -1,50 +1,16 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
-
-// Bloquear caché
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-
-// Solo admin
-if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 1) {
-    header("Location: ../index.php");
-    exit();
-}
-
-// Conexión SQL Server
-function conectarBD()
-{
-    $conn = sqlsrv_connect(
-        "sdb-apptransportistas-maco.privatelink.database.windows.net",
-        [
-            "Database" => "db-apptransportistas-maco",
-            "UID" => "ServiceAppTrans",
-            "PWD" => "⁠nZ(#n41LJm)iLmJP",
-            "TrustServerCertificate" => true,
-            "CharacterSet" => "UTF-8"
-        ]
-    );
-    if ($conn === false) die("Error de conexión");
-    return $conn;
-}
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([1]); // Solo pantalla 1 puede acceder
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // CSRF token
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-function verificarCSRF($token) {
-    return hash_equals($_SESSION['csrf_token'], $token);
-}
-
-$conn = conectarBD();
+$csrfToken = generarTokenCSRF();
 $mensaje = "";
 $datosConsultados = null;
 
 // Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verificarCSRF($_POST['csrf_token'] ?? '')) die("CSRF inválido");
+    if (!validarTokenCSRF($_POST['csrf_token'] ?? '')) die("CSRF inválido");
 
     $accion = $_POST['accion'] ?? '';
     $nombre = $_POST['nombre'] ?? '';
@@ -111,7 +77,7 @@ if (!empty($_GET['cedula_consulta'])) {
         <div class="card p-4">
             <h5><i class="fa fa-plus-circle me-2 text-success"></i>Agregar</h5>
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                 <input type="hidden" name="accion" value="insertar">
                 <input type="text" name="nombre" class="form-control mb-2" placeholder="Nombre completo" required>
                 <input type="text" name="cedula" class="form-control mb-2" placeholder="Cédula" required>
@@ -126,7 +92,7 @@ if (!empty($_GET['cedula_consulta'])) {
         <div class="card p-4">
             <h5><i class="fa fa-pen me-2 text-warning"></i>Actualizar</h5>
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                 <input type="hidden" name="accion" value="actualizar">
                 <input type="text" name="cedula" class="form-control mb-2" placeholder="Cédula" required>
                 <input type="text" name="nombre" class="form-control mb-2" placeholder="Nuevo nombre" required>
@@ -155,7 +121,7 @@ if (!empty($_GET['cedula_consulta'])) {
         <div class="card p-4">
             <h5><i class="fa fa-trash me-2 text-danger"></i>Eliminar</h5>
             <form method="POST" class="d-flex">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                 <input type="hidden" name="accion" value="eliminar_transportista">
                 <input type="text" name="cedula" class="form-control me-2" placeholder="Cédula" required>
                 <button class="btn btn-danger">Eliminar</button>

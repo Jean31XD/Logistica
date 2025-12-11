@@ -1,19 +1,6 @@
 <?php
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);
-ini_set('session.use_strict_mode', 1);
-
-session_start();
-session_regenerate_id(true);
-
-if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [8,0])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([8, 0]); // Solo pantallas 8 y 0
 
 // Mapeo de pantallas a su página principal/inicio
 $homePage = [

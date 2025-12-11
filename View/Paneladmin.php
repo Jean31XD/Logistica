@@ -3,33 +3,11 @@
  * Panel de Administración - MACO Design System
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-date_default_timezone_set('America/Santo_Domingo');
-
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-
-// Verificar que esté autenticado
-if (!isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
-    exit();
-}
-
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([5]); // Solo pantalla 5 puede acceder
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 5) {
-    header("Location: /index.php");
-    exit();
-}
-
-// Generar token CSRF si no existe
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+$csrfToken = generarTokenCSRF();
 
 $pageTitle = "Panel de Administración | MACO";
 $additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';

@@ -1,67 +1,12 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([0]); // Solo pantalla 0 (Admin) puede acceder
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
-// --- SECCIÓN 1: SEGURIDAD Y CONFIGURACIÓN INICIAL ---
+// CSRF token
+$csrfToken = generarTokenCSRF();
 
-// Proteger la página contra el almacenamiento en caché del navegador
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-
-// Verificar si el usuario está logueado y es administrador (pantalla = 0)
-if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
-    // Si no lo es, redirigir a la página de inicio de sesión
-    header("Location: ../index.php");
-    exit();
-}
-
-/**
- * Establece la conexión con la base de datos SQL Server.
- * @return false|resource El objeto de conexión o false si falla.
- */
-function conectarBD()
-{
-    $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
-    $database   = "db-apptransportistas-maco";
-    $username   = "ServiceAppTrans";
-    $password   = "⁠nZ(#n41LJm)iLmJP"; // Es mejor manejar esto con variables de entorno.
-
-    $connectionInfo = array(
-        "Database" => $database,
-        "UID" => $username,
-        "PWD" => $password,
-        "TrustServerCertificate" => true,
-        "CharacterSet" => "UTF-8"
-    );
-
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) {
-        error_log(print_r(sqlsrv_errors(), true));
-        die("<div class='alert alert-danger'>❌ Error de conexión. Por favor, contacte al administrador.</div>");
-    }
-    return $conn;
-}
-
-/**
- * Genera un token CSRF si no existe en la sesión.
- */
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-/**
- * Verifica si el token CSRF enviado coincide con el de la sesión.
- * @param string $tokenEnviado El token del formulario.
- * @param string $tokenSesion El token de la sesión.
- * @return bool True si son válidos e iguales, false en caso contrario.
- */
-function verificarCSRF($tokenEnviado, $tokenSesion) {
-    return is_string($tokenEnviado) && is_string($tokenSesion) && hash_equals($tokenSesion, $tokenEnviado);
-}
-
-// Conectar a la base de datos
-$conn = conectarBD();
+// La conexión $conn ya está disponible desde conexion.php
 
 // Inicializar variables de mensajes
 $mensajeTransportista = "";
@@ -81,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = $_POST['csrf_token'] ?? '';
 
     // Validar token CSRF para TODAS las acciones de tipo POST
-    if (!verificarCSRF($csrf, $_SESSION['csrf_token'])) {
+    if (!validarTokenCSRF($csrf)) {
         die("Error: Token CSRF inválido. Por favor, recargue la página e intente de nuevo.");
     }
 
@@ -89,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'crear':
             $usuario = trim($_POST['usuario'] ?? '');
             $password = trim($_POST['password'] ?? '');
-            $pantalla = filter_var($_POST['pantalla'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 8]]);
+            $pantalla = filter_var($_POST['pantalla'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 100]]);
 
             if (!$usuario || !$password || $pantalla === false) {
                 $mensajeCrear = "⚠️ Todos los campos son obligatorios y válidos.";
@@ -127,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $usuarioMod = trim($_POST['usuario_modificar'] ?? '');
             $nuevaClave = trim($_POST['password_nuevo'] ?? '');
             $pantallaNuevaInput = $_POST['pantalla_nuevo'] ?? '-1';
-            $pantallaNueva = ($pantallaNuevaInput !== '-1') ? filter_var($pantallaNuevaInput, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 8]]) : false;
+            $pantallaNueva = ($pantallaNuevaInput !== '-1') ? filter_var($pantallaNuevaInput, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 100]]) : false;
 
             if (!$usuarioMod) {
                 $mensajeModificar = "⚠️ Especifique el usuario a modificar.";
@@ -616,7 +561,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-header"><i class="fa-solid fa-plus-circle me-2" style="color: var(--success-color);"></i>Agregar Transportista</div>
                     <div class="card-body">
                         <form method="POST">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                             <input type="hidden" name="accion" value="insertar">
                             <div class="row g-3">
                                 <div class="col-md-6"><input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required></div>
@@ -635,7 +580,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-header"><i class="fa-solid fa-pencil-alt me-2" style="color: var(--warning-color);"></i>Actualizar Transportista</div>
                     <div class="card-body">
                         <form method="POST">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                             <input type="hidden" name="accion" value="actualizar">
                             <div class="row g-3">
                                 <div class="col-12"><input type="text" name="cedula" class="form-control" placeholder="Cédula del transportista a actualizar" required></div>
@@ -676,7 +621,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-header"><i class="fa-solid fa-trash-alt me-2" style="color: var(--danger-color);"></i>Eliminar Transportista</div>
                     <div class="card-body d-flex flex-column justify-content-center">
                         <form method="POST" class="row g-3 align-items-center">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                             <input type="hidden" name="accion" value="eliminar_transportista">
                             <div class="col"> <input type="text" name="cedula" class="form-control" placeholder="Cédula del transportista a eliminar" required> </div>
                             <div class="col-auto"> <button type="submit" class="btn btn-danger"><i class="fa fa-trash me-1"></i>Eliminar</button> </div>
@@ -698,7 +643,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-body">
                         <?php if ($mensajeCrear): ?><div class="alert <?= $alertCrear ?>"><?= $mensajeCrear ?></div><?php endif; ?>
                         <form method="post" autocomplete="off" novalidate>
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>" />
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>" />
                             <input type="hidden" name="accion" value="crear" />
                             <div class="mb-3"><label for="usuario" class="form-label">Usuario</label><input type="text" id="usuario" name="usuario" class="form-control" required pattern="[a-zA-Z0-9_]{3,20}" /></div>
                             <div class="mb-3"><label for="password" class="form-label">Contraseña</label><input type="password" id="password" name="password" class="form-control" required /></div>
@@ -714,11 +659,11 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-body">
                         <?php if ($mensajeModificar): ?><div class="alert <?= $alertModificar ?>"><?= $mensajeModificar ?></div><?php endif; ?>
                         <form method="post" autocomplete="off" novalidate>
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>" />
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>" />
                             <input type="hidden" name="accion" value="modificar" />
                             <div class="mb-3"><label for="usuario_modificar" class="form-label">Usuario a Modificar</label><input type="text" id="usuario_modificar" name="usuario_modificar" class="form-control" required /></div>
                             <div class="mb-3"><label for="password_nuevo" class="form-label">Nueva Contraseña</label><input type="password" id="password_nuevo" name="password_nuevo" class="form-control" placeholder="Dejar vacío para no cambiar" /></div>
-                            <div class="mb-3"><label for="pantalla_nuevo" class="form-label">Nuevo Nivel de Acceso</label><select id="pantalla_nuevo" name="pantalla_nuevo" class="form-select"><option value="-1" selected>Sin cambio</option><option value="1">Despacho</option><option value="2">Validación</option><option value="3">Recepción</option><option value="0">Administrador</option><option value="5">Admin-limitado</option><option value="4">Reportes</option><option value="6">Reporte de faltantes</option><option value="8">Listo etiquetas</option></select></div>
+                            <div class="mb-3"><label for="pantalla_nuevo" class="form-label">Nuevo Nivel de Acceso</label><select id="pantalla_nuevo" name="pantalla_nuevo" class="form-select"><option value="-1" selected>Sin cambio</option><option value="1">Despacho</option><option value="2">Validación</option><option value="3">Recepción</option><option value="0">Administrador</option><option value="5">Admin-limitado</option><option value="4">Reportes</option><option value="6">Reporte de faltantes</option><option value="8">Listo etiquetas</option> <option value="10">Listo inventario</option></select></div>
                             <button type="submit" class="btn btn-warning text-dark w-100 mt-2"><i class="fa-solid fa-pen me-1"></i>Modificar</button>
                         </form>
                     </div>
@@ -730,7 +675,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-body d-flex flex-column justify-content-center">
                         <?php if ($mensajeEliminar): ?><div class="alert <?= $alertEliminar ?>"><?= $mensajeEliminar ?></div><?php endif; ?>
                         <form method="post" autocomplete="off" novalidate>
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>" />
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>" />
                             <input type="hidden" name="accion" value="eliminar" />
                             <div class="mb-3">
                                 <label for="usuario_eliminar" class="form-label">Usuario a Eliminar</label>
@@ -760,7 +705,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                             </div>
                         <?php endif; ?>
                         <form method="POST">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                             <input type="hidden" name="accion" value="asignar_ventanilla">
                             <div class="mb-3">
                                 <label for="usuario_v" class="form-label">Usuario</label>
@@ -838,7 +783,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                     <div class="card-header"><i class="fa-solid fa-plus-circle me-2"></i>Crear Nuevo Código</div>
                     <div class="card-body">
                         <form method="POST">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                             <input type="hidden" name="accion" value="crear_codigo">
                             
                             <div class="mb-3">
@@ -919,7 +864,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                                             <td>
                                                 <div class="actions-col">
                                                     <form method="POST" style="margin:0;">
-                                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                                                         <input type="hidden" name="action" value="toggle_codigo">
                                                         <input type="hidden" name="id" value="<?= $codigo['id'] ?>">
                                                         <button type="submit" class="btn btn-sm <?= $codigo['activo'] ? 'btn-warning text-dark' : 'btn-info' ?>"
@@ -931,7 +876,7 @@ $statsAcceso = sqlsrv_fetch_array(sqlsrv_query($conn, $sqlStats), SQLSRV_FETCH_A
                                                     <?php if ($codigo['codigo'] !== '0000'): // Proteger código maestro ?>
                                                         <form method="POST" style="margin:0;" 
                                                               onsubmit="return confirm('¿Estás seguro de eliminar este código?');">
-                                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                                                             <input type="hidden" name="action" value="eliminar_codigo">
                                                             <input type="hidden" name="id" value="<?= $codigo['id'] ?>">
                                                             <input type="hidden" name="codigo_valor" value="<?= htmlspecialchars($codigo['codigo']) ?>">

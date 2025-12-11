@@ -1,19 +1,17 @@
 <?php
-// --- MODIFICACIÓN: Iniciar y validar sesión ---
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-// 1. Debe estar logueado en el sistema principal Y HABER PASADO EL LOGIN DEL DASHBOARD
-if (!isset($_SESSION['usuario']) || !isset($_SESSION['dashboard_access_granted']) || $_SESSION['dashboard_access_granted'] !== true) {
+// 1. Debe haber pasado el login del dashboard
+if (!isset($_SESSION['dashboard_access_granted']) || $_SESSION['dashboard_access_granted'] !== true) {
     http_response_code(401); // 401 Unauthorized
-    echo json_encode(['error' => 'No autorizado. Por favor, inicie sesión.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => 'No autorizado para acceder al dashboard.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // 2. Obtener datos de la sesión del DASHBOARD
 $USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
 $USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
-// ----------------------------------------------
 
 
 // Requerir la conexión a la base de datos
@@ -476,9 +474,12 @@ try {
             ";
             
             $overviewParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            error_log("DEBUG: SQL Query for overview: " . $sqlOverview);
+            error_log("DEBUG: SQL Params for overview: " . print_r($overviewParams, true));
             $stmtOverview = sqlsrv_query($conn, $sqlOverview, $overviewParams);
 
             if ($stmtOverview === false) {
+                error_log("DEBUG: SQL Error in overview: " . print_r(sqlsrv_errors(), true));
                 throw new Exception('Error al consultar el resumen de estados.');
             }
 
@@ -495,6 +496,7 @@ try {
                     $response['estadosData'][] = ['Estado' => $row['Estado'], 'Total' => $total];
                 }
             }
+            error_log("DEBUG: Final response for overview: " . print_r($response, true));
             break;
     }
 } catch (Exception $e) {

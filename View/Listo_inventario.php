@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+?>
 <!DOCTYPE html> 
 <html lang="es">
 <head>

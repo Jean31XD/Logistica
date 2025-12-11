@@ -1,21 +1,10 @@
 <?php
-session_start();
+require_once __DIR__ . '/../conexionBD/session_config.php';
 
-// Headers para evitar cache
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
+// Validación de sesión y configuración de headers
+verificarAutenticacion();
 
-// Validación estricta de sesión
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(401);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Sesión expirada. Por favor, inicia sesión nuevamente.', 'redirect' => true]);
-    exit();
-}
-
-date_default_timezone_set('America/Santo_Domingo');
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Sincronizar facturas
 $sqlSync = "{CALL SyncCustinvoicejour}";
@@ -26,6 +15,7 @@ if ($stmtSync === false) {
     echo json_encode(['error' => 'Error al sincronizar facturas']);
     exit();
 }
+sqlsrv_free_stmt($stmtSync);
 
 // Parámetros de búsqueda
 $transportista = $_POST['transportista'] ?? '';
@@ -117,7 +107,9 @@ if ($buscarFactura) {
     $params[] = "%$buscarFactura%";
 }
 
-$sql .= " ORDER BY Fecha DESC OFFSET $offset ROWS FETCH NEXT $limite ROWS ONLY";
+$sql .= " ORDER BY Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+$params[] = $offset;
+$params[] = $limite;
 $stmt = sqlsrv_query($conn, $sql, $params);
 
 // === Generar HTML ===

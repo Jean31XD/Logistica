@@ -3,54 +3,14 @@
  * Recepción de Facturas - MACO Design System
  */
 
-// Seguridad de sesión
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.use_strict_mode', 1);
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.cookie_samesite', 'Strict');
-    session_start();
-}
+// Incluir configuración centralizada de sesión
+require_once __DIR__ . '/../conexionBD/session_config.php';
 
-date_default_timezone_set('America/Santo_Domingo');
+// Verificar autenticación y permisos (pantallas: 0=Admin, 2=Facturas, 3=CXC, 5=PanelAdmin)
+verificarAutenticacion([0, 2, 3, 5]);
 
-// Cierre por inactividad (200 segundos)
-$inactividadLimite = 200;
-
-if (isset($_SESSION['ultimo_acceso'])) {
-    $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
-    if ($tiempoInactivo > $inactividadLimite) {
-        session_unset();
-        session_destroy();
-        header("Location: ../index.php");
-        exit();
-    }
-}
-$_SESSION['ultimo_acceso'] = time();
-
-if (!isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-session_regenerate_id(true);
-
-include '../conexionBD/conexion.php';
-
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
-
-if (isset($_GET['logout'])) {
-    session_unset();
-    session_destroy();
-    header("Location: ../index.php");
-    exit();
-}
-
-if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 2, 3, 5])) {
-    header("Location: ../index.php");
-    exit();
-}
+// Incluir conexión a BD
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Cargar transportistas
 $query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";

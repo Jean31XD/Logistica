@@ -1,12 +1,6 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
-
-// 1. Debe estar logueado en el sistema principal
-if (!isset($_SESSION['usuario'])) {
-    header('Location: ../View/dashboard.php?error=2'); // No autorizado
-    exit;
-}
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
 // 2. Requerir la conexión
 require '../conexionBD/conexion.php'; 
@@ -19,6 +13,28 @@ if (!isset($conn) || $conn === false) {
 $codigo_ingresado = $_POST['codigo'] ?? '';
 $ip = $_SERVER['REMOTE_ADDR'];
 $log_exito = 0; // 0 = fallido, 1 = exitoso
+
+// --- LÓGICA DE BLOQUEO POR INTENTOS FALLIDOS ---
+$max_intentos = 5;
+$tiempo_bloqueo = 15; // en minutos
+
+$sql_check_attempts = "SELECT COUNT(*) as attempts FROM log_accesos WHERE ip = ? AND tipo_intento = 'pin' AND exito = 0 AND fecha_hora > DATEADD(minute, -?, GETDATE())";
+$params_check_attempts = [$ip, $tiempo_bloqueo];
+$stmt_check_attempts = sqlsrv_query($conn, $sql_check_attempts, $params_check_attempts);
+
+if ($stmt_check_attempts === false) {
+    // Si la consulta falla, es más seguro bloquear temporalmente que permitir el acceso.
+    header('Location: ../View/dashboard.php?error=dberror');
+    exit;
+}
+
+$attempts_row = sqlsrv_fetch_array($stmt_check_attempts, SQLSRV_FETCH_ASSOC);
+$intentos_fallidos = $attempts_row['attempts'] ?? 0;
+
+if ($intentos_fallidos >= $max_intentos) {
+    header('Location: ../View/dashboard.php?error=blocked');
+    exit;
+}
 
 try {
     if (empty($codigo_ingresado)) {
@@ -50,6 +66,10 @@ try {
         $sqlUpdate = "UPDATE codigos_acceso SET ultimo_acceso = GETDATE() WHERE id = ?";
         sqlsrv_query($conn, $sqlUpdate, [$row['id']]);
 
+        // Limpiar intentos de login fallidos para esta IP
+        $sqlClear = "DELETE FROM log_accesos WHERE ip = ? AND tipo_intento = 'pin'";
+        sqlsrv_query($conn, $sqlClear, [$ip]);
+        
         header('Location: ../View/dashboard.php');
         exit;
         
@@ -65,7 +85,7 @@ try {
     exit;
 } finally {
     // 6. Registrar el intento de acceso en el log
-    $sqlLog = "INSERT INTO log_accesos (codigo, exito, ip, fecha_hora) VALUES (?, ?, ?, GETDATE())";
+    $sqlLog = "INSERT INTO log_accesos (codigo, exito, ip, fecha_hora, tipo_intento) VALUES (?, ?, ?, GETDATE(), 'pin')";
     sqlsrv_query($conn, $sqlLog, [$codigo_ingresado, $log_exito, $ip]);
 
     if (isset($conn) && $conn !== false) {

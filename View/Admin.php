@@ -3,20 +3,10 @@
  * Panel de Administración - MACO Design System
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-date_default_timezone_set('America/Santo_Domingo');
-
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-
-if (!isset($_SESSION['usuario']) || $_SESSION['pantalla'] != 0) {
-    header("Location: ../index.php");
-    exit();
-}
+// Incluir configuración centralizada de sesión y conexión a BD
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([0]); // Solo pantalla 0 (Admin) puede acceder
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $pageTitle = "Panel de Administración | MACO";
 $additionalCSS = <<<'CSS'
@@ -302,6 +292,13 @@ include __DIR__ . '/templates/header.php';
                         'desc' => 'Visión general del sistema. Métricas consolidadas y estadísticas globales.',
                         'link' => '../View/dashboard.php',
                         'icon' => 'fa-tachometer-alt',
+                        'badge' => 'Overview'
+                    ],
+                    [
+                        'title' => 'Listo de Inventario',
+                        'desc' => 'Inventario de Listo ferreteria.',
+                        'link' => '../View/Listo_inventario.php',
+                        'icon' => 'fa-warehouse',
                         'badge' => 'Overview'
                     ]
                 ];

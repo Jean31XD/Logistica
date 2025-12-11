@@ -3,21 +3,9 @@
  * Reporte por Transportista - MACO Design System
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.use_strict_mode', 1);
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.cookie_samesite', 'Strict');
-    session_start();
-}
-
-date_default_timezone_set('America/Santo_Domingo');
-
-if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 4, 5])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([0, 4, 5]); // Solo pantallas 0, 4, 5
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $filtro = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? '';
@@ -38,7 +26,7 @@ $sqlTotal = "SELECT COUNT(DISTINCT Transportista) AS total
              FROM custinvoicejour
              WHERE Transportista IS NOT NULL
                AND Validar = 'Completada'
-               AND Fecha BETWEEN ? AND ?
+               AND Fecha_Scanner BETWEEN ? AND ?
                AND Factura NOT LIKE 'NC%'";
 $paramsTotal = [$desdeSQL, $hastaSQL];
 

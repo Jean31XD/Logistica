@@ -5,63 +5,41 @@
  */
 
 // --- CONFIGURACIÓN DE SESIÓN Y CABECERAS ---
-ini_set('session.cookie_lifetime', 0);
-ini_set('session.gc_maxlifetime', 1800);
+require_once __DIR__ . '/conexionBD/session_config.php';
 
-session_start();
+// --- CSRF TOKEN ---
+$csrfToken = generarTokenCSRF();
 
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
-
-// --- FUNCIÓN DE CONEXIÓN A LA BASE DE DATOS ---
-function conectarBD()
-{
-    $serverName = "sdb-apptransportistas-maco.privatelink.database.windows.net";
-    $database   = "db-apptransportistas-maco";
-    $username   = "ServiceAppTrans";
-    $password   = "⁠nZ(#n41LJm)iLmJP";
-
-    $connectionInfo = array(
-        "Database" => $database,
-        "UID" => $username,
-        "PWD" => $password,
-        "TrustServerCertificate" => true,
-        "CharacterSet" => "UTF-8"
-    );
-
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) {
-        error_log(print_r(sqlsrv_errors(), true));
-        die("<div class='alert alert-danger'>❌ Error de conexión con el servidor. Por favor, contacte al administrador.</div>");
-    }
-    return $conn;
-}
-
-$conn = conectarBD();
+// --- CONEXIÓN A LA BASE DE DATOS ---
+require_once __DIR__ . '/conexionBD/conexion.php';
 $errorLogin = "";
 $tiempo_espera = 1 * 60;
 
 // --- LÓGICA DE BLOQUEO POR INTENTOS FALLIDOS ---
-if (!isset($_SESSION['intentos_login'])) {
-    $_SESSION['intentos_login'] = 0;
-}
+$ip = $_SERVER['REMOTE_ADDR'];
+$max_intentos = 5;
+$tiempo_bloqueo = 15; // en minutos
 
-if ($_SESSION['intentos_login'] >= 5) {
-    $ultimo_intento = $_SESSION['ultimo_intento'] ?? 0;
-    $tiempo_transcurrido = time() - $ultimo_intento;
+$sql_check_attempts = "SELECT COUNT(*) as attempts, MIN(fecha_hora) as first_attempt_time FROM log_accesos WHERE ip = ? AND tipo_intento = 'login' AND exito = 0 AND fecha_hora > DATEADD(minute, -?, GETDATE())";
+$params_check_attempts = [$ip, $tiempo_bloqueo];
+$stmt_check_attempts = sqlsrv_query($conn, $sql_check_attempts, $params_check_attempts);
+if ($stmt_check_attempts === false) {
+    // Si la consulta falla, es más seguro bloquear temporalmente que permitir el acceso.
+    $errorLogin = "Error del servicio de seguridad. Intente más tarde.";
+} else {
+    $attempts_row = sqlsrv_fetch_array($stmt_check_attempts, SQLSRV_FETCH_ASSOC);
+    $intentos_fallidos = $attempts_row['attempts'] ?? 0;
 
-    if ($tiempo_transcurrido < $tiempo_espera) {
-        $seg_rest = $tiempo_espera - $tiempo_transcurrido;
-        $errorLogin = "Demasiados intentos fallidos. Espera $seg_rest segundos para volver a intentar.";
-    } else {
-        $_SESSION['intentos_login'] = 0;
-        unset($_SESSION['ultimo_intento']);
+    if ($intentos_fallidos >= $max_intentos) {
+        $errorLogin = "Demasiados intentos fallidos. Por favor, espere $tiempo_bloqueo minutos antes de volver a intentar.";
     }
 }
 
 // --- PROCESAMIENTO DEL FORMULARIO DE LOGIN ---
 if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
+    if (!validarTokenCSRF($_POST['csrf_token'] ?? '')) {
+        $errorLogin = "Error de validación de seguridad. Por favor, intente de nuevo.";
+    } else {
     $usuario = trim($_POST['usuario'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -78,8 +56,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                 $_SESSION['usuario'] = $row['usuario'];
                 $_SESSION['pantalla'] = $row['pantalla'];
 
+                // Limpiar intentos de login fallidos para esta IP
+                $sqlClear = "DELETE FROM log_accesos WHERE ip = ? AND tipo_intento = 'login'";
+                sqlsrv_query($conn, $sqlClear, [$ip]);
+
                 unset($_SESSION['intentos_login']);
                 unset($_SESSION['ultimo_intento']);
+
+                // Sincronizar facturas al iniciar sesión
+                $sqlSync = "{CALL SyncCustinvoicejour}";
+                $stmtSync = sqlsrv_query($conn, $sqlSync);
+                if ($stmtSync === false) {
+                    error_log("Error al sincronizar facturas en login: " . print_r(sqlsrv_errors(), true));
+                    // Continuar con el login aunque falle la sincronización
+                } else {
+                    sqlsrv_free_stmt($stmtSync);
+                }
 
                 switch ($row['pantalla']) {
                     case 0: header("Location: View/Admin.php"); break;
@@ -91,22 +83,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                     case 6: header("Location: View/BI.php"); break;
                     case 8: header("Location: View/Listo-etiquetas.php"); break;
                     case 9: header("Location: View/dashboard.php"); break;
+                    case 10: header("Location: View/Listo_inventario.php"); break;
                     default: header("Location: View/Inicio.php"); break;
                 }
                 exit();
             } else {
-                $_SESSION['intentos_login']++;
-                $_SESSION['ultimo_intento'] = time();
+                $sqlLog = "INSERT INTO log_accesos (ip, username, exito, tipo_intento) VALUES (?, ?, 0, 'login')";
+                sqlsrv_query($conn, $sqlLog, [$ip, $usuario]);
                 $errorLogin = "Usuario o contraseña incorrectos.";
             }
         } else {
-            $_SESSION['intentos_login']++;
-            $_SESSION['ultimo_intento'] = time();
+            $sqlLog = "INSERT INTO log_accesos (ip, username, exito, tipo_intento) VALUES (?, ?, 0, 'login')";
+            sqlsrv_query($conn, $sqlLog, [$ip, $usuario]);
             $errorLogin = "Usuario o contraseña incorrectos.";
         }
         sqlsrv_free_stmt($stmt);
     }
     sqlsrv_close($conn);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -521,6 +515,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
         <?php endif; ?>
 
         <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
             <div class="input-group">
                 <label class="input-label">Usuario</label>
                 <div class="input-wrapper">

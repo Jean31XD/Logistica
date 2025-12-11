@@ -1,48 +1,7 @@
 <?php
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);
-ini_set('session.use_strict_mode', 1);
-
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
-
-// Expirar sesión tras 200 segundos de inactividad
-$inactividadLimite = 200;
-if (isset($_SESSION['ultimo_acceso'])) {
-    $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
-    if ($tiempoInactivo > $inactividadLimite) {
-        session_unset();
-        session_destroy();
-        header("Location: ../index.php");
-        exit();
-    }
-}
-$_SESSION['ultimo_acceso'] = time();
-
-// Validar usuario autenticado
-if (!isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-session_regenerate_id(true);
-
-include '../conexionBD/conexion.php';
-
-// Logout manual
-if (isset($_GET['logout'])) {
-    $_SESSION = [];
-    session_unset();
-    session_destroy();
-    header("Location: ../index.php");
-    exit();
-}
-
-// Validar pantalla permitida
-if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 3, 5])) {
-    header("Location: ../index.php");
-    exit();
-}
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion([0, 3, 5]); // Solo pantallas 0, 3, 5
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Consultar transportistas
 $query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";

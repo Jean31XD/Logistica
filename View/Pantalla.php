@@ -1,19 +1,15 @@
 <?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+
+// Incluir la conexión centralizada que ya provee $conn
+require_once __DIR__ . '/../conexionBD/conexion.php';
+
 // --- Lógica para obtener datos ---
 function obtenerDatosDeTickets() {
-    // Asegúrate de que la ruta a tu archivo de conexión es la correcta
-    require_once __DIR__ . '/../conexionBD/conexion.php'; 
-    
-    // Tus variables de conexión deben estar definidas en el archivo de arriba
-    $connectionInfo = [
-        "Database" => $database, 
-        "UID" => $username, 
-        "PWD" => $password,
-        "TrustServerCertificate" => true, 
-        "CharacterSet" => "UTF-8"
-    ];
-    $conn = sqlsrv_connect($serverName, $connectionInfo);
-    if ($conn === false) { return []; }
+    global $conn;
+
+    if ($conn === false || $conn === null) { return []; }
 
     $sql = "SELECT log.Tiket, log.NombreTR, log.Empresa, log.Estatus, usuarios.ventanilla,
                    DATEDIFF(SECOND, COALESCE(log.FechaCreacion, log.FechaModificacion, GETDATE()), GETDATE()) AS TiempoTranscurrido

@@ -1,14 +1,9 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-if (!isset($_SESSION['usuario'])) {
-    header('HTTP/1.1 403 Forbidden');
-    echo json_encode(['error' => 'Acceso no autorizado']);
-    exit();
-}
 
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 if (!$conn) {
     header('HTTP/1.1 500 Internal Server Error');
     echo json_encode(['error' => 'Error de conexión a la base de datos']);
@@ -74,7 +69,9 @@ $total_pages = $total_rows > 0 ? ceil($total_rows / $limit) : 1;
 $sql = "
 SELECT Factura, Fecha, Validar AS Estado, Transportista, Fecha_scanner AS Recepcion_ALM,
        Usuario AS Usuario_ALM, recepcion AS Recepcion_CC, Usuario_de_recepcion AS Usuario_CC, zona AS Localizacion
-FROM custinvoicejour $where ORDER BY Fecha DESC OFFSET $offset ROWS FETCH NEXT $limit ROWS ONLY";
+FROM custinvoicejour $where ORDER BY Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+$params[] = $offset;
+$params[] = $limit;
 $stmt = sqlsrv_query($conn, $sql, $params);
 if ($stmt === false) {
     header('HTTP/1.1 500 Internal Server Error');

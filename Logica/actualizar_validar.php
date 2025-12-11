@@ -1,15 +1,8 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-// Validación de sesión
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(401);
-    echo "ERROR: Sesión expirada";
-    exit();
-}
-
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Validar que se recibieron los parámetros
 if (!isset($_POST['factura']) || !isset($_POST['valor']) || !isset($_POST['transportista'])) {

@@ -3,24 +3,11 @@
  * Pantalla de Despacho/Tickets - MACO Design System
  */
 
-// Seguridad de sesión
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.cookie_secure', 0);
-    ini_set('session.use_strict_mode', 1);
-    session_start();
-}
+// Incluir configuración centralizada de sesión
+require_once __DIR__ . '/../conexionBD/session_config.php';
 
-session_regenerate_id(true);
-
-if (!isset($_SESSION['pantalla']) || !in_array($_SESSION['pantalla'], [0, 1, 5])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
+// Verificar autenticación y permisos (pantallas: 0=Admin, 1=Gestión, 5=PanelAdmin)
+verificarAutenticacion([0, 1, 5]);
 
 $pageTitle = "Despacho de Tickets | MACO";
 $additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';
@@ -241,7 +228,7 @@ $additionalJS = <<<'JS'
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
 $(document).ready(function () {
-    const usuarioSesion = "<?php echo $_SESSION['usuario']; ?>";
+    const usuarioSesion = "<?php echo htmlspecialchars($_SESSION['usuario'], ENT_QUOTES, 'UTF-8'); ?>";
     let lastCheckTimestamp = 0;
     let timers = {}, retencionClicks = {}, retencionBloqueado = {};
 
@@ -289,9 +276,13 @@ $(document).ready(function () {
     actualizarTablaInteligentemente();
     setInterval(actualizarTablaInteligentemente, 5000);
 
-    function despacharTicket(tiket, factura) {
+    function despacharTicket(tiket, factura, codigo = '') {
         let tiempo = timers[tiket] || 0;
-        $.post('../Logica/despachar_ticket.php', { tiket, tiempo, factura }, function(response) {
+        let data = { tiket, tiempo, factura };
+        if (codigo) {
+            data.codigo = codigo;
+        }
+        $.post('../Logica/despachar_ticket.php', data, function(response) {
             if (!response.toLowerCase().includes('error')) {
                 delete timers[tiket];
                 actualizarTablaInteligentemente();
@@ -411,11 +402,12 @@ $(document).ready(function () {
         const myModal = bootstrap.Modal.getInstance(document.getElementById('facturaModal'));
 
         if (seFue) {
-            if ($('#codigoSeFue').val().trim() !== 'LogisicA*2025*') {
+            const codigo = $('#codigoSeFue').val().trim();
+            if (codigo !== 'LogisicA*2025*') {
                 return alert('Código incorrecto para despachar como "Se fue".');
             }
             if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
-                despacharTicket(tiket, "Se fue");
+                despacharTicket(tiket, "Se fue", codigo);
                 myModal.hide();
             }
             return;

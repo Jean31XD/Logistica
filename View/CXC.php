@@ -3,28 +3,17 @@
  * Panel de Validación CXC - MACO Design System
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Incluir configuración centralizada de sesión
+require_once __DIR__ . '/../conexionBD/session_config.php';
 
-date_default_timezone_set('America/Santo_Domingo');
+// Verificar autenticación y permisos (solo pantalla 3=CXC)
+verificarAutenticacion([3]);
 
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-
-// Verificar autenticación y permisos
-if (!isset($_SESSION['usuario'], $_SESSION['pantalla']) || $_SESSION['pantalla'] != 3) {
-    header("Location: ../index.php");
-    exit();
-}
-
+// Incluir conexión a BD
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-// Generar token CSRF si no existe
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+// Generar token CSRF
+$csrfToken = generarTokenCSRF();
 
 $pageTitle = "Panel de Validación CXC | MACO";
 $additionalCSS = '<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />';

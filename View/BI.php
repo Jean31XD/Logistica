@@ -4,19 +4,12 @@
  * Dashboard de análisis y métricas
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.use_strict_mode', 1);
-    session_start();
-}
+// Incluir configuración centralizada de sesión y conexión a BD
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion(); // Acceso general para usuarios autenticados
 
-date_default_timezone_set('America/Santo_Domingo');
 
-if (!isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
-    exit();
-}
-
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Obtenemos los datos para los SELECT
 $transportistas = [];

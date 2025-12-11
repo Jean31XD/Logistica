@@ -1,17 +1,8 @@
 <?php
-session_start();
-date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
-
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
-$connectionInfo = array(
-    "Database" => $database,
-    "UID" => $username,
-    "PWD" => $password,
-    "TrustServerCertificate" => true
-);
-
-$conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
     echo '<div class="alert alert-danger text-center" role="alert">

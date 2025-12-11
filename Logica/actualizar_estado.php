@@ -1,11 +1,6 @@
 <?php 
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
-
-if (!isset($_SESSION['usuario'])) {
-    echo json_encode(['success' => false, 'error' => 'Acceso no autorizado.']);
-    exit();
-}
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
@@ -22,9 +17,11 @@ $params = [$nuevoEstado, $factura];
 $stmt = sqlsrv_query($conn, $sql, $params);
 
 if ($stmt === false) {
+    error_log("Error SQL en actualizar_estado.php: " . print_r(sqlsrv_errors(), true));
+    http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'Error al actualizar el estado: ' . print_r(sqlsrv_errors(), true)
+        'error' => 'Error interno del servidor'
     ]);
     exit();
 }

@@ -1,25 +1,10 @@
 <?php
-session_start();
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-// Headers para respuesta JSON
 header('Content-Type: application/json');
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
 
-// Validación de sesión
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(401);
-    echo json_encode([
-        'success' => false,
-        'encontrada' => false,
-        'error' => 'Sesión expirada. Por favor, inicia sesión nuevamente.'
-    ]);
-    exit();
-}
-
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Validar parámetros requeridos
 $factura = trim($_POST['factura'] ?? '');

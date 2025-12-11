@@ -1,25 +1,9 @@
 <?php
-session_start();
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
-// Headers para evitar cache
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
 header('Content-Type: application/json');
-
-// Validación de sesión
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(401);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Sesión expirada. Por favor, inicia sesión nuevamente.',
-        'redirect' => true
-    ]);
-    exit();
-}
-
-date_default_timezone_set('America/Santo_Domingo');
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 // Validar que se recibió el número de factura
 if (!isset($_POST['numeroFactura']) || empty($_POST['numeroFactura'])) {

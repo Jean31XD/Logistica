@@ -1,17 +1,10 @@
 <?php   
-session_start(); 
-date_default_timezone_set('America/Santo_Domingo');
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
 
 header('Content-Type: application/json');
 
-// Validación estricta de sesión
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(401); // No autorizado
-    echo json_encode(['error' => 'Usuario no autenticado']);
-    exit();
-}
-
-include '../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $factura = $_POST['factura'] ?? '';
 $transportista = $_POST['transportista'] ?? '';

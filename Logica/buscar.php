@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../conexionBD/session_config.php';
+verificarAutenticacion();
+
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
 $termino = trim($_GET["q"] ?? "");
@@ -21,7 +24,8 @@ if (!empty($termino)) {
 
     $stmt = sqlsrv_query($conn, $sql, $params);
     if ($stmt === false) {
-        $response["message"] = "Error en la consulta: " . print_r(sqlsrv_errors(), true);
+        error_log("Error SQL en buscar.php: " . print_r(sqlsrv_errors(), true));
+        $response["message"] = "Error interno del servidor";
     } else {
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             // Agregar URL de imagen de Azure
