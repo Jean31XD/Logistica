@@ -30,7 +30,8 @@
       "Bash(php test_get_facturas.php:*)",
       "Bash(php:*)",
       "Bash(grep:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(dir \"C:\\xampp\\htdocs\\MACO.AppLogistica.Web-1\")"
     ],
     "deny": [],
     "ask": []
