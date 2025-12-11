@@ -14,20 +14,20 @@ if (!checkRateLimit('validar_factura', 20, 60)) {
 // Validar CSRF token
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validarTokenCSRF($csrf)) {
-        http_response_code(403);
-        die(json_encode(['success' => false, 'error' => 'Token CSRF inválido']));
-    }
+    validarTokenCSRF($csrf);
 }
 
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/log_manager.php';
 
 // Validar parámetros requeridos
 $factura = trim($_POST['factura'] ?? '');
 $transportista = trim($_POST['transportista'] ?? '');
 $usuario = $_SESSION['usuario'];
+logWithRotation("Intento de validación de factura: $factura, transportista: $transportista", 'INFO', 'VALIDACION');
+logWithRotation("Intento de validación de factura: $factura, transportista: $transportista", 'INFO', 'VALIDACION');
 
 if (empty($factura) || empty($transportista)) {
     http_response_code(400);
@@ -70,6 +70,7 @@ if ($result === false) {
 $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
 
 if (!$row) {
+    logWithRotation("Factura no encontrada: $factura, transportista: $transportista", 'WARNING', 'VALIDACION');
     echo json_encode([
         'success' => false,
         'encontrada' => false,
