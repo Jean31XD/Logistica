@@ -35,23 +35,9 @@ if (session_status() === PHP_SESSION_NONE) {
                     (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
     ini_set('session.cookie_secure', $cookieSecure ? 1 : 0);
 
-    // Determinar si la página actual es Pantalla.php
-    $current_page = basename($_SERVER['PHP_SELF']);
-    $isPantallaPage = ($current_page === 'Pantalla.php');
-
-    // Tiempo de vida de sesión
-    if ($isPantallaPage) {
-        // Para Pantalla.php, establecer una vida útil de la sesión mucho más larga o "nunca expira"
-        // Un valor de 31536000 segundos = 1 año. Usar 0 para cookie_lifetime significa expirar al cerrar el navegador,
-        // pero para evitar que el GC del servidor elimine la sesión, gc_maxlifetime debe ser largo.
-        // Si se desea que la cookie persista aún con el navegador cerrado, también se debe establecer cookie_lifetime a un valor largo.
-        ini_set('session.gc_maxlifetime', 31536000); // 1 año
-        ini_set('session.cookie_lifetime', 31536000); // 1 año
-    } else {
-        // Configuración estándar para otras páginas: 30 minutos de vida en el servidor, cookie expira al cerrar el navegador
-        ini_set('session.gc_maxlifetime', 1800);
-        ini_set('session.cookie_lifetime', 0);      
-    }
+    // Tiempo de vida de sesión: 30 minutos (1800 segundos)
+    ini_set('session.gc_maxlifetime', 1800);
+    ini_set('session.cookie_lifetime', 0);      // Cookie expira al cerrar navegador
 
     // Iniciar sesión
     session_start();
@@ -63,25 +49,22 @@ date_default_timezone_set('America/Santo_Domingo');
 // Timeout de inactividad: 30 minutos (mejorado desde 200 segundos)
 $inactividadLimite = 1800; // 30 minutos
 
-// Solo aplicar el control de inactividad si no es Pantalla.php
-if (!$isPantallaPage) {
-    if (isset($_SESSION['ultimo_acceso'])) {
-        $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
+if (isset($_SESSION['ultimo_acceso'])) {
+    $tiempoInactivo = time() - $_SESSION['ultimo_acceso'];
+    
+    if ($tiempoInactivo > $inactividadLimite) {
+        // Sesión expirada por inactividad
+        session_unset();
+        session_destroy();
         
-        if ($tiempoInactivo > $inactividadLimite) {
-            // Sesión expirada por inactividad
-            session_unset();
-            session_destroy();
-            
-            // Redirigir a login
-            header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
-            exit();
-        }
+        // Redirigir a login
+        header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
+        exit();
     }
-
-    // Actualizar timestamp de último acceso
-    $_SESSION['ultimo_acceso'] = time();
 }
+
+// Actualizar timestamp de último acceso
+$_SESSION['ultimo_acceso'] = time();
 
 // Regenerar ID de sesión cada 15 minutos (NO en cada carga)
 if (!isset($_SESSION['ultimo_regenerate'])) {
@@ -120,12 +103,6 @@ header("Expires: 0");
 
 // Función helper para verificar autenticación
 function verificarAutenticacion($pantallasPermitidas = []) {
-    global $isPantallaPage; // Accede a la variable global
-
-    if ($isPantallaPage) {
-        return; // Si es Pantalla.php, no se requiere autenticación ni verificación de permisos
-    }
-
     if (!isset($_SESSION['usuario'])) {
         header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
         exit();
