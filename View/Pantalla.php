@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion();
+// require_once __DIR__ . '/../conexionBD/session_config.php';
+// verificarAutenticacion();
 
 // Incluir la conexión centralizada que ya provee $conn
 require_once __DIR__ . '/../conexionBD/conexion.php';
