@@ -229,6 +229,7 @@ $additionalJS = <<<'JS'
 <script>
 $(document).ready(function () {
     const usuarioSesion = "<?php echo htmlspecialchars($_SESSION['usuario'], ENT_QUOTES, 'UTF-8'); ?>";
+    const csrfToken = "<?php echo generarTokenCSRF(); ?>";
     let lastCheckTimestamp = 0;
     let timers = {}, retencionClicks = {}, retencionBloqueado = {};
 
@@ -348,7 +349,8 @@ $(document).ready(function () {
             data: {
                 tiket: tiket,
                 password: password,
-                current_assignee: currentAssignee
+                current_assignee: currentAssignee,
+                csrf_token: csrfToken
             },
             dataType: 'json',
             success: function(response) {
@@ -435,7 +437,9 @@ $(document).ready(function () {
 
     window.addEventListener('pageshow', function(event) {
         if (event.persisted || (window.performance && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
-            window.location.reload();
+            const url = new URL(window.location.href);
+            url.searchParams.set('cache_bust', new Date().getTime());
+            window.location.href = url.href;
         }
     });
 });
