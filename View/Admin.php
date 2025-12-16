@@ -300,6 +300,27 @@ include __DIR__ . '/templates/header.php';
                         'link' => '../View/Listo_inventario.php',
                         'icon' => 'fa-warehouse',
                         'badge' => 'Overview'
+                    ],
+                    [
+                        'title' => 'Códigos de Barras',
+                        'desc' => 'Escaneo y asignación de códigos de barras a artículos. Control de inventario.',
+                        'link' => '../View/Codigos_de_barras.php',
+                        'icon' => 'fa-barcode',
+                        'badge' => 'Inventario'
+                    ],
+                    [
+                        'title' => 'Códigos de Referencia',
+                        'desc' => 'Visualización completa de códigos de barras asignados. Exportación a Excel disponible.',
+                        'link' => '../View/Codigos_referencia.php',
+                        'icon' => 'fa-list-alt',
+                        'badge' => 'Reportes'
+                    ],
+                    [
+                        'title' => 'Gestión de Imágenes',
+                        'desc' => 'Administra imágenes de productos en Azure Blob Storage. Sube, visualiza y elimina imágenes.',
+                        'link' => '../View/Gestion_imagenes.php',
+                        'icon' => 'fa-images',
+                        'badge' => 'Azure'
                     ]
                 ];
 
