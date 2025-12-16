@@ -84,6 +84,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                     case 8: header("Location: View/Listo-etiquetas.php"); break;
                     case 9: header("Location: View/dashboard.php"); break;
                     case 10: header("Location: View/Listo_inventario.php"); break;
+                    case 11: header("Location: View/Codigos_de_barras.php"); break;
+                    case 12: header("Location: View/Codigos_referencia.php"); break;
+                    case 13: header("Location: View/Gestion_imagenes.php"); break;
                     default: header("Location: View/Inicio.php"); break;
                 }
                 exit();
