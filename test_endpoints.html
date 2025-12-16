@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Endpoints</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .test-section {
+            border: 2px solid #ccc;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left: 4px solid #f44336;
+        }
+        .info {
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test de Endpoints - Gestión de Imágenes</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Endpoint Mínimo (Sin Dependencias)</h2>
+        <p>Este endpoint NO requiere autenticación ni dependencias. Si falla, el problema es de routing o configuración del servidor.</p>
+        <button onclick="testMinimal()">🧪 Probar Endpoint Mínimo</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Endpoint de Subida (CON Dependencias)</h2>
+        <p>Este endpoint requiere autenticación. Veremos qué logs genera.</p>
+        <button onclick="testUpload()">🧪 Probar Endpoint de Subida (sin archivo)</button>
+        <div id="result2" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Verificar Logs de PHP</h2>
+        <p>Después de ejecutar los tests anteriores, revisa los logs:</p>
+        <ul>
+            <li><strong>Windows (XAMPP):</strong> <code>C:\xampp\php\logs\php_error_log</code></li>
+            <li><strong>Linux:</strong> <code>/var/log/apache2/error.log</code> o <code>/var/log/php/error.log</code></li>
+        </ul>
+        <p>Busca líneas que contengan "subir_imagen.php" o "test_endpoint.php"</p>
+    </div>
+
+    <script>
+        async function testMinimal() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ Enviando request a Logica/test_endpoint.php...\n';
+
+            try {
+                console.log('=== TEST 1: Endpoint Mínimo ===');
+
+                const response = await fetch('Logica/test_endpoint.php', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                resultDiv.textContent += `✓ Response recibido\n`;
+                resultDiv.textContent += `  Status: ${response.status} ${response.statusText}\n`;
+                resultDiv.textContent += `  Content-Type: ${response.headers.get('content-type')}\n`;
+                resultDiv.textContent += `\n`;
+
+                // Leer como texto primero
+                const text = await response.text();
+                resultDiv.textContent += `Respuesta (texto):\n${text}\n\n`;
+
+                // Intentar parsear como JSON
+                try {
+                    const data = JSON.parse(text);
+                    resultDiv.textContent += `Respuesta (JSON parseado):\n`;
+                    resultDiv.textContent += JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                    console.log('✓ Test 1 exitoso:', data);
+                } catch (jsonError) {
+                    resultDiv.textContent += `✗ ERROR: No es JSON válido\n`;
+                    resultDiv.textContent += jsonError.message;
+                    resultDiv.className = 'result error';
+                    console.error('✗ Test 1 falló (JSON):', jsonError);
+                }
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent += `\n✗ ERROR de red:\n${error.message}\n`;
+                resultDiv.textContent += `\nStack:\n${error.stack}`;
+                console.error('✗ Test 1 falló (red):', error);
+            }
+        }
+
+        async function testUpload() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ Enviando request a Logica/subir_imagen.php (sin archivo)...\n';
+            resultDiv.textContent += 'NOTA: Este test debería fallar con un error específico, no con respuesta vacía.\n\n';
+
+            try {
+                console.log('=== TEST 2: Endpoint de Subida ===');
+
+                // Crear FormData vacío (simula POST sin archivo)
+                const formData = new FormData();
+                formData.append('csrf_token', 'test_token_123');
+                formData.append('itemid', 'TEST-SKU');
+
+                const response = await fetch('Logica/subir_imagen.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                resultDiv.textContent += `✓ Response recibido\n`;
+                resultDiv.textContent += `  Status: ${response.status} ${response.statusText}\n`;
+                resultDiv.textContent += `  Content-Type: ${response.headers.get('content-type')}\n`;
+                resultDiv.textContent += `\n`;
+
+                // Leer como texto primero
+                const text = await response.text();
+
+                if (text === '') {
+                    resultDiv.textContent += `⚠️ PROBLEMA DETECTADO: Respuesta VACÍA\n`;
+                    resultDiv.textContent += `Esto significa que el script NO está enviando ningún output.\n`;
+                    resultDiv.textContent += `\nRevisa los logs de PHP para ver qué pasó:\n`;
+                    resultDiv.textContent += `  Windows: C:\\xampp\\php\\logs\\php_error_log\n`;
+                    resultDiv.textContent += `  Linux: /var/log/apache2/error.log\n`;
+                    resultDiv.className = 'result error';
+                } else {
+                    resultDiv.textContent += `Respuesta (texto):\n${text.substring(0, 500)}\n\n`;
+
+                    // Intentar parsear como JSON
+                    try {
+                        const data = JSON.parse(text);
+                        resultDiv.textContent += `Respuesta (JSON parseado):\n`;
+                        resultDiv.textContent += JSON.stringify(data, null, 2);
+
+                        if (data.success === false) {
+                            resultDiv.textContent += `\n\n✓ BIEN: El script respondió con un error controlado (esperado sin archivo)`;
+                            resultDiv.className = 'result success';
+                        } else {
+                            resultDiv.className = 'result info';
+                        }
+                        console.log('✓ Test 2 - respuesta recibida:', data);
+                    } catch (jsonError) {
+                        resultDiv.textContent += `✗ ERROR: No es JSON válido\n`;
+                        resultDiv.textContent += jsonError.message;
+                        resultDiv.className = 'result error';
+                        console.error('✗ Test 2 falló (JSON):', jsonError);
+                    }
+                }
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent += `\n✗ ERROR de red:\n${error.message}\n`;
+                resultDiv.textContent += `\nStack:\n${error.stack}`;
+                console.error('✗ Test 2 falló (red):', error);
+            }
+        }
+    </script>
+</body>
+</html>
