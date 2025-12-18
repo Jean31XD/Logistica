@@ -5,11 +5,17 @@
  */
 
 session_start();
+require_once __DIR__ . '/../conexionBD/conexion.php'; // Para cargar .env
 
-// Configuración de Azure (se puede mover a .env)
-$clientId = getenv('AZURE_CLIENT_ID') ?: '22655584-42f3-4fbb-acec-42d657113f51';
-// Tenant de Grupo Corripio (corregido)
-$tenantId = '02b9b7a6-8935-407f-8797-f17aa9838e3b';
+// Configuración de Azure desde variables de entorno
+$clientId = getenv('AZURE_CLIENT_ID');
+$tenantId = getenv('AZURE_TENANT_ID');
+
+if (empty($clientId) || empty($tenantId)) {
+    error_log("Error: AZURE_CLIENT_ID o AZURE_TENANT_ID no configurados en .env");
+    header('Location: ../index.php?error=config');
+    exit();
+}
 
 // Detectar URL base automáticamente
 // En Azure, usar HTTPS y detectar si estamos detrás de proxy

@@ -7,11 +7,16 @@
 session_start();
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
-// Configuración de Azure
-$clientId = getenv('AZURE_CLIENT_ID') ?: '22655584-42f3-4fbb-acec-42d657113f51';
-$clientSecret = getenv('AZURE_CLIENT_SECRET') ?: '07V8Q~zgWnToXFGK45sijoHBYXaOrPrEsqx8nbdx';
-// Tenant de Grupo Corripio (corregido)
-$tenantId = '02b9b7a6-8935-407f-8797-f17aa9838e3b';
+// Configuración de Azure desde variables de entorno
+$clientId = getenv('AZURE_CLIENT_ID');
+$clientSecret = getenv('AZURE_CLIENT_SECRET');
+$tenantId = getenv('AZURE_TENANT_ID');
+
+if (empty($clientId) || empty($clientSecret) || empty($tenantId)) {
+    error_log("Error: Credenciales Azure no configuradas en .env");
+    header('Location: ../index.php?error=config');
+    exit();
+}
 
 // Detectar URL base automáticamente
 // En Azure, usar HTTPS y detectar si estamos detrás de proxy
