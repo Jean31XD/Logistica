@@ -12,9 +12,20 @@ $clientId = getenv('AZURE_CLIENT_ID') ?: '22655584-42f3-4fbb-acec-42d657113f51';
 $tenantId = '02b9b7a6-8935-407f-8797-f17aa9838e3b';
 
 // Detectar URL base automáticamente
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+// En Azure, usar HTTPS y detectar si estamos detrás de proxy
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') 
+         || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+         || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
+         || (strpos($_SERVER['HTTP_HOST'] ?? '', 'azurewebsites.net') !== false);
+
+$protocol = $isHttps ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'];
-$baseUrl = $protocol . '://' . $host . '/MACO.AppLogistica.Web-1';
+
+// Detectar si estamos en Azure (sin subcarpeta) o local (con subcarpeta)
+$isAzure = strpos($host, 'azurewebsites.net') !== false;
+$basePath = $isAzure ? '' : '/MACO.AppLogistica.Web-1';
+
+$baseUrl = $protocol . '://' . $host . $basePath;
 $redirectUri = $baseUrl . '/Logica/auth_callback.php';
 
 // Generar state para protección CSRF
