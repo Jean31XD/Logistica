@@ -2,22 +2,53 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
-// 1. Debe haber pasado el login del dashboard
-if (!isset($_SESSION['dashboard_access_granted']) || $_SESSION['dashboard_access_granted'] !== true) {
-    http_response_code(401); // 401 Unauthorized
+// Conexión a BD para verificar permisos
+require_once __DIR__ . '/../conexionBD/conexion.php';
+
+if (!$conn) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Error de conexión a la base de datos.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Verificar permiso del módulo dashboard_general
+$usuario = $_SESSION['usuario'];
+$pantalla = $_SESSION['pantalla'] ?? -1;
+
+$tienePermiso = ($pantalla == 0); // Admin tiene acceso
+
+if (!$tienePermiso) {
+    $sql = "SELECT modulo FROM usuario_modulos WHERE usuario = ? AND modulo = 'dashboard_general' AND activo = 1";
+    $stmt = sqlsrv_query($conn, $sql, [$usuario]);
+    if ($stmt !== false) {
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $tienePermiso = ($row !== null);
+    }
+}
+
+if (!$tienePermiso) {
+    http_response_code(401);
     echo json_encode(['error' => 'No autorizado para acceder al dashboard.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 2. Obtener datos de la sesión del DASHBOARD
-$USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
-$USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
+// Obtener almacén asignado al usuario
+$USER_WAREHOUSE = '';
+$sqlAlmacen = "SELECT dashboard_almacen FROM usuarios WHERE usuario = ?";
+$stmtAlmacen = @sqlsrv_query($conn, $sqlAlmacen, [$usuario]);
+
+if ($stmtAlmacen !== false) {
+    $rowAlmacen = sqlsrv_fetch_array($stmtAlmacen, SQLSRV_FETCH_ASSOC);
+    if ($rowAlmacen && isset($rowAlmacen['dashboard_almacen'])) {
+        $USER_WAREHOUSE = $rowAlmacen['dashboard_almacen'] ?? '';
+    }
+}
+
+$USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
 
 // 3. Cargar autoloader del proyecto (habilita clases y helpers)
 require_once __DIR__ . '/../src/autoload.php';
 
-// Requerir la conexión a la base de datos
-require '../conexionBD/conexion.php'; 
 // Establecer el encabezado de respuesta como JSON
 header('Content-Type: application/json; charset=utf-8');
 

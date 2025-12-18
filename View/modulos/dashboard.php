@@ -39,14 +39,18 @@ if (!$tienePermiso) {
     exit();
 }
 
-// Obtener almacén asignado al usuario
+// Obtener almacén asignado al usuario (con manejo de error si columna no existe)
+$USER_WAREHOUSE = '';
 $sqlAlmacen = "SELECT dashboard_almacen FROM usuarios WHERE usuario = ?";
-$stmtAlmacen = sqlsrv_query($conn, $sqlAlmacen, [$usuario]);
+$stmtAlmacen = @sqlsrv_query($conn, $sqlAlmacen, [$usuario]);
 
 if ($stmtAlmacen !== false) {
     $rowAlmacen = sqlsrv_fetch_array($stmtAlmacen, SQLSRV_FETCH_ASSOC);
-    $USER_WAREHOUSE = $rowAlmacen['dashboard_almacen'] ?? '';
+    if ($rowAlmacen && isset($rowAlmacen['dashboard_almacen'])) {
+        $USER_WAREHOUSE = $rowAlmacen['dashboard_almacen'] ?? '';
+    }
 }
+// Si la columna no existe, USER_WAREHOUSE queda vacío (acceso a todos)
 
 // Determinar tipo de usuario (admin = ve todos, warehouse = ve solo su almacén)
 $USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
