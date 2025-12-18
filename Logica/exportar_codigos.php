@@ -2,11 +2,31 @@
 /**
  * Exportar Códigos de Referencia a Excel
  * Genera un archivo Excel con todos los códigos aplicando filtros
+ * 
+ * IMPORTANTE: Este script maneja su propia salida y NO debe tener output previo
  */
 
-require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0, 5, 12]); // Admin, Admin-limitado, Códigos de Referencia
+// Iniciar buffer de salida ANTES de cualquier cosa
+ob_start();
+
+// Incluir dependencias
 require_once __DIR__ . '/../conexionBD/conexion.php';
+
+// Validación manual de sesión (sin los headers de session_config)
+session_start();
+if (!isset($_SESSION['usuario'])) {
+    ob_end_clean();
+    header("Location: /MACO.AppLogistica.Web-1/index.php");
+    exit();
+}
+
+// Verificar permisos (0=Admin, 5=Admin-limitado, 12=Códigos de Referencia)
+$pantalla = $_SESSION['pantalla'] ?? -1;
+if (!in_array($pantalla, [0, 5, 12])) {
+    ob_end_clean();
+    header("Location: /MACO.AppLogistica.Web-1/index.php");
+    exit();
+}
 
 try {
     // Obtener filtros
@@ -18,26 +38,23 @@ try {
     $whereConditions = "WHERE 1=1";
     $params = array();
 
-    // Filtro por nombre
     if (!empty($searchNombre)) {
         $whereConditions .= " AND Nombre LIKE ?";
         $params[] = '%' . $searchNombre . '%';
     }
 
-    // Filtro por código
     if (!empty($searchCodigo)) {
         $whereConditions .= " AND Codigo_barra LIKE ?";
         $params[] = '%' . $searchCodigo . '%';
     }
 
-    // Filtro por estado
     if ($filterEstado === 'asignado') {
         $whereConditions .= " AND Codigo_barra IS NOT NULL AND Codigo_barra != '' AND LEN(RTRIM(LTRIM(Codigo_barra))) > 0";
     } elseif ($filterEstado === 'sin_asignar') {
         $whereConditions .= " AND (Codigo_barra IS NULL OR Codigo_barra = '' OR LEN(RTRIM(LTRIM(Codigo_barra))) = 0)";
     }
 
-    // Consulta para obtener todos los datos (sin paginación)
+    // Consulta
     $sql = "SELECT id, Nombre, Codigo_barra, Usuario
             FROM [dbo].[Arti_codigos]
             $whereConditions
@@ -49,118 +66,117 @@ try {
         throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
     }
 
-    // Preparar nombre del archivo
-    $fecha = date('Y-m-d_H-i-s');
-    $filename = "Codigos_Referencia_" . $fecha . ".xls";
-
-    // Configurar cabeceras para descarga de Excel
-    header("Content-Type: application/vnd.ms-excel; charset=UTF-8");
-    header("Content-Disposition: attachment; filename=\"$filename\"");
-    header("Pragma: no-cache");
-    header("Expires: 0");
-
-    // Agregar BOM para UTF-8
-    echo "\xEF\xBB\xBF";
-
-    // Crear tabla HTML (Excel puede leer HTML)
-    echo '<!DOCTYPE html>';
-    echo '<html>';
-    echo '<head>';
-    echo '<meta charset="UTF-8">';
-    echo '<style>';
-    echo 'table { border-collapse: collapse; width: 100%; }';
-    echo 'th { background-color: #E63946; color: white; font-weight: bold; padding: 10px; border: 1px solid #ddd; text-align: left; }';
-    echo 'td { padding: 8px; border: 1px solid #ddd; }';
-    echo 'tr:nth-child(even) { background-color: #f2f2f2; }';
-    echo '.asignado { background-color: #d4edda; color: #155724; }';
-    echo '.sin-asignar { background-color: #f8d7da; color: #721c24; }';
-    echo '</style>';
-    echo '</head>';
-    echo '<body>';
-
-    echo '<h1>Códigos de Referencia - MACO</h1>';
-    echo '<p>Fecha de exportación: ' . date('d/m/Y H:i:s') . '</p>';
-    echo '<p>Usuario: ' . htmlspecialchars($_SESSION['usuario']) . '</p>';
-
+    // Construir contenido del Excel en memoria primero
+    $excelContent = '';
+    
+    // BOM UTF-8
+    $excelContent .= "\xEF\xBB\xBF";
+    
+    // HTML para Excel
+    $excelContent .= '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+    $excelContent .= '<style>';
+    $excelContent .= 'table { border-collapse: collapse; width: 100%; }';
+    $excelContent .= 'th { background-color: #E63946; color: white; font-weight: bold; padding: 10px; border: 1px solid #ddd; }';
+    $excelContent .= 'td { padding: 8px; border: 1px solid #ddd; }';
+    $excelContent .= 'tr:nth-child(even) { background-color: #f2f2f2; }';
+    $excelContent .= '.asignado { background-color: #d4edda; color: #155724; }';
+    $excelContent .= '.sin-asignar { background-color: #f8d7da; color: #721c24; }';
+    $excelContent .= '</style></head><body>';
+    
+    $excelContent .= '<h1>Códigos de Referencia - MACO</h1>';
+    $excelContent .= '<p>Fecha: ' . date('d/m/Y H:i:s') . '</p>';
+    $excelContent .= '<p>Usuario: ' . htmlspecialchars($_SESSION['usuario']) . '</p>';
+    
+    // Filtros aplicados
     if (!empty($searchNombre) || !empty($searchCodigo) || !empty($filterEstado)) {
-        echo '<h3>Filtros aplicados:</h3><ul>';
-        if (!empty($searchNombre)) echo '<li>Nombre: ' . htmlspecialchars($searchNombre) . '</li>';
-        if (!empty($searchCodigo)) echo '<li>Código: ' . htmlspecialchars($searchCodigo) . '</li>';
+        $excelContent .= '<h3>Filtros:</h3><ul>';
+        if (!empty($searchNombre)) $excelContent .= '<li>Nombre: ' . htmlspecialchars($searchNombre) . '</li>';
+        if (!empty($searchCodigo)) $excelContent .= '<li>Código: ' . htmlspecialchars($searchCodigo) . '</li>';
         if (!empty($filterEstado)) {
-            $estadoText = $filterEstado === 'asignado' ? 'Con código asignado' : 'Sin código asignar';
-            echo '<li>Estado: ' . $estadoText . '</li>';
+            $estadoText = $filterEstado === 'asignado' ? 'Con código' : 'Sin código';
+            $excelContent .= '<li>Estado: ' . $estadoText . '</li>';
         }
-        echo '</ul>';
+        $excelContent .= '</ul>';
     }
-
-    echo '<table>';
-    echo '<thead>';
-    echo '<tr>';
-    echo '<th>ID</th>';
-    echo '<th>Nombre del Artículo</th>';
-    echo '<th>Código de Barras</th>';
-    echo '<th>Usuario Asignado</th>';
-    echo '<th>Estado</th>';
-    echo '</tr>';
-    echo '</thead>';
-    echo '<tbody>';
-
+    
+    // Tabla
+    $excelContent .= '<table>';
+    $excelContent .= '<thead><tr><th>ID</th><th>Nombre</th><th>Código de Barras</th><th>Usuario</th><th>Estado</th></tr></thead>';
+    $excelContent .= '<tbody>';
+    
     $contador = 0;
     $totalAsignados = 0;
     $totalSinAsignar = 0;
-
+    
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $contador++;
         $tieneCodigoRow = !empty($row['Codigo_barra']) && trim($row['Codigo_barra']) !== '';
-
+        
         if ($tieneCodigoRow) {
             $totalAsignados++;
+            $estadoClass = 'asignado';
+            $estadoText = 'Asignado';
+            $codigoDisplay = htmlspecialchars($row['Codigo_barra']);
         } else {
             $totalSinAsignar++;
+            $estadoClass = 'sin-asignar';
+            $estadoText = 'Sin asignar';
+            $codigoDisplay = '-';
         }
-
-        $estadoClass = $tieneCodigoRow ? 'asignado' : 'sin-asignar';
-        $estadoText = $tieneCodigoRow ? 'Asignado' : 'Sin asignar';
-        $codigoDisplay = $tieneCodigoRow ? htmlspecialchars($row['Codigo_barra']) : '-';
+        
         $usuario = !empty($row['Usuario']) ? htmlspecialchars($row['Usuario']) : '-';
-
-        echo '<tr>';
-        echo '<td>' . htmlspecialchars($row['id']) . '</td>';
-        echo '<td>' . htmlspecialchars($row['Nombre']) . '</td>';
-        echo '<td>' . $codigoDisplay . '</td>';
-        echo '<td>' . $usuario . '</td>';
-        echo '<td class="' . $estadoClass . '">' . $estadoText . '</td>';
-        echo '</tr>';
+        
+        $excelContent .= '<tr>';
+        $excelContent .= '<td>' . htmlspecialchars($row['id']) . '</td>';
+        $excelContent .= '<td>' . htmlspecialchars($row['Nombre']) . '</td>';
+        $excelContent .= '<td>' . $codigoDisplay . '</td>';
+        $excelContent .= '<td>' . $usuario . '</td>';
+        $excelContent .= '<td class="' . $estadoClass . '">' . $estadoText . '</td>';
+        $excelContent .= '</tr>';
     }
-
-    echo '</tbody>';
-    echo '<tfoot>';
-    echo '<tr style="background-color: #e9ecef; font-weight: bold;">';
-    echo '<td colspan="5">';
-    echo 'Total de registros: ' . $contador . ' | ';
-    echo 'Asignados: ' . $totalAsignados . ' | ';
-    echo 'Sin asignar: ' . $totalSinAsignar;
-    echo '</td>';
-    echo '</tr>';
-    echo '</tfoot>';
-    echo '</table>';
-
-    echo '</body>';
-    echo '</html>';
-
+    
+    $excelContent .= '</tbody>';
+    $excelContent .= '<tfoot><tr style="background-color: #e9ecef; font-weight: bold;">';
+    $excelContent .= '<td colspan="5">Total: ' . $contador . ' | Asignados: ' . $totalAsignados . ' | Sin asignar: ' . $totalSinAsignar . '</td>';
+    $excelContent .= '</tr></tfoot>';
+    $excelContent .= '</table></body></html>';
+    
     sqlsrv_free_stmt($stmt);
-
-    // Log de la exportación
-    error_log("Exportación de códigos realizada por usuario: {$_SESSION['usuario']}, Total registros: $contador");
-
+    
+    // AHORA limpiar TODO el buffer y enviar headers limpios
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    // Nombre del archivo
+    $fecha = date('Y-m-d_H-i-s');
+    $filename = "Codigos_Referencia_" . $fecha . ".xls";
+    
+    // Headers para descarga
+    header_remove(); // Eliminar TODOS los headers previos
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=\"" . $filename . "\"");
+    header("Content-Length: " . strlen($excelContent));
+    header("Cache-Control: private");
+    header("Pragma: private");
+    
+    // Enviar contenido
+    echo $excelContent;
+    
+    // Log
+    error_log("Export códigos exitoso: {$_SESSION['usuario']}, Total: $contador");
+    
 } catch (Exception $e) {
-    error_log("Error en exportar_codigos.php: " . $e->getMessage());
-
-    // Limpiar buffer de salida si hay error
-    if (ob_get_length()) ob_clean();
-
-    // Redirigir a página de error
-    header('Location: ../View/Codigos_referencia.php?error=export_failed');
-    exit;
+    // Limpiar buffer
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    error_log("Error export: " . $e->getMessage());
+    
+    header("Content-Type: text/html; charset=UTF-8");
+    echo "<h1>Error al exportar</h1><p>Por favor intente nuevamente.</p>";
 }
+
+exit();
 ?>

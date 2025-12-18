@@ -143,14 +143,13 @@ function generarTokenCSRF() {
     return $_SESSION['csrf_token'];
 }
 
-// Función helper para validar token CSRF
+// Función helper para validar token CSRF (retorna boolean, no termina ejecución)
 function validarTokenCSRF($token) {
-    if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
-        http_response_code(403);
-        header('Content-Type: application/json');
-        die(json_encode(['success' => false, 'message' => 'Token CSRF inválido']));
+    // Si el token está vacío o no coincide, retornar false
+    if (empty($token) || !isset($_SESSION['csrf_token'])) {
+        return false;
     }
-    return true;
+    return hash_equals($_SESSION['csrf_token'], $token);
 }
 
 // Función helper para validar Content-Type en requests POST

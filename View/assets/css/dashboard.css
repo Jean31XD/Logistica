@@ -1,0 +1,801 @@
+/**
+ * Dashboard Styles - MACO Logística
+ * Estilos principales para el dashboard de facturación
+ * 
+ * @package    MACO
+ * @author     MACO Team
+ * @version    1.0.0
+ */
+
+/* ==========================================================================
+   Variables CSS
+   ========================================================================== */
+:root {
+    --sidebar-bg: #1D3557;
+    --main-bg: #F7FAFC;
+    --card-bg: #ffffff;
+    --text-primary: #2D3748;
+    --text-secondary: #718096;
+    --accent-color: #E63946;
+    --accent-dark: #D62839;
+    --accent-blue: #457B9D;
+    --border-color: #E2E8F0;
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--main-bg);
+    color: var(--text-primary);
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+.dashboard-layout {
+    display: flex;
+    height: 100%;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 2.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
+    max-width: 100%;
+}
+
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+.sidebar {
+    width: 300px;
+    background: linear-gradient(180deg, #1D3557 0%, #0F1F30 100%);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.logo {
+    margin-bottom: 2rem;
+    text-align: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo img {
+    max-width: 100%;
+    height: auto;
+    max-height: 80px;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.sidebar-section h3 {
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+    color: #A0AEC0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(230, 57, 70, 0.2);
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.nav-item a {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    color: #CBD5E0;
+    text-decoration: none;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.nav-item a:hover {
+    background: rgba(230, 57, 70, 0.1);
+    color: #fff;
+    transform: translateX(5px);
+}
+
+.nav-item a.active {
+    background: var(--accent-color);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(230, 57, 70, 0.4);
+}
+
+.nav-item a.logout-link {
+    color: #F56565;
+    border: 1px solid rgba(245, 101, 101, 0.3);
+}
+
+.nav-item a.logout-link:hover {
+    background: rgba(230, 57, 70, 0.15);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+
+/* ==========================================================================
+   Filter Form
+   ========================================================================== */
+.filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.filter-group {
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group:hover {
+    border-color: rgba(230, 57, 70, 0.3);
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.filter-group:focus-within {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.2);
+    transform: translateY(-2px);
+}
+
+.filter-group label {
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    font-size: 0.7rem;
+    color: #718096;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    pointer-events: none;
+}
+
+.filter-group input,
+.filter-group select {
+    width: 100%;
+    padding: 2rem 1rem 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #2D3748;
+    font-family: inherit;
+    font-size: 1rem;
+    appearance: none;
+    font-weight: 600;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.filter-group select {
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23E63946%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 1rem top 50%;
+    background-size: 0.7em auto;
+    cursor: pointer;
+    padding-right: 2.5rem;
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 3px solid rgba(230, 57, 70, 0.1);
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #E63946 0%, #457B9D 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.loader {
+    font-size: 0.9rem;
+    color: var(--accent-color);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-weight: 600;
+}
+
+.loader.loading {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Views
+   ========================================================================== */
+.view-container {
+    display: none;
+}
+
+.view-container.active {
+    display: block;
+}
+
+/* ==========================================================================
+   Grid Layout
+   ========================================================================== */
+.grid-layout {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
+    width: 100%;
+}
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+.card {
+    background-color: var(--card-bg);
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(230, 57, 70, 0.1);
+    transition: all 0.3s ease;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ==========================================================================
+   Chart Container
+   ========================================================================== */
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   KPI Cards
+   ========================================================================== */
+.kpi-card {
+    background: linear-gradient(135deg, #fff 0%, #F7FAFC 100%);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    border-left: 6px solid var(--accent-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -10px rgba(230, 57, 70, 0.3);
+    border-left-width: 8px;
+}
+
+.kpi-card h2 {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.kpi-card p {
+    margin: 0;
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent-color);
+}
+
+/* ==========================================================================
+   Status Table
+   ========================================================================== */
+.status-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.status-table th,
+.status-table td {
+    padding: 1rem;
+    text-align: left;
+}
+
+.status-table th {
+    background: #1D3557;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid var(--accent-color);
+}
+
+.status-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.status-table tbody tr:hover {
+    background-color: rgba(69, 123, 157, 0.05);
+}
+
+.status-table tbody tr:nth-child(even) {
+    background-color: #F7FAFC;
+}
+
+.status-table tfoot td {
+    font-weight: 800;
+    background: #EDF2F7;
+    border-top: 3px solid var(--accent-color);
+    padding: 1.25rem 1rem;
+    font-size: 1.1rem;
+}
+
+.status-table tfoot td:last-child {
+    color: var(--accent-color);
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   Delivery Details Table
+   ========================================================================== */
+.delivery-details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.delivery-details-table thead {
+    background: #F7FAFC;
+}
+
+.delivery-details-table thead th {
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4A5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #E2E8F0;
+}
+
+.delivery-details-table tbody tr {
+    border-bottom: 1px solid #E2E8F0;
+    transition: background-color 0.2s;
+}
+
+.delivery-details-table tbody tr:hover {
+    background-color: #F7FAFC;
+}
+
+.delivery-details-table tbody td {
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: #2D3748;
+}
+
+.delivery-details-table tbody tr[data-estado="ENTREGADO"] {
+    background-color: rgba(72, 187, 120, 0.05);
+}
+
+.truck-header {
+    background: #E63946;
+    color: white;
+    padding: 1rem;
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: left;
+}
+
+.truck-summary {
+    background: #FEF3C7;
+    font-weight: 700;
+    border-top: 2px solid #F59E0B;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Transportistas
+   ========================================================================== */
+.transportistas-container {
+    width: 100%;
+}
+
+.transportista-card {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.transportista-card:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
+}
+
+.transportista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.transportista-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #E63946 0%, #D62839 100%);
+    transition: left 0.4s ease;
+    z-index: 0;
+}
+
+.transportista-header:hover::before {
+    left: 0;
+}
+
+.transportista-header > * {
+    position: relative;
+    z-index: 1;
+}
+
+.transportista-nombre {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.transportista-nombre i {
+    font-size: 1.5rem;
+}
+
+.transportista-stats {
+    display: flex;
+    gap: 1.5rem;
+    color: white;
+    align-items: center;
+}
+
+.stat-item {
+    text-align: center;
+    min-width: 60px;
+}
+
+.stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    opacity: 0.85;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-top: 0.25rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.expand-icon {
+    color: white;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+    transform: rotate(180deg);
+}
+
+.transportista-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.transportista-details.expanded {
+    max-height: 2000px;
+}
+
+.transportista-details-content {
+    padding: 1.5rem;
+    background: #F7FAFC;
+}
+
+/* ==========================================================================
+   Badges
+   ========================================================================== */
+.estado-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.badge-entregado {
+    background-color: rgba(72, 187, 120, 0.15);
+    color: #2F855A;
+    border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+.badge-despachado {
+    background-color: rgba(237, 137, 54, 0.15);
+    color: #C05621;
+    border: 1px solid rgba(237, 137, 54, 0.3);
+}
+
+/* ==========================================================================
+   Metricas Resumen
+   ========================================================================== */
+.metricas-resumen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.metrica-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metrica-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.metrica-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.metrica-info {
+    flex: 1;
+}
+
+.metrica-label {
+    font-size: 0.75rem;
+    color: #718096;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metrica-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2D3748;
+    margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   Facturas Table Wrapper
+   ========================================================================== */
+.facturas-table-wrapper {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.table-header h3 i {
+    margin-right: 0.5rem;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.filter-btn.active {
+    background: white;
+    color: #667eea;
+    border-color: white;
+}
+
+.filter-btn i {
+    margin-right: 0.35rem;
+}
+
+/* ==========================================================================
+   Loading Spinner
+   ========================================================================== */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #667eea;
+}
+
+.loading-spinner p {
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   No Data Message
+   ========================================================================== */
+.no-data-message {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 3rem;
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed var(--border-color);
+}
+
+/* ==========================================================================
+   Pagination Controls
+   ========================================================================== */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #F7FAFC;
+    border-top: 1px solid #E2E8F0;
+}
+
+.pagination-info {
+    color: #718096;
+    font-size: 0.875rem;
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pagination-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #E2E8F0;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #F7FAFC;
+    border-color: var(--accent-color);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-indicator {
+    padding: 0.5rem 1rem;
+    background: #E63946;
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+}
