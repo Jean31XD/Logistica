@@ -223,8 +223,8 @@ switch ($action) {
         break;
         
     case 'list_almacenes':
-        // Listar almacenes disponibles desde inventlocation
-        $sql = "SELECT DISTINCT inventlocationid FROM inventlocation ORDER BY inventlocationid";
+        // Listar almacenes disponibles desde inventdim
+        $sql = "SELECT DISTINCT inventlocationid FROM inventdim WHERE inventlocationid IS NOT NULL AND inventlocationid <> '' ORDER BY inventlocationid";
         $stmt = sqlsrv_query($conn, $sql);
         
         if ($stmt === false) {
