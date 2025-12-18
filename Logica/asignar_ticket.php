@@ -33,74 +33,77 @@ if (!$conn) {
 
 // 2. Obtener datos de la petición AJAX
 $tiket = $_POST['tiket'] ?? null;
-$password = $_POST['password'] ?? null;
+$password = $_POST['password'] ?? '';
 $currentAssignee = $_POST['current_assignee'] ?? ''; // El usuario que tiene el ticket ahora
 $sessionUser = $_SESSION['usuario']; // El usuario que quiere tomar el ticket
 
-if (!$tiket || !$password) {
-    echo json_encode(['success' => false, 'message' => 'Faltan datos (ticket o contraseña).']);
+if (!$tiket) {
+    echo json_encode(['success' => false, 'message' => 'Falta el número de ticket.']);
     exit();
 }
 
-// 3. El resto de tu lógica (que ya está bien)
-// Determinar qué usuario debemos verificar
-$user_to_check = '';
-if (!empty($currentAssignee)) {
-    // --- CASO 1: RE-ASIGNACIÓN ---
+// 3. Determinar si es asignación nueva o reasignación
+$isReassignment = !empty($currentAssignee);
+
+if ($isReassignment) {
+    // --- CASO 1: RE-ASIGNACIÓN (se requiere contraseña) ---
     if ($currentAssignee === $sessionUser) {
         echo json_encode(['success' => false, 'message' => 'No puedes reasignarte un ticket que ya es tuyo.']);
         sqlsrv_close($conn);
         exit();
     }
-    $user_to_check = $currentAssignee;
-} else {
-    // --- CASO 2: ASIGNACIÓN NUEVA ---
-    $user_to_check = $sessionUser;
-}
-
-// Buscar el hash de la contraseña del usuario a verificar
-$sql_get_hash = "SELECT password FROM usuarios WHERE usuario = ?";
-$params_get_hash = [$user_to_check];
-$stmt_get_hash = sqlsrv_query($conn, $sql_get_hash, $params_get_hash);
-
-if ($stmt_get_hash === false) {
-    echo json_encode(['success' => false, 'message' => 'Error al consultar el usuario.']);
-    sqlsrv_close($conn);
-    exit();
-}
-
-$row = sqlsrv_fetch_array($stmt_get_hash, SQLSRV_FETCH_ASSOC);
-
-if (!$row || !isset($row['password'])) {
-    // No revelar si el usuario existe o no (prevenir enumeración)
-    require_once __DIR__ . '/../conexionBD/log_manager.php';
-    logWithRotation("Intento de asignación con usuario no encontrado: $user_to_check", 'WARNING', 'AUTH');
-    echo json_encode(['success' => false, 'message' => 'Error de autenticación. Verifique su contraseña.']);
-    sqlsrv_close($conn);
-    exit();
-}
-
-$hashed_password = $row['password'];
-
-// Verificar la contraseña
-if (password_verify($password, $hashed_password)) {
-    // Contraseña correcta. Procedemos a asignar el ticket al usuario de la sesión.
-    $sql_update = "UPDATE log SET Asignar = ?, FechaModificacion = GETDATE() WHERE Tiket = ?";
-    $params_update = [$sessionUser, $tiket];
-    $stmt_update = sqlsrv_query($conn, $sql_update, $params_update);
-
-    if ($stmt_update && sqlsrv_rows_affected($stmt_update) > 0) {
-        // Regenerar sesión por cambio de privilegios (ahora tiene un ticket asignado)
-        regenerarSesionPorCambioPrivilegios();
-        echo json_encode(['success' => true, 'message' => 'Ticket asignado correctamente.']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Error al asignar el ticket. Intente de nuevo.']);
+    
+    // Verificar contraseña del usuario que tiene el ticket
+    if (empty($password)) {
+        echo json_encode(['success' => false, 'message' => 'Para reasignar, ingrese la contraseña del usuario actual.']);
+        sqlsrv_close($conn);
+        exit();
     }
+    
+    $sql_get_hash = "SELECT password FROM usuarios WHERE usuario = ?";
+    $stmt_get_hash = sqlsrv_query($conn, $sql_get_hash, [$currentAssignee]);
+    
+    if ($stmt_get_hash === false) {
+        echo json_encode(['success' => false, 'message' => 'Error al consultar el usuario.']);
+        sqlsrv_close($conn);
+        exit();
+    }
+    
+    $row = sqlsrv_fetch_array($stmt_get_hash, SQLSRV_FETCH_ASSOC);
+    
+    if (!$row || !isset($row['password'])) {
+        require_once __DIR__ . '/../conexionBD/log_manager.php';
+        logWithRotation("Intento de reasignación - usuario no encontrado: $currentAssignee", 'WARNING', 'AUTH');
+        echo json_encode(['success' => false, 'message' => 'Error de autenticación. Verifique la contraseña.']);
+        sqlsrv_close($conn);
+        exit();
+    }
+    
+    if (!password_verify($password, $row['password'])) {
+        require_once __DIR__ . '/../conexionBD/log_manager.php';
+        logWithRotation("Intento fallido de reasignación - contraseña incorrecta para: $currentAssignee", 'WARNING', 'AUTH');
+        echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
+        sqlsrv_close($conn);
+        exit();
+    }
+    
+    // Contraseña correcta, proceder con reasignación
 } else {
-    // Contraseña incorrecta - mismo mensaje que usuario no encontrado (prevenir enumeración)
-    require_once __DIR__ . '/../conexionBD/log_manager.php';
-    logWithRotation("Intento fallido de asignación para usuario: $user_to_check", 'WARNING', 'AUTH');
-    echo json_encode(['success' => false, 'message' => 'Error de autenticación. Verifique su contraseña.']);
+    // --- CASO 2: ASIGNACIÓN NUEVA (usuario ya autenticado en sesión) ---
+    // No se requiere contraseña adicional, el usuario ya inició sesión
+}
+
+// Proceder con la asignación del ticket
+$sql_update = "UPDATE log SET Asignar = ?, FechaModificacion = GETDATE() WHERE Tiket = ?";
+$params_update = [$sessionUser, $tiket];
+$stmt_update = sqlsrv_query($conn, $sql_update, $params_update);
+
+if ($stmt_update && sqlsrv_rows_affected($stmt_update) > 0) {
+    regenerarSesionPorCambioPrivilegios();
+    $actionType = $isReassignment ? 'reasignado' : 'asignado';
+    echo json_encode(['success' => true, 'message' => "Ticket $actionType correctamente."]);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Error al asignar el ticket. Intente de nuevo.']);
 }
 
 sqlsrv_close($conn);

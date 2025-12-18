@@ -155,19 +155,21 @@ include __DIR__ . '/../templates/header.php';
             <form id="formAsignar">
                 <div class="modal-header">
                     <h5 class="modal-title" id="asignarModalLabel">
-                        <i class="fa-solid fa-lock me-2"></i>Confirmar Asignación
+                        <i class="fa-solid fa-user-check me-2"></i>Confirmar Asignación
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="modalAsignarTexto">Para asignarte el ticket <strong id="asignarTicketId"></strong>, por favor ingresa tu contraseña.</p>
+                    <p id="modalAsignarTexto">¿Deseas asignarte el ticket <strong id="asignarTicketId"></strong>?</p>
 
                     <input type="hidden" id="asignarTiketInput">
                     <input type="hidden" id="currentAssigneeInput">
+                    <input type="hidden" id="isReassignment" value="false">
 
-                    <div class="mb-3">
-                        <label for="usuarioPassword" id="passwordLabel" class="form-label">Tu Contraseña:</label>
-                        <input type="password" id="usuarioPassword" class="form-control" required autocomplete="current-password">
+                    <!-- Campo de contraseña (solo visible en reasignación) -->
+                    <div class="mb-3" id="passwordContainer" style="display: none;">
+                        <label for="usuarioPassword" id="passwordLabel" class="form-label">Contraseña del usuario actual:</label>
+                        <input type="password" id="usuarioPassword" class="form-control" autocomplete="current-password">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -346,16 +348,26 @@ $(document).ready(function () {
         $('#usuarioPassword').val('');
 
         if (asignadoA) {
-            $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, por favor ingresa la contraseña de <strong>${asignadoA}</strong>.`);
+            // Reasignación - mostrar campo contraseña
+            $('#isReassignment').val('true');
+            $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, ingresa la contraseña de <strong>${asignadoA}</strong>.`);
             $('#passwordLabel').text(`Contraseña de ${asignadoA}:`);
+            $('#passwordContainer').show();
+            $('#usuarioPassword').prop('required', true);
         } else {
-            $('#modalAsignarTexto').html(`Para asignarte el ticket <strong>${tiket}</strong>, por favor ingresa tu contraseña.`);
-            $('#passwordLabel').text('Tu Contraseña:');
+            // Asignación nueva - no requiere contraseña
+            $('#isReassignment').val('false');
+            $('#modalAsignarTexto').html(`¿Deseas asignarte el ticket <strong>${tiket}</strong>?`);
+            $('#passwordContainer').hide();
+            $('#usuarioPassword').prop('required', false);
         }
 
         const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
         asignarModal.show();
-        $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
+        
+        if (asignadoA) {
+            $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
+        }
     });
 
     $('#formAsignar').on('submit', function(e) {
@@ -363,9 +375,11 @@ $(document).ready(function () {
         const tiket = $('#asignarTiketInput').val();
         const password = $('#usuarioPassword').val();
         const currentAssignee = $('#currentAssigneeInput').val();
+        const isReassignment = $('#isReassignment').val() === 'true';
 
-        if (!password) {
-            alert('Por favor, ingresa la contraseña requerida.');
+        // Solo validar contraseña si es reasignación
+        if (isReassignment && !password) {
+            alert('Por favor, ingresa la contraseña del usuario actual.');
             return;
         }
 
@@ -385,7 +399,9 @@ $(document).ready(function () {
                     actualizarTablaInteligentemente();
                 } else {
                     alert('Error: ' + response.message);
-                    $('#usuarioPassword').val('').focus();
+                    if (isReassignment) {
+                        $('#usuarioPassword').val('').focus();
+                    }
                 }
             },
             error: () => alert('Ocurrió un error de comunicación. Inténtalo de nuevo.')
