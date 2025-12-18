@@ -13,6 +13,12 @@ $csrfToken = generarTokenCSRF();
 // --- CONEXIÓN A LA BASE DE DATOS ---
 require_once __DIR__ . '/conexionBD/conexion.php';
 $errorLogin = "";
+
+// Capturar error de autenticación Microsoft
+if (isset($_GET['error']) && $_GET['error'] === 'auth') {
+    $errorLogin = $_SESSION['auth_error'] ?? 'Error de autenticación con Microsoft';
+    unset($_SESSION['auth_error']);
+}
 $tiempo_espera = 1 * 60;
 
 // --- LÓGICA DE BLOQUEO POR INTENTOS FALLIDOS ---
@@ -73,22 +79,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                     sqlsrv_free_stmt($stmtSync);
                 }
 
-                switch ($row['pantalla']) {
-                    case 0: header("Location: View/Admin.php"); break;
-                    case 1: header("Location: View/Inicio_gestion.php"); break;
-                    case 2: header("Location: View/facturas.php"); break;
-                    case 3: header("Location: View/CXC.php"); break;
-                    case 4: header("Location: View/Reporte.php"); break;
-                    case 5: header("Location: View/Paneladmin.php"); break;
-                    case 6: header("Location: View/BI.php"); break;
-                    case 8: header("Location: View/Listo-etiquetas.php"); break;
-                    case 9: header("Location: View/dashboard.php"); break;
-                    case 10: header("Location: View/Listo_inventario.php"); break;
-                    case 11: header("Location: View/Codigos_de_barras.php"); break;
-                    case 12: header("Location: View/Codigos_referencia.php"); break;
-                    case 13: header("Location: View/Gestion_imagenes.php"); break;
-                    default: header("Location: View/Inicio.php"); break;
-                }
+                // TODOS los usuarios van a Portal.php
+                // Allí verán solo los módulos que tienen asignados
+                header("Location: View/pantallas/Portal.php");
                 exit();
             } else {
                 $sqlLog = "INSERT INTO log_accesos (ip, username, exito, tipo_intento) VALUES (?, ?, 0, 'login')";
@@ -542,6 +535,53 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($errorLogin)) {
                 Iniciar Sesión
             </button>
         </form>
+
+        <!-- Separador -->
+        <div style="display: flex; align-items: center; margin: 24px 0;">
+            <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+            <span style="padding: 0 16px; color: #94a3b8; font-size: 0.875rem; font-weight: 500;">o continúa con</span>
+            <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+        </div>
+
+        <!-- Botón Microsoft -->
+        <a href="Logica/auth_microsoft.php" class="btn-microsoft">
+            <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            <span>Iniciar con Microsoft</span>
+        </a>
+
+        <style>
+            .btn-microsoft {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                width: 100%;
+                padding: 14px 16px;
+                background: #ffffff;
+                border: 2px solid #e2e8f0;
+                border-radius: 12px;
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: var(--text-dark);
+                text-decoration: none;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            .btn-microsoft:hover {
+                background: #f8fafc;
+                border-color: #0078d4;
+                box-shadow: 0 4px 12px rgba(0, 120, 212, 0.15);
+                transform: translateY(-1px);
+            }
+            .btn-microsoft svg {
+                flex-shrink: 0;
+            }
+        </style>
     </div>
 </div>
 

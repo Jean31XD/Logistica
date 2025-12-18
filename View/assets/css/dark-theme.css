@@ -1,0 +1,350 @@
+/**
+ * Dark Theme - MACO Logística
+ * 
+ * Variables CSS para tema oscuro.
+ * 
+ * @package    MACO
+ * @author     MACO Team
+ * @version    1.0.0
+ */
+
+/* ==========================================================================
+   Dark Theme Variables
+   ========================================================================== */
+[data-theme="dark"] {
+    /* Backgrounds */
+    --main-bg: #0F1419;
+    --card-bg: #1A1F25;
+    --sidebar-bg: #0D1117;
+    --header-bg: #161B22;
+
+    /* Text */
+    --text-primary: #E6EDF3;
+    --text-secondary: #8B949E;
+    --text-muted: #6E7681;
+
+    /* Borders */
+    --border-color: #30363D;
+    --border-light: #21262D;
+
+    /* Brand Colors (se mantienen) */
+    --accent-color: #E63946;
+    --accent-dark: #D62839;
+    --accent-blue: #58A6FF;
+
+    /* Status Colors */
+    --success: #3FB950;
+    --warning: #D29922;
+    --danger: #F85149;
+    --info: #58A6FF;
+
+    /* Shadows */
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+    /* Input */
+    --input-bg: #0D1117;
+    --input-border: #30363D;
+    --input-focus: #58A6FF;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, #E63946 0%, #D62839 100%);
+    --gradient-secondary: linear-gradient(135deg, #21262D 0%, #161B22 100%);
+    --gradient-accent: linear-gradient(135deg, #58A6FF 0%, #1F6FEB 100%);
+}
+
+/* ==========================================================================
+   Dark Theme Overrides
+   ========================================================================== */
+[data-theme="dark"] body {
+    background-color: var(--main-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .sidebar {
+    background: var(--gradient-secondary);
+    border-right: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .maco-card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card:hover,
+[data-theme="dark"] .maco-card:hover {
+    background-color: #21262D;
+    box-shadow: var(--shadow-lg);
+}
+
+[data-theme="dark"] .kpi-card {
+    background: var(--gradient-secondary);
+    border-left-color: var(--accent-color);
+}
+
+[data-theme="dark"] .status-table {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .status-table th {
+    background: #21262D;
+    border-bottom-color: var(--accent-color);
+}
+
+[data-theme="dark"] .status-table tbody tr {
+    border-bottom-color: var(--border-light);
+}
+
+[data-theme="dark"] .status-table tbody tr:hover {
+    background-color: rgba(88, 166, 255, 0.08);
+}
+
+[data-theme="dark"] .status-table tbody tr:nth-child(even) {
+    background-color: #161B22;
+}
+
+[data-theme="dark"] .status-table tfoot td {
+    background: #21262D;
+}
+
+[data-theme="dark"] .delivery-details-table thead {
+    background: #21262D;
+}
+
+[data-theme="dark"] .delivery-details-table thead th {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .delivery-details-table tbody tr {
+    border-bottom-color: var(--border-light);
+}
+
+[data-theme="dark"] .delivery-details-table tbody tr:hover {
+    background-color: rgba(88, 166, 255, 0.08);
+}
+
+[data-theme="dark"] .transportista-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .transportista-header {
+    background: var(--gradient-secondary);
+}
+
+[data-theme="dark"] .transportista-details-content {
+    background: #161B22;
+}
+
+[data-theme="dark"] .metrica-card {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .facturas-table-wrapper {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .filter-group {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .filter-group:hover {
+    border-color: var(--accent-color);
+}
+
+[data-theme="dark"] .filter-group label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .filter-group input,
+[data-theme="dark"] .filter-group select {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"] .filter-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+[data-theme="dark"] .pagination-controls {
+    background: #21262D;
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .pagination-btn,
+[data-theme="dark"] .btn-page {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .pagination-btn:hover:not(:disabled),
+[data-theme="dark"] .btn-page:hover:not(:disabled) {
+    background: #21262D;
+    border-color: var(--accent-color);
+}
+
+[data-theme="dark"] .maco-table {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .maco-table thead {
+    background: #21262D;
+}
+
+[data-theme="dark"] .maco-table tbody tr {
+    border-bottom-color: var(--border-light);
+}
+
+[data-theme="dark"] .maco-table.striped tbody tr:nth-child(even) {
+    background-color: #161B22;
+}
+
+[data-theme="dark"] .maco-table.hover tbody tr:hover {
+    background-color: rgba(88, 166, 255, 0.08);
+}
+
+[data-theme="dark"] .maco-table td {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .badge-entregado {
+    background-color: rgba(63, 185, 80, 0.15);
+    color: #3FB950;
+    border-color: rgba(63, 185, 80, 0.3);
+}
+
+[data-theme="dark"] .badge-despachado {
+    background-color: rgba(210, 153, 34, 0.15);
+    color: #D29922;
+    border-color: rgba(210, 153, 34, 0.3);
+}
+
+[data-theme="dark"] .maco-alert-success {
+    background: rgba(63, 185, 80, 0.1);
+    border-color: rgba(63, 185, 80, 0.3);
+    color: #3FB950;
+}
+
+[data-theme="dark"] .maco-alert-error {
+    background: rgba(248, 81, 73, 0.1);
+    border-color: rgba(248, 81, 73, 0.3);
+    color: #F85149;
+}
+
+[data-theme="dark"] .maco-alert-warning {
+    background: rgba(210, 153, 34, 0.1);
+    border-color: rgba(210, 153, 34, 0.3);
+    color: #D29922;
+}
+
+[data-theme="dark"] .maco-alert-info {
+    background: rgba(88, 166, 255, 0.1);
+    border-color: rgba(88, 166, 255, 0.3);
+    color: #58A6FF;
+}
+
+[data-theme="dark"] .modal {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .modal-header {
+    background: #21262D;
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-footer {
+    background: #21262D;
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .no-data-message {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] header h1 {
+    background: linear-gradient(135deg, #E63946 0%, #58A6FF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* ==========================================================================
+   Theme Toggle Button
+   ========================================================================== */
+.theme-toggle {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    border-radius: 13px;
+    background: var(--border-color);
+    cursor: pointer;
+    transition: background 0.3s ease;
+    border: none;
+    padding: 0;
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle::after {
+    content: '☀️';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+}
+
+[data-theme="dark"] .theme-toggle {
+    background: var(--accent-blue);
+}
+
+[data-theme="dark"] .theme-toggle::before {
+    transform: translateX(24px);
+}
+
+[data-theme="dark"] .theme-toggle::after {
+    content: '🌙';
+    left: 6px;
+    right: auto;
+}
+
+.theme-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.theme-toggle-label {
+    font-size: 0.85rem;
+    color: #A0AEC0;
+}

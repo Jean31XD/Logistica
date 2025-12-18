@@ -4,6 +4,8 @@
  * Template reutilizable para todas las pantallas
  */
 
+// Cargar autoloader del proyecto (helpers y clases)
+require_once __DIR__ . '/../../src/autoload.php';
 // Asegurar que la sesión esté iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -34,20 +36,33 @@ $roles = [
 $rol = $roles[$pantalla] ?? 'Usuario';
 $iniciales = strtoupper(substr($usuario, 0, 2));
 
-// Mapeo de pantallas a su página principal/inicio
-$homePage = [
-    0 => 'Admin.php',
-    1 => 'Inicio_gestion.php',
-    2 => 'facturas.php',
-    3 => 'CXC.php',
-    4 => 'Reporte.php',
-    5 => 'Paneladmin.php',
-    6 => 'BI.php',
-    8 => 'Listo-etiquetas.php',
-    9 => 'dashboard.php'
-];
+// Calcular la ruta base relativa al directorio View
+// Detectar si estamos en una subcarpeta (pantallas/ o modulos/)
+$scriptPath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_FILENAME']));
+$viewPath = str_replace('\\', '/', realpath(__DIR__ . '/..'));
 
-$homeUrl = $homePage[$pantalla] ?? 'Inicio.php';
+// Determinar el nivel de profundidad y rutas
+if (strpos($scriptPath, '/pantallas') !== false || strpos($scriptPath, '/modulos') !== false) {
+    $basePath = '../..'; // Desde View/pantallas/ o View/modulos/
+    $assetsPath = '../../assets'; // assets/ en raíz del proyecto
+    $viewAssetsPath = '../assets'; // View/assets/
+    $imgPath = '../../IMG';
+    $logicaPath = '../../Logica';
+    $pantallasPath = '../pantallas';
+    $modulosPath = '../modulos';
+} else {
+    $basePath = '..'; // Desde View/
+    $assetsPath = '../assets'; // assets/ en raíz del proyecto
+    $viewAssetsPath = 'assets'; // View/assets/
+    $imgPath = '../IMG';
+    $logicaPath = '../Logica';
+    $pantallasPath = 'pantallas';
+    $modulosPath = 'modulos';
+}
+
+// Página de inicio: TODOS los usuarios van a Portal.php
+// Ya no hay panel de admin separado, todos ven solo sus módulos asignados
+$homeUrl = $pantallasPath . '/Portal.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -68,7 +83,7 @@ $homeUrl = $homePage[$pantalla] ?? 'Inicio.php';
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- MACO Design System -->
-    <link rel="stylesheet" href="../assets/css/maco-design-system.css">
+    <link rel="stylesheet" href="<?= $assetsPath ?>/css/maco-design-system.css">
 
     <!-- Estilos adicionales de la página -->
     <?php if (isset($additionalCSS)): ?>
@@ -87,7 +102,7 @@ $homeUrl = $homePage[$pantalla] ?? 'Inicio.php';
         <header class="maco-header">
             <div class="maco-header-content">
                 <div class="maco-logo">
-                    <img src="../IMG/LOGO MC - NEGRO.png" alt="MACO Logo">
+                    <img src="<?= $imgPath ?>/LOGO MC - NEGRO.png" alt="MACO Logo">
                     <span class="maco-logo-text">MACO Logística</span>
                 </div>
 
@@ -103,7 +118,7 @@ $homeUrl = $homePage[$pantalla] ?? 'Inicio.php';
                     <div class="maco-user-avatar">
                         <?= $iniciales ?>
                     </div>
-                    <a href="../Logica/logout.php" class="maco-logout-btn">
+                    <a href="<?= $logicaPath ?>/logout.php" class="maco-logout-btn">
                         <i class="fas fa-sign-out-alt"></i>
                         <span class="d-none d-md-inline">Salir</span>
                     </a>

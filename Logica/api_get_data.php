@@ -13,6 +13,8 @@ if (!isset($_SESSION['dashboard_access_granted']) || $_SESSION['dashboard_access
 $USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
 $USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
 
+// 3. Cargar autoloader del proyecto (habilita clases y helpers)
+require_once __DIR__ . '/../src/autoload.php';
 
 // Requerir la conexión a la base de datos
 require '../conexionBD/conexion.php'; 
@@ -379,6 +381,109 @@ try {
                 }
                 $response[] = $row;
             }
+            break;
+
+        case 'dispatched_by_truck':
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para consultar facturas despachadas.', 400);
+            }
+
+            // Consulta: Para cada transportista (desde Camiones_PW), contar facturas según su estado
+            // Relaciona Camiones_PW.chasis con Factura_Programa_Despacho_MACOR.Camion
+            $sqlDispatched = $cte_facturas . "
+                SELECT
+                    m.Camion AS Camion,
+                    ISNULL(c.nombre, 'Sin asignar') AS Transportista,
+                    ISNULL(c.placa, m.Camion) AS Placa,
+                    ISNULL(c.modelo, 'N/A') AS Modelo,
+                    ISNULL(c.ficha, 'N/A') AS Ficha,
+                    -- Total de facturas asignadas a este camión
+                    COUNT(DISTINCT m.No_Factura) AS TotalAsignadas,
+                    -- Facturas con Estado = 'ENTREGADO'
+                    COUNT(DISTINCT CASE
+                        WHEN m.Estado = 'ENTREGADO'
+                        THEN m.No_Factura
+                        ELSE NULL
+                    END) AS TotalEntregadas,
+                    -- Facturas con Estado = 'DESPACHADO' u otros estados
+                    COUNT(DISTINCT CASE
+                        WHEN m.Estado <> 'ENTREGADO' OR m.Estado IS NULL
+                        THEN m.No_Factura
+                        ELSE NULL
+                    END) AS TotalDespachadas
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                LEFT JOIN Camiones_PW c ON m.Camion = c.chasis
+                WHERE m.Fecha_de_Despacho IS NOT NULL
+                    AND f.invoicedate BETWEEN ? AND ?
+                    AND m.Camion IS NOT NULL
+                    $almacenSqlAnd
+                GROUP BY m.Camion, c.nombre, c.placa, c.modelo, c.ficha
+                ORDER BY c.nombre, c.placa
+            ";
+
+            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtDispatched = sqlsrv_query($conn, $sqlDispatched, $baseParams);
+
+            if ($stmtDispatched === false) {
+                throw new Exception('Error al consultar facturas despachadas por camión.');
+            }
+
+            $response = [];
+            while ($row = sqlsrv_fetch_array($stmtDispatched, SQLSRV_FETCH_ASSOC)) {
+                $response[] = $row;
+            }
+            break;
+
+        case 'facturas_by_truck':
+            // Obtener todas las facturas de un camión específico (por chasis)
+            $chasisCamion = $_GET['camion'] ?? '';
+            if (empty($chasisCamion) || empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros (camion, fecha_inicio, fecha_fin).', 400);
+            }
+
+            $sqlFacturas = $cte_facturas . "
+                SELECT
+                    m.No_Factura AS Factura,
+                    f.invoicingname AS Cliente,
+                    m.Estado,
+                    m.Camion AS Chasis,
+                    ISNULL(c.placa, m.Camion) AS Placa,
+                    ISNULL(c.nombre, 'Sin asignar') AS Transportista,
+                    m.Fecha_de_Despacho AS FechaDespacho,
+                    m.Despachado_por AS DespachadoPor,
+                    m.Fecha_de_Entregado AS FechaEntregado
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                LEFT JOIN Camiones_PW c ON m.Camion = c.chasis
+                WHERE m.Camion = ?
+                    AND m.Fecha_de_Despacho IS NOT NULL
+                    AND f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+                ORDER BY m.Estado DESC, m.Fecha_de_Registro DESC
+            ";
+
+            $facturasParams = array_merge([$chasisCamion, $fecha_inicio, $fecha_fin], $almacenParams);
+            $stmtFacturas = sqlsrv_query($conn, $sqlFacturas, $facturasParams);
+
+            if ($stmtFacturas === false) {
+                $errors = sqlsrv_errors();
+                error_log("Error SQL facturas_by_truck: " . print_r($errors, true));
+                throw new Exception('Error al consultar facturas del transportista.');
+            }
+
+            $response = [];
+            while ($row = sqlsrv_fetch_array($stmtFacturas, SQLSRV_FETCH_ASSOC)) {
+                // Convertir objetos DateTime a strings
+                if (isset($row['FechaDespacho']) && $row['FechaDespacho'] instanceof DateTime) {
+                    $row['FechaDespacho'] = $row['FechaDespacho']->format('Y-m-d H:i:s');
+                }
+                if (isset($row['FechaEntregado']) && $row['FechaEntregado'] instanceof DateTime) {
+                    $row['FechaEntregado'] = $row['FechaEntregado']->format('Y-m-d H:i:s');
+                }
+                $response[] = $row;
+            }
+            error_log("facturas_by_truck: Found " . count($response) . " facturas for camion (chasis): $chasisCamion");
             break;
 
         case 'drivers_list':

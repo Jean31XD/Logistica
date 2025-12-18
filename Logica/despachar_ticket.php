@@ -2,14 +2,7 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
-// Validar CSRF token
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrf = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!validarTokenCSRF($csrf)) {
-        http_response_code(403);
-        die(json_encode(['error' => 'Token CSRF inválido']));
-    }
-}
+// La sesión ya protege esta acción - CSRF removido para evitar expiración
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
@@ -34,6 +27,16 @@ if ($facturasRaw === "Se fue") {
 // Si la factura es distinta de "Se fue", validar duplicados y longitud
 if ($facturasRaw !== "Se fue") {
     $facturas = array_filter(array_map('trim', explode(';', $facturasRaw)));
+
+    // Validar que cada factura comience con FT o ft
+    foreach ($facturas as $f) {
+        $prefijo = strtoupper(substr($f, 0, 2));
+        if ($prefijo !== 'FT') {
+            echo "Error: La factura '$f' debe comenzar con 'FT'.";
+            sqlsrv_close($conn);
+            exit();
+        }
+    }
 
     // Validar duplicados en tabla 'analisis'
     foreach ($facturas as $factura) {

@@ -25,19 +25,33 @@ $response = [
 // Convertir el timestamp del cliente a un formato de fecha para SQL Server
 $sinceDate = date('Y-m-d H:i:s', $sinceTimestamp);
 
-// 3. Buscar tickets actualizados o nuevos desde la última revisión
-// Se buscan los que no están en un estado "final" como 'Despachado' o 'Se fue'
-$sqlUpdates = "SELECT l.Tiket, l.NombreTR, f.Cedula, f.Matricula, l.Empresa, l.Asignar, l.Estatus
-               FROM [log] l
-               LEFT JOIN facebd f ON l.NombreTR = f.Nombres
-               WHERE l.FechaModificacion > ? AND l.Estatus NOT IN ('Despachado', 'Se fue')";
-
-$paramsUpdates = [$sinceDate];
-$stmtUpdates = sqlsrv_query($conn, $sqlUpdates, $paramsUpdates);
+// 3. Buscar tickets actualizados o nuevos
+// En la carga inicial (since=0), obtener TODOS los tickets activos
+// En cargas posteriores, solo los modificados desde la última revisión
+// NOTA: TiempoTranscurrido usa el mismo cálculo que Pantalla.php para sincronización
+if ($sinceTimestamp == 0) {
+    // Carga inicial: todos los tickets activos
+    $sqlUpdates = "SELECT l.Tiket, l.NombreTR, f.Cedula, f.Matricula, l.Empresa, l.Asignar, l.Estatus,
+                          DATEDIFF(SECOND, COALESCE(l.FechaCreacion, l.FechaModificacion, GETDATE()), GETDATE()) AS TiempoTranscurrido
+                   FROM [log] l
+                   LEFT JOIN facebd f ON l.NombreTR = f.Nombres
+                   WHERE l.Estatus NOT IN ('Despachado', 'Se fue')";
+    $stmtUpdates = sqlsrv_query($conn, $sqlUpdates);
+} else {
+    // Actualización incremental: solo cambios recientes
+    $sqlUpdates = "SELECT l.Tiket, l.NombreTR, f.Cedula, f.Matricula, l.Empresa, l.Asignar, l.Estatus,
+                          DATEDIFF(SECOND, COALESCE(l.FechaCreacion, l.FechaModificacion, GETDATE()), GETDATE()) AS TiempoTranscurrido
+                   FROM [log] l
+                   LEFT JOIN facebd f ON l.NombreTR = f.Nombres
+                   WHERE l.FechaModificacion > ? AND l.Estatus NOT IN ('Despachado', 'Se fue')";
+    $paramsUpdates = [$sinceDate];
+    $stmtUpdates = sqlsrv_query($conn, $sqlUpdates, $paramsUpdates);
+}
 
 if ($stmtUpdates === false) {
-    // No terminar la ejecución, solo loguear el error si es necesario.
-    // Enviar una respuesta vacía es mejor que cortar la comunicación.
+    // Loguear el error SQL para diagnóstico
+    error_log("Error SQL en obtener_tickets.php: " . print_r(sqlsrv_errors(), true));
+    $response['sql_error'] = sqlsrv_errors();
 } else {
     while ($row = sqlsrv_fetch_array($stmtUpdates, SQLSRV_FETCH_ASSOC)) {
         $tiket = htmlspecialchars($row['Tiket']);
@@ -105,8 +119,26 @@ function generateRowHtml($row) {
     $retencionDisabled = !$isAsignadoAMi ? "disabled" : "";
     $selectDisabled = ($isRetencion || !$isAsignadoAMi) ? "disabled" : "";
 
+    // Tiempo transcurrido (calculado en SQL igual que Pantalla.php)
+    $tiempoStr = '--';
+    if (isset($row['TiempoTranscurrido'])) {
+        $segundos = (int)$row['TiempoTranscurrido'];
+        $horas = floor($segundos / 3600);
+        $minutos = floor(($segundos % 3600) / 60);
+        
+        if ($horas >= 24) {
+            $dias = floor($horas / 24);
+            $tiempoStr = $dias . 'd ' . ($horas % 24) . 'h';
+        } elseif ($horas > 0) {
+            $tiempoStr = $horas . 'h ' . $minutos . 'm';
+        } else {
+            $tiempoStr = $minutos . ' min';
+        }
+    }
+
     $html = "<tr class='$claseFila animate__animated' id='row_$tiket' data-tiket-id='$tiket'>";
     $html .= "<td>$tiket</td>";
+    $html .= "<td><span class='badge bg-secondary'>$tiempoStr</span></td>";
     $html .= "<td>" . htmlspecialchars($row['NombreTR']) .
              "<br><small style='color: black;'><strong>Cédula:</strong> " . htmlspecialchars($row['Cedula'] ?? 'N/A') .
              "<br><strong>Matrícula:</strong> " . htmlspecialchars($row['Matricula'] ?? 'N/A') . "</small></td>";
