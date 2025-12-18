@@ -1,40 +1,55 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../conexionBD/session_config.php';
+verificarAutenticacion();
 
 // =========================================================================
-// NUEVO BLOQUE DE LOGOUT (INICIO)
+// VERIFICAR PERMISO DEL MÓDULO DASHBOARD
 // =========================================================================
-// Si la URL tiene "?action=logout", cerramos la sesión completa.
-if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-    date_default_timezone_set(timezoneId: 'America/Santo_Domingo');
-    $_SESSION = [];
-    session_destroy();
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
-    // Eliminar la cookie de sesión también
-    if (ini_get("session.use_cookies")) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
-        );
-    }
-    // Redirigir al login principal (la "página anterior")
-    header("Location: ../index.php");
+if (!$conn) {
+    header("Location: ../pantallas/Portal.php?error=db");
     exit();
 }
-// =========================================================================
-// NUEVO BLOQUE DE LOGOUT (FIN)
-// =========================================================================
-
 
 date_default_timezone_set('America/Santo_Domingo');
 
-// 1. VERIFICAR SESIÓN PRINCIPAL DEL PROYECTO
-// (El resto de tu código de verificación sigue igual)
-if (!isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
+$usuario = $_SESSION['usuario'];
+$pantalla = $_SESSION['pantalla'] ?? -1;
+
+// Si es admin (pantalla 0), tiene acceso completo
+$tienePermiso = ($pantalla == 0);
+$USER_WAREHOUSE = '';
+$USER_TYPE = 'admin';
+
+if (!$tienePermiso) {
+    // Verificar si tiene el módulo dashboard_general asignado
+    $sql = "SELECT modulo FROM usuario_modulos WHERE usuario = ? AND modulo = 'dashboard_general' AND activo = 1";
+    $stmt = sqlsrv_query($conn, $sql, [$usuario]);
+    
+    if ($stmt !== false) {
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $tienePermiso = ($row !== null);
+    }
+}
+
+if (!$tienePermiso) {
+    // No tiene permiso, redirigir a Portal
+    header("Location: ../pantallas/Portal.php?error=sin_permiso");
     exit();
 }
+
+// Obtener almacén asignado al usuario
+$sqlAlmacen = "SELECT dashboard_almacen FROM usuarios WHERE usuario = ?";
+$stmtAlmacen = sqlsrv_query($conn, $sqlAlmacen, [$usuario]);
+
+if ($stmtAlmacen !== false) {
+    $rowAlmacen = sqlsrv_fetch_array($stmtAlmacen, SQLSRV_FETCH_ASSOC);
+    $USER_WAREHOUSE = $rowAlmacen['dashboard_almacen'] ?? '';
+}
+
+// Determinar tipo de usuario (admin = ve todos, warehouse = ve solo su almacén)
+$USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
 
 // Mapeo de pantallas a su página principal/inicio
 $homePage = [
@@ -49,205 +64,28 @@ $homePage = [
     9 => 'dashboard.php'
 ];
 
-$homeUrl = $homePage[$_SESSION['pantalla'] ?? 0] ?? 'Inicio.php';
+$homeUrl = $homePage[$pantalla] ?? '../pantallas/Portal.php';
 
-// 2. VERIFICAR SI EL ACCESO AL DASHBOARD YA FUE CONCEDIDO
-if (isset($_SESSION['dashboard_access_granted']) && $_SESSION['dashboard_access_granted'] === true) {
-    // Si ya tiene acceso, preparamos las variables para el dashboard
-    $USER_TYPE = $_SESSION['dashboard_user_type'] ?? 'guest';
-    $USER_WAREHOUSE = $_SESSION['dashboard_warehouse'] ?? '';
-    
-    // Si el tipo es 'warehouse', el almacén NO puede estar vacío.
-    if ($USER_TYPE === 'warehouse' && empty($USER_WAREHOUSE)) {
-        // Algo está mal (ej. un usuario de almacén sin almacén asignado).
-        // Lo forzamos a salir del dashboard para que vuelva a loguearse.
-        unset($_SESSION['dashboard_access_granted']);
-        header("Location: dashboard.php?error=3"); // Error: Perfil de almacén sin almacén
-        exit();
+// =========================================================================
+// LOGOUT HANDLER
+// =========================================================================
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    $_SESSION = [];
+    session_destroy();
+
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
     }
-    
-    // Si es admin, $USER_WAREHOUSE será "" (vacío), lo cual está bien.
-    
-} else {
-    // Si NO tiene acceso, mostramos el formulario de login por CÓDIGO.
-    // El resto de la página (el dashboard) no se cargará.
-    
-    $error_msg = '';
-    if (isset($_GET['error'])) {
-        switch ($_GET['error']) {
-            case '1': $error_msg = 'Código incorrecto o inactivo.'; break;
-            case '2': $error_msg = 'No tiene permiso para acceder.'; break;
-            case '3': $error_msg = 'Error de configuración: Su código de almacén no tiene un almacén asignado.'; break;
-            default: $error_msg = 'Error desconocido.';
-        }
-    }
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso al Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--gray-100);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            color: #fff;
-            position: relative;
-            overflow: hidden;
-        }
-        body::before {
-            content: '';
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: rgba(230, 57, 70, 0.1);
-            border-radius: 50%;
-            top: -300px;
-            right: -200px;
-            animation: float 6s ease-in-out infinite;
-        }
-        body::after {
-            content: '';
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: rgba(69, 123, 157, 0.15);
-            border-radius: 50%;
-            bottom: -200px;
-            left: -150px;
-            animation: float 8s ease-in-out infinite reverse;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) translateX(0px); }
-            50% { transform: translateY(-30px) translateX(30px); }
-        }
-        .login-container {
-            background: rgba(255, 255, 255, 0.98);
-            padding: 3rem;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            width: 100%;
-            max-width: 420px;
-            position: relative;
-            z-index: 10;
-            backdrop-filter: blur(10px);
-        }
-        .login-container img {
-            max-width: 100%;
-            height: auto;
-            max-height: 90px;
-            margin-bottom: 2rem;
-            filter: none;
-        }
-        .login-container h1 {
-            font-size: 1.75rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-            color: #1D3557;
-            background: linear-gradient(135deg, #E63946 0%, #457B9D 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .login-container p {
-            color: #718096;
-            margin-bottom: 2rem;
-            font-size: 0.95rem;
-        }
-        .login-form input {
-            width: 100%;
-            padding: 1.25rem;
-            font-size: 1.5rem;
-            text-align: center;
-            letter-spacing: 0.8em;
-            border: 2px solid #E2E8F0;
-            background-color: #F7FAFC;
-            color: #2D3748;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            font-weight: 700;
-        }
-        .login-form input:focus {
-            outline: none;
-            border-color: #E63946;
-            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
-            background-color: white;
-        }
-        .login-form button {
-            width: 100%;
-            padding: 1.25rem;
-            font-size: 1rem;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, #E63946 0%, #D62839 100%);
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
-        }
-        .login-form button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
-        }
-        .login-form button:active {
-            transform: translateY(0);
-        }
-        .error-message {
-            color: #E63946;
-            margin-top: 1rem;
-            font-weight: 600;
-            background: rgba(230, 57, 70, 0.1);
-            padding: 0.75rem;
-            border-radius: 8px;
-        }
-        .logout-link {
-            color: #457B9D;
-            font-size: 0.9rem;
-            margin-top: 1.5rem;
-            display: inline-block;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s ease;
-        }
-        .logout-link:hover {
-            color: #E63946;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <img src="../../IMG/LOGO MC - NEGRO.png" alt="Logo">
-        <h1>Acceso al Dashboard</h1>
-        <p>Ingresa tu PIN de 4 dígitos para continuar</p>
-        <form action="../../Logica/check_dashboard_code.php" method="POST" class="login-form">
-            <input type="password" name="codigo" placeholder="••••" required maxlength="4" pattern="\d{4}" inputmode="numeric" autocomplete="one-time-code">
-            <button type="submit">Ingresar al Dashboard</button>
-        </form>
-        <?php if ($error_msg): ?>
-            <p class="error-message"><?php echo htmlspecialchars($error_msg); ?></p>
-        <?php endif; ?>
-        <a href="../../Logica/logout.php" class="logout-link">Volver al login principal</a>
-    </div>
-</body>
-</html>
-<?php
-    exit(); // Importante: detenemos la ejecución para no mostrar el dashboard
+    header("Location: ../../index.php");
+    exit();
 }
 
 // =========================================================================
-// SI EL SCRIPT LLEGA HASTA AQUÍ, SIGNIFICA QUE EL LOGIN FUE EXITOSO.
-// AHORA MOSTRAMOS EL DASHBOARD NORMALMENTE.
+// DASHBOARD - ACCESO CONCEDIDO
 // =========================================================================
 ?>
 <!DOCTYPE html>

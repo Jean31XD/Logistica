@@ -173,6 +173,72 @@ switch ($action) {
         
     default:
         echo json_encode(['success' => false, 'error' => 'Acción no válida']);
+        break;
+        
+    case 'get_dashboard_almacen':
+        // Obtener almacén asignado al usuario para el dashboard
+        $usuario = $_GET['usuario'] ?? '';
+        
+        if (empty($usuario)) {
+            echo json_encode(['success' => false, 'error' => 'Usuario no especificado']);
+            exit;
+        }
+        
+        $sql = "SELECT dashboard_almacen FROM usuarios WHERE usuario = ?";
+        $stmt = sqlsrv_query($conn, $sql, [$usuario]);
+        
+        if ($stmt === false) {
+            echo json_encode(['success' => false, 'error' => 'Error al consultar almacén']);
+            exit;
+        }
+        
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $almacen = $row['dashboard_almacen'] ?? '';
+        
+        echo json_encode(['success' => true, 'almacen' => $almacen]);
+        break;
+        
+    case 'save_dashboard_almacen':
+        // Guardar almacén asignado al usuario para el dashboard
+        $usuario = $_POST['usuario'] ?? '';
+        $almacen = $_POST['almacen'] ?? '';
+        
+        if (empty($usuario)) {
+            echo json_encode(['success' => false, 'error' => 'Usuario no especificado']);
+            exit;
+        }
+        
+        // Vacío = ver todos los almacenes
+        $almacenValue = empty($almacen) ? null : $almacen;
+        
+        $sql = "UPDATE usuarios SET dashboard_almacen = ? WHERE usuario = ?";
+        $stmt = sqlsrv_query($conn, $sql, [$almacenValue, $usuario]);
+        
+        if ($stmt === false) {
+            echo json_encode(['success' => false, 'error' => 'Error al guardar almacén']);
+            exit;
+        }
+        
+        echo json_encode(['success' => true, 'message' => 'Almacén guardado correctamente']);
+        break;
+        
+    case 'list_almacenes':
+        // Listar almacenes disponibles desde inventlocation
+        $sql = "SELECT DISTINCT inventlocationid FROM inventlocation ORDER BY inventlocationid";
+        $stmt = sqlsrv_query($conn, $sql);
+        
+        if ($stmt === false) {
+            echo json_encode(['success' => false, 'error' => 'Error al listar almacenes']);
+            exit;
+        }
+        
+        $almacenes = [];
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $almacenes[] = $row['inventlocationid'];
+        }
+        
+        echo json_encode(['success' => true, 'almacenes' => $almacenes]);
+        break;
 }
 
 sqlsrv_close($conn);
