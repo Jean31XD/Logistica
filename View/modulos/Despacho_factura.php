@@ -456,8 +456,8 @@ $(document).ready(function () {
 
         if (seFue) {
             const codigo = $('#codigoSeFue').val().trim();
-            if (codigo !== 'LogisicA*2025*') {
-                return alert('Código incorrecto para despachar como "Se fue".');
+            if (!codigo) {
+                return alert('Debe ingresar un código para despachar como "Se fue".');
             }
             if (confirm("¿Estás seguro de despachar este ticket como 'Se fue'?")) {
                 despacharTicket(tiket, "Se fue", codigo);
