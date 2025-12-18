@@ -1080,6 +1080,18 @@ include __DIR__ . '/../templates/header.php';
                                 <!-- Los módulos se cargan aquí via AJAX -->
                             </div>
                             
+                            <!-- Selector de almacén para Dashboard -->
+                            <div id="dashboard_almacen_container" class="mb-4 p-3 bg-light rounded" style="display: none;">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-warehouse me-2 text-primary"></i>Almacén del Dashboard
+                                </label>
+                                <p class="text-muted small mb-2">Si el usuario tiene acceso al Dashboard, selecciona qué almacén puede ver.</p>
+                                <select id="dashboard_almacen_select" class="form-select">
+                                    <option value="">Todos los almacenes (Admin)</option>
+                                    <!-- Se cargan via AJAX -->
+                                </select>
+                            </div>
+                            
                             <button type="button" class="maco-btn maco-btn-success w-100" onclick="guardarPermisos()">
                                 <i class="fas fa-save"></i> Guardar Permisos
                             </button>
@@ -1201,7 +1213,61 @@ function renderizarModulos(modulos) {
         jQuery(this).closest('.form-check')
             .toggleClass('bg-success bg-opacity-10 border-success', isChecked)
             .toggleClass('bg-light', !isChecked);
+        
+        // Mostrar/ocultar selector de almacén si dashboard está marcado
+        actualizarSelectorAlmacen();
     });
+    
+    // Cargar almacenes y mostrar selector si dashboard está marcado
+    cargarAlmacenes();
+    actualizarSelectorAlmacen();
+}
+
+function cargarAlmacenes() {
+    jQuery.ajax({
+        url: '../../Logica/api_permisos.php',
+        method: 'GET',
+        data: { action: 'list_almacenes' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.almacenes) {
+                var select = jQuery('#dashboard_almacen_select');
+                // Mantener la primera opción
+                select.find('option:not(:first)').remove();
+                response.almacenes.forEach(function(almacen) {
+                    select.append('<option value="' + almacen + '">' + almacen + '</option>');
+                });
+                
+                // Cargar almacén actual del usuario
+                cargarAlmacenUsuario();
+            }
+        }
+    });
+}
+
+function cargarAlmacenUsuario() {
+    if (!usuarioSeleccionado) return;
+    
+    jQuery.ajax({
+        url: '../../Logica/api_permisos.php',
+        method: 'GET',
+        data: { action: 'get_dashboard_almacen', usuario: usuarioSeleccionado },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                jQuery('#dashboard_almacen_select').val(response.almacen || '');
+            }
+        }
+    });
+}
+
+function actualizarSelectorAlmacen() {
+    var dashboardMarcado = jQuery('#mod_dashboard_general').is(':checked');
+    if (dashboardMarcado) {
+        jQuery('#dashboard_almacen_container').slideDown();
+    } else {
+        jQuery('#dashboard_almacen_container').slideUp();
+    }
 }
 
 function guardarPermisos() {
@@ -1215,6 +1281,7 @@ function guardarPermisos() {
         modulosSeleccionados.push(jQuery(this).val());
     });
     
+    // Guardar permisos
     jQuery.ajax({
         url: '../../Logica/api_permisos.php',
         method: 'POST',
@@ -1227,6 +1294,11 @@ function guardarPermisos() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
+                // Guardar almacén del dashboard si el módulo está marcado
+                var dashboardMarcado = jQuery('#mod_dashboard_general').is(':checked');
+                if (dashboardMarcado) {
+                    guardarAlmacenDashboard();
+                }
                 mostrarMensaje('✅ ' + response.message, 'alert-success');
             } else {
                 mostrarMensaje('❌ ' + response.error, 'alert-danger');
@@ -1235,6 +1307,22 @@ function guardarPermisos() {
         error: function() {
             mostrarMensaje('Error de conexión al servidor', 'alert-danger');
         }
+    });
+}
+
+function guardarAlmacenDashboard() {
+    var almacen = jQuery('#dashboard_almacen_select').val();
+    
+    jQuery.ajax({
+        url: '../../Logica/api_permisos.php',
+        method: 'POST',
+        data: {
+            action: 'save_dashboard_almacen',
+            usuario: usuarioSeleccionado,
+            almacen: almacen,
+            csrf_token: csrfToken
+        },
+        dataType: 'json'
     });
 }
 
