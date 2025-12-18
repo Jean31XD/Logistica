@@ -56,16 +56,17 @@ if ($stmtAlmacen !== false) {
 $USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
 
 // Mapeo de pantallas a su página principal/inicio
+// Todas van a Portal.php donde se muestran los módulos asignados
 $homePage = [
-    0 => 'Admin.php',
-    1 => 'Inicio_gestion.php',
-    2 => 'facturas.php',
-    3 => 'CXC.php',
-    4 => 'Reporte.php',
-    5 => 'Paneladmin.php',
-    6 => 'BI.php',
-    8 => 'Listo-etiquetas.php',
-    9 => 'dashboard.php'
+    0 => '../pantallas/Portal.php',
+    1 => '../pantallas/Portal.php',
+    2 => '../pantallas/Portal.php',
+    3 => '../pantallas/Portal.php',
+    4 => '../pantallas/Portal.php',
+    5 => '../pantallas/Portal.php',
+    6 => '../pantallas/Portal.php',
+    8 => '../pantallas/Portal.php',
+    9 => '../pantallas/Portal.php'
 ];
 
 $homeUrl = $homePage[$pantalla] ?? '../pantallas/Portal.php';
