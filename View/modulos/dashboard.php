@@ -1464,7 +1464,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     const porcentajeEntrega = totalAsignadas > 0 ? ((totalEntregadas / totalAsignadas) * 100).toFixed(1) : 0;
 
                     transportistasHTML += `
-                        <div class="transportista-card" id="truck-${index}" data-camion="${truck}" data-nombre="${transportista}" data-chasis="${chasis}" data-placa="${placa}">
+                        <div class="transportista-card" id="truck-${index}" data-camion="${truck}">
                             <div class="transportista-header" onclick="toggleTransportista('truck-${index}')">
                                 <div class="transportista-nombre">
                                     <i class="fas fa-truck"></i>
@@ -1603,21 +1603,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         </div>`;
                 });
                 transportistasContainer.innerHTML = transportistasHTML;
-
-                // Actualizar contadores totales en el header
-                const totalTrucksEl = document.getElementById('totalTrucks');
-                const totalDeliveriesEl = document.getElementById('totalDeliveries');
-                if (totalTrucksEl) {
-                    totalTrucksEl.textContent = trucksWithInvoices.length;
-                }
-                if (totalDeliveriesEl) {
-                    // Calcular total de entregas de todos los camiones
-                    let totalEntregasGeneral = 0;
-                    trucksWithInvoices.forEach(truck => {
-                        totalEntregasGeneral += asignadasByTruck[truck] || 0;
-                    });
-                    totalDeliveriesEl.textContent = totalEntregasGeneral;
-                }
 
             } catch (error) {
                 console.error('Error cargando detalles de entregas:', error);
