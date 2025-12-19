@@ -499,18 +499,20 @@ include __DIR__ . '/../templates/header.php';
             <div id="modal-content" style="display: none;">
                 <!-- Info General -->
                 <div class="info-grid">
+                    <div class="info-item"><span class="info-label">Cliente:</span> <span id="info-cliente"></span></div>
                     <div class="info-item"><span class="info-label">Estado:</span> <span id="info-estado"></span></div>
                     <div class="info-item"><span class="info-label">Fecha:</span> <span id="info-fecha"></span></div>
                     <div class="info-item"><span class="info-label">Transportista:</span> <span id="info-transportista"></span></div>
                     <div class="info-item"><span class="info-label">Almacén:</span> <span id="info-almacen"></span></div>
                     <div class="info-item"><span class="info-label">Usuario ALM:</span> <span id="info-usuario-alm"></span></div>
-                    <div class="info-item"><span class="info-label">Usuario CC:</span> <span id="info-usuario-cc"></span></div>
                 </div>
                 
                 <!-- Resumen -->
                 <div class="totales-grid">
                     <div class="total-box"><span class="total-num" id="total-items">0</span><span class="total-label">Artículos</span></div>
-                    <div class="total-box"><span class="total-num" id="total-monto">$0.00</span><span class="total-label">Monto Total</span></div>
+                    <div class="total-box"><span class="total-num" id="total-subtotal">$0.00</span><span class="total-label">Subtotal</span></div>
+                    <div class="total-box"><span class="total-num" id="total-impuesto">$0.00</span><span class="total-label">Impuesto</span></div>
+                    <div class="total-box" style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);"><span class="total-num" id="total-monto">$0.00</span><span class="total-label">Total</span></div>
                 </div>
                 
                 <!-- Tabla de Líneas -->
@@ -523,7 +525,8 @@ include __DIR__ . '/../templates/header.php';
                                 <th>Descripción</th>
                                 <th>Cantidad</th>
                                 <th>Unidad</th>
-                                <th>Precio</th>
+                                <th>Monto</th>
+                                <th>Impuesto</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
@@ -750,16 +753,18 @@ function abrirDetalleFactura(factura) {
             
             // Llenar info general
             const f = response.factura;
+            $('#info-cliente').text(f.Cliente || '—');
             $('#info-estado').html('<span class="badge-status ' + getBadgeClass(f.Validar) + '">' + (f.Validar || 'Sin Estado') + '</span>');
             $('#info-fecha').text(f.Fecha || '—');
             $('#info-transportista').text(f.Transportista || '—');
-            $('#info-almacen').text(f.zona || '—');
+            $('#info-almacen').text(f.Almacen || f.zona || '—');
             $('#info-usuario-alm').text(f.Usuario || '—');
-            $('#info-usuario-cc').text(f.Usuario_de_recepcion || '—');
             
             // Totales
             $('#total-items').text(response.totales.items);
-            $('#total-monto').text('$' + response.totales.monto);
+            $('#total-subtotal').text('$' + response.totales.subtotal);
+            $('#total-impuesto').text('$' + response.totales.impuesto);
+            $('#total-monto').text('$' + response.totales.total);
             
             // Líneas
             let lineasHtml = '';
@@ -770,12 +775,13 @@ function abrirDetalleFactura(factura) {
                     lineasHtml += '<td>' + (linea.Descripcion || '—') + '</td>';
                     lineasHtml += '<td>' + (linea.Cantidad || 0) + '</td>';
                     lineasHtml += '<td>' + (linea.Unidad || '—') + '</td>';
-                    lineasHtml += '<td>$' + parseFloat(linea.Precio || 0).toFixed(2) + '</td>';
-                    lineasHtml += '<td>$' + parseFloat(linea.Total || 0).toFixed(2) + '</td>';
+                    lineasHtml += '<td>$' + parseFloat(linea.lineamount || 0).toFixed(2) + '</td>';
+                    lineasHtml += '<td>$' + parseFloat(linea.lineamounttax || 0).toFixed(2) + '</td>';
+                    lineasHtml += '<td>$' + parseFloat(linea.LineTotal || 0).toFixed(2) + '</td>';
                     lineasHtml += '</tr>';
                 });
             } else {
-                lineasHtml = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#64748B;">No hay líneas de detalle</td></tr>';
+                lineasHtml = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#64748B;">No hay líneas de detalle</td></tr>';
             }
             $('#lineas-body').html(lineasHtml);
             
