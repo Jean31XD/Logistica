@@ -385,11 +385,13 @@ include __DIR__ . '/../templates/header.php';
 </div>
 
 <?php
-$additionalJS = <<<JS
+// Inyectar token CSRF como variable JS
+echo "<script>const CSRF_TOKEN = '{$csrfToken}';</script>";
+
+$additionalJS = <<<'JS'
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-const CSRF_TOKEN = '{$csrfToken}';
 let paginaActual = 1;
 
 $(document).ready(function () {
