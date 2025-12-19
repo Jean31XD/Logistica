@@ -683,85 +683,78 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     </style>
 </head>
 <body>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="logo">
-                <img src="../../IMG/LOGO MC - COLOR.png" alt="Logo">
-            </div>
-            <div class="sidebar-section">
-                <h3>Análisis</h3>
-                <ul class="sidebar-nav">
-                    <li class="nav-item"><a href="#" class="active" data-view="overview">Resumen General</a></li>
-                    <li class="nav-item"><a href="#" data-view="trends">Tendencias Diarias</a></li>
-                    <li class="nav-item"><a href="#" data-view="performance">Rendimiento y Calidad</a></li>
-                    <li class="nav-item"><a href="#" data-view="financial">Análisis Financiero</a></li>
-                </ul>
-            </div>
-            <div class="sidebar-section">
-                <h3>Filtros</h3>
-                <div class="filter-form">
-                    <div class="filter-group">
-                        <label for="fecha_inicio">Desde:</label>
-                        <input type="date" id="fecha_inicio" name="fecha_inicio">
-                    </div>
-                    <div class="filter-group">
-                        <label for="fecha_fin">Hasta:</label>
-                        <input type="date" id="fecha_fin" name="fecha_fin">
-                    </div>
-
-                    <?php if ($USER_TYPE === 'admin'): ?>
-                    <div class="filter-group">
-                        <label for="filtro_almacen">Almacén:</label>
-                        <select id="filtro_almacen" name="filtro_almacen">
-                            <option value="">Todos los Almacenes</option>
-                        </select>
-                    </div>
-                    <?php else: ?>
-                    <div class="filter-group">
-                        <label for="filtro_almacen">Almacén Asignado:</label>
-                        <input type="text" id="filtro_almacen_fijo" name="filtro_almacen_fijo" value="<?php echo htmlspecialchars($USER_WAREHOUSE); ?>" disabled>
-                        <select id="filtro_almacen" name="filtro_almacen" style="display:none;"></select>
-                    </div>
-                    <?php endif; ?>
-                    
+    <div class="dashboard-layout no-sidebar">
+        <!-- Topbar con Logo -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="logo-small">
+                    <img src="../../IMG/LOGO MC - COLOR.png" alt="MACO">
+                </div>
+                <div class="topbar-title">
+                    <h1>Dashboard de Facturación</h1>
                 </div>
             </div>
-            <div class="sidebar-section" style="margin-top: auto;">
-                 <ul class="sidebar-nav">
-                    <li class="nav-item">
-                        <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="logout-link" style="background: rgba(69, 123, 157, 0.2); border-left: 4px solid #457B9D;">
-                            <i class="fas fa-home" style="margin-right: 0.5rem;"></i>
-                            Volver al Menú Principal
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="dashboard.php?action=logout" class="logout-link">
-                            <i class="fas fa-sign-out-alt" style="margin-right: 0.5rem;"></i>
-                            Cerrar Dashboard (<?php echo htmlspecialchars($USER_TYPE === 'admin' ? 'Admin' : $USER_WAREHOUSE); ?>)
-                        </a>
-                    </li>
-                </ul>
+            <div class="topbar-right">
+                <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="topbar-btn">
+                    <i class="fas fa-home"></i>
+                    <span>Portal</span>
+                </a>
+                <a href="dashboard.php?action=logout" class="topbar-btn logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Salir</span>
+                </a>
             </div>
-        </aside>
+        </div>
+        
+        <!-- Barra de Filtros -->
+        <div class="filter-bar">
+            <div class="filter-bar-left">
+                <div class="filter-inline">
+                    <label for="fecha_inicio"><i class="fas fa-calendar"></i> Desde:</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio">
+                </div>
+                <div class="filter-inline">
+                    <label for="fecha_fin"><i class="fas fa-calendar"></i> Hasta:</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin">
+                </div>
+                <?php if ($USER_TYPE === 'admin'): ?>
+                <div class="filter-inline">
+                    <label for="filtro_almacen"><i class="fas fa-warehouse"></i> Almacén:</label>
+                    <select id="filtro_almacen" name="filtro_almacen">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <?php else: ?>
+                <div class="filter-inline">
+                    <label><i class="fas fa-warehouse"></i> Almacén:</label>
+                    <span class="filter-value"><?php echo htmlspecialchars($USER_WAREHOUSE); ?></span>
+                    <select id="filtro_almacen" name="filtro_almacen" style="display:none;"></select>
+                </div>
+                <?php endif; ?>
+            </div>
+            <div class="filter-bar-right">
+                <div class="user-badge">
+                    <i class="fas fa-user-circle"></i>
+                    <span><?php echo htmlspecialchars($_SESSION['usuario']); ?></span>
+                    <strong><?php echo $USER_TYPE === 'admin' ? 'Admin' : htmlspecialchars($USER_WAREHOUSE); ?></strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar oculto para mantener compatibilidad JS -->
+        <div style="display:none;">
+            <ul class="sidebar-nav">
+                <li class="nav-item"><a href="#" class="active" data-view="overview"></a></li>
+                <li class="nav-item"><a href="#" data-view="trends"></a></li>
+                <li class="nav-item"><a href="#" data-view="performance"></a></li>
+                <li class="nav-item"><a href="#" data-view="financial"></a></li>
+            </ul>
+        </div>
         
         <main class="main-content">
-            <header>
-                <div class="header-left">
-                    <nav class="breadcrumb">
-                        <a href="<?php echo $homeUrl; ?>"><i class="fas fa-home"></i> Portal</a>
-                        <span>/</span>
-                        <span>Dashboard</span>
-                    </nav>
-                    <h1 id="main-title">Resumen de Facturas</h1>
-                </div>
-                <div class="header-right">
-                    <div id="loader" class="loader"><span>Actualizando datos...</span></div>
-                    <div class="user-info">
-                        <i class="fas fa-user-circle"></i>
-                        <span><?php echo htmlspecialchars($_SESSION['usuario']); ?></span>
-                        <strong>(<?php echo $USER_TYPE === 'admin' ? 'Administrador' : htmlspecialchars($USER_WAREHOUSE); ?>)</strong>
-                    </div>
-                </div>
+            <header class="section-header">
+                <h1 id="main-title">Resumen de Facturas</h1>
+                <div id="loader" class="loader"><span>Actualizando datos...</span></div>
             </header>
             
             <!-- Tabs de Navegación -->
