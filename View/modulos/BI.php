@@ -484,6 +484,164 @@ include __DIR__ . '/../templates/header.php';
     <div class="pagination-custom" id="paginacion-container"></div>
 </div>
 
+<!-- Modal de Detalles de Factura -->
+<div id="facturaModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-invoice"></i> Detalles de Factura: <span id="modal-factura-id"></span></h3>
+            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="modal-loader" style="text-align: center; padding: 2rem;">
+                <div class="spinner"></div>
+                <p>Cargando detalles...</p>
+            </div>
+            <div id="modal-content" style="display: none;">
+                <!-- Info General -->
+                <div class="info-grid">
+                    <div class="info-item"><span class="info-label">Estado:</span> <span id="info-estado"></span></div>
+                    <div class="info-item"><span class="info-label">Fecha:</span> <span id="info-fecha"></span></div>
+                    <div class="info-item"><span class="info-label">Transportista:</span> <span id="info-transportista"></span></div>
+                    <div class="info-item"><span class="info-label">Almacén:</span> <span id="info-almacen"></span></div>
+                    <div class="info-item"><span class="info-label">Usuario ALM:</span> <span id="info-usuario-alm"></span></div>
+                    <div class="info-item"><span class="info-label">Usuario CC:</span> <span id="info-usuario-cc"></span></div>
+                </div>
+                
+                <!-- Resumen -->
+                <div class="totales-grid">
+                    <div class="total-box"><span class="total-num" id="total-items">0</span><span class="total-label">Artículos</span></div>
+                    <div class="total-box"><span class="total-num" id="total-monto">$0.00</span><span class="total-label">Monto Total</span></div>
+                </div>
+                
+                <!-- Tabla de Líneas -->
+                <h4 style="margin: 1rem 0;"><i class="fas fa-list"></i> Líneas de la Factura</h4>
+                <div class="table-responsive">
+                    <table class="bi-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Precio</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lineas-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+    }
+    
+    .modal-container {
+        background: #fff;
+        border-radius: 12px;
+        max-width: 900px;
+        width: 100%;
+        max-height: 85vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    }
+    
+    .modal-header {
+        background: var(--bi-secondary);
+        color: #fff;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+        opacity: 0.8;
+    }
+    
+    .modal-close:hover {
+        opacity: 1;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        background: #F8FAFC;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .info-item {
+        font-size: 0.9rem;
+    }
+    
+    .info-label {
+        color: var(--bi-muted);
+        font-weight: 600;
+    }
+    
+    .totales-grid {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .total-box {
+        flex: 1;
+        background: linear-gradient(135deg, var(--bi-accent) 0%, var(--bi-secondary) 100%);
+        color: #fff;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .total-num {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 800;
+    }
+    
+    .total-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        opacity: 0.85;
+    }
+</style>
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
@@ -560,8 +718,99 @@ $(document).ready(function() {
         }
     });
 
+    // Click en factura para ver detalles
+    $(document).on('click', '.factura-link', function(e) {
+        e.preventDefault();
+        const factura = $(this).text();
+        abrirDetalleFactura(factura);
+    });
+
     // Carga inicial
     aplicarFiltros(1);
+});
+
+// Funciones del Modal
+function abrirDetalleFactura(factura) {
+    $('#facturaModal').show();
+    $('#modal-factura-id').text(factura);
+    $('#modal-loader').show();
+    $('#modal-content').hide();
+    
+    $.ajax({
+        url: '../../Logica/api_factura_detalle.php',
+        type: 'GET',
+        data: { factura: factura },
+        dataType: 'json',
+        success: function(response) {
+            if (response.error) {
+                alert('Error: ' + response.error);
+                cerrarModal();
+                return;
+            }
+            
+            // Llenar info general
+            const f = response.factura;
+            $('#info-estado').html('<span class="badge-status ' + getBadgeClass(f.Estado) + '">' + (f.Estado || 'Sin Estado') + '</span>');
+            $('#info-fecha').text(f.Fecha || '—');
+            $('#info-transportista').text(f.Transportista || '—');
+            $('#info-almacen').text(f.Localizacion || '—');
+            $('#info-usuario-alm').text(f.Usuario_ALM || '—');
+            $('#info-usuario-cc').text(f.Usuario_CC || '—');
+            
+            // Totales
+            $('#total-items').text(response.totales.items);
+            $('#total-monto').text('$' + response.totales.monto);
+            
+            // Líneas
+            let lineasHtml = '';
+            if (response.lineas && response.lineas.length > 0) {
+                response.lineas.forEach(function(linea) {
+                    lineasHtml += '<tr>';
+                    lineasHtml += '<td>' + (linea.Codigo || '—') + '</td>';
+                    lineasHtml += '<td>' + (linea.Descripcion || '—') + '</td>';
+                    lineasHtml += '<td>' + (linea.Cantidad || 0) + '</td>';
+                    lineasHtml += '<td>' + (linea.Unidad || '—') + '</td>';
+                    lineasHtml += '<td>$' + parseFloat(linea.Precio || 0).toFixed(2) + '</td>';
+                    lineasHtml += '<td>$' + parseFloat(linea.Total || 0).toFixed(2) + '</td>';
+                    lineasHtml += '</tr>';
+                });
+            } else {
+                lineasHtml = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#64748B;">No hay líneas de detalle</td></tr>';
+            }
+            $('#lineas-body').html(lineasHtml);
+            
+            $('#modal-loader').hide();
+            $('#modal-content').show();
+        },
+        error: function() {
+            alert('Error al cargar los detalles de la factura');
+            cerrarModal();
+        }
+    });
+}
+
+function getBadgeClass(estado) {
+    if (estado === 'Completada') return 'badge-completada';
+    if (estado === 'RE') return 'badge-re';
+    return 'badge-vacio';
+}
+
+function cerrarModal() {
+    $('#facturaModal').hide();
+}
+
+// Cerrar modal con Escape
+$(document).on('keyup', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModal();
+    }
+});
+
+// Cerrar modal haciendo clic fuera
+$('#facturaModal').on('click', function(e) {
+    if (e.target === this) {
+        cerrarModal();
+    }
 });
 </script>
 
