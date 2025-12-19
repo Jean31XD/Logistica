@@ -11,12 +11,13 @@ ob_start();
 
 // Incluir dependencias
 require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/helpers.php';
 
 // Validación manual de sesión (sin los headers de session_config)
 session_start();
 if (!isset($_SESSION['usuario'])) {
     ob_end_clean();
-    header("Location: /MACO.AppLogistica.Web-1/index.php");
+    header("Location: " . getLoginUrl());
     exit();
 }
 
@@ -24,7 +25,7 @@ if (!isset($_SESSION['usuario'])) {
 $pantalla = $_SESSION['pantalla'] ?? -1;
 if (!in_array($pantalla, [0, 5, 12])) {
     ob_end_clean();
-    header("Location: /MACO.AppLogistica.Web-1/index.php");
+    header("Location: " . getLoginUrl());
     exit();
 }
 
