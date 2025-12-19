@@ -44,7 +44,7 @@ try {
     $facturaData = sqlsrv_fetch_array($stmtFactura, SQLSRV_FETCH_ASSOC);
     
     if (!$facturaData) {
-        echo json_encode(['error' => 'Factura no encontrada en custinvoicejour: ' . $factura]);
+        echo json_encode(['error' => 'Factura no encontrada: ' . $factura]);
         exit();
     }
     
@@ -60,7 +60,7 @@ try {
     }
     
     // Obtener líneas de la factura desde Facturas_lineas
-    // Columnas: invoiceid, lineamount, lineamounttax, inventlocationid, invoicingname
+    // Solo columnas que existen: invoiceid, invoicedate, lineamount, lineamounttax, inventlocationid, invoicingname
     $sqlLineas = "
         SELECT 
             invoiceid,
@@ -69,14 +69,9 @@ try {
             lineamounttax,
             (lineamount + lineamounttax) AS LineTotal,
             inventlocationid AS Almacen,
-            invoicingname AS Cliente,
-            itemid AS Codigo,
-            itemname AS Descripcion,
-            qty AS Cantidad,
-            salesunit AS Unidad
+            invoicingname AS Cliente
         FROM Facturas_lineas 
-        WHERE invoiceid = ?
-        ORDER BY linenum";
+        WHERE invoiceid = ?";
     
     $stmtLineas = sqlsrv_query($conn, $sqlLineas, [$factura]);
     
@@ -100,7 +95,7 @@ try {
         }
     } else {
         $errors = sqlsrv_errors();
-        echo json_encode(['error' => 'Error en consulta Facturas_lineas: ' . json_encode($errors)]);
+        echo json_encode(['error' => 'Error en Facturas_lineas: ' . json_encode($errors)]);
         exit();
     }
     
