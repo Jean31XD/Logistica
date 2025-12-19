@@ -904,12 +904,10 @@ header h1 {
 .transportista-card {
     background: var(--bg-card);
     border-radius: var(--radius-md);
-    overflow: visible !important;
+    overflow: hidden;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
     transition: var(--transition);
-    height: auto !important;
-    min-height: 60px;
 }
 
 .transportista-card:hover {
