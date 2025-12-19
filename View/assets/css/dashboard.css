@@ -904,15 +904,17 @@ header h1 {
 .transportista-card {
     background: var(--bg-card);
     border-radius: var(--radius-md);
+    overflow: visible !important;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
     transition: var(--transition);
-    margin-bottom: 0.5rem;
+    height: auto !important;
+    min-height: 60px;
 }
 
 .transportista-card:hover {
     box-shadow: var(--shadow-md);
-    border-color: var(--primary);
+    border-color: rgba(230, 57, 70, 0.15);
 }
 
 .transportista-header {
@@ -1049,13 +1051,13 @@ header h1 {
 }
 
 .transportista-details {
-    display: none;
-    background: #F8FAFC;
-    border-top: 1px solid var(--border);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
 }
 
 .transportista-details.expanded {
-    display: block;
+    max-height: 2000px;
 }
 
 .transportista-details-content {
