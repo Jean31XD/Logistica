@@ -4,6 +4,9 @@
  * Usar este archivo en TODOS los módulos
  */
 
+// Cargar helpers centralizados
+require_once __DIR__ . '/helpers.php';
+
 // Forzar HTTPS en producción (solo si no estamos en localhost)
 // Azure App Service usa X-Forwarded-Proto para indicar el protocolo original
 $isHTTPS = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
@@ -58,7 +61,7 @@ if (isset($_SESSION['ultimo_acceso'])) {
         session_destroy();
         
         // Redirigir a login
-        header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
+        header("Location: " . getLoginUrl());
         exit();
     }
 }
@@ -104,13 +107,13 @@ header("Expires: 0");
 // Función helper para verificar autenticación
 function verificarAutenticacion($pantallasPermitidas = []) {
     if (!isset($_SESSION['usuario'])) {
-        header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
+        header("Location: " . getLoginUrl());
         exit();
     }
 
     // Si se especifican pantallas permitidas, verificar permisos
     if (!empty($pantallasPermitidas) && !in_array($_SESSION['pantalla'], $pantallasPermitidas)) {
-        header("Location: " . ($_SERVER['REQUEST_SCHEME'] ?? 'http') . "://" . $_SERVER['HTTP_HOST'] . "/MACO.AppLogistica.Web-1/index.php");
+        header("Location: " . getLoginUrl());
         exit();
     }
 }
