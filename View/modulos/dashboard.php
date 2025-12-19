@@ -746,9 +746,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         
         <main class="main-content">
             <header>
-                <h1 id="main-title">Resumen de Facturas</h1>
-                <div id="loader" class="loader"><span>Actualizando datos...</span></div>
+                <div class="header-left">
+                    <nav class="breadcrumb">
+                        <a href="<?php echo $homeUrl; ?>"><i class="fas fa-home"></i> Portal</a>
+                        <span>/</span>
+                        <span>Dashboard</span>
+                    </nav>
+                    <h1 id="main-title">Resumen de Facturas</h1>
+                </div>
+                <div class="header-right">
+                    <div id="loader" class="loader"><span>Actualizando datos...</span></div>
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span><?php echo htmlspecialchars($_SESSION['usuario']); ?></span>
+                        <strong>(<?php echo $USER_TYPE === 'admin' ? 'Administrador' : htmlspecialchars($USER_WAREHOUSE); ?>)</strong>
+                    </div>
+                </div>
             </header>
+            
+            <div class="content-area">
 
             <div id="view-overview" class="view-container active">
                 <div class="grid-layout">
@@ -886,7 +902,20 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <div class="chart-container" style="height: 450px;"><canvas id="topWarehousesChart"></canvas></div>
                     </div>
                 </div>
+                </div>
             </div>
+            
+            <!-- Footer Profesional -->
+            <footer class="dashboard-footer">
+                <div class="footer-left">
+                    <i class="fas fa-chart-line"></i>
+                    <span>© <?php echo date('Y'); ?> <strong>MACO Logística</strong> - Dashboard de Facturación</span>
+                </div>
+                <div class="footer-right">
+                    <span><i class="fas fa-clock"></i> Última actualización: <span id="last-update-time"><?php echo date('H:i'); ?></span></span>
+                    <span><i class="fas fa-code-branch"></i> v3.0</span>
+                </div>
+            </footer>
         </main>
     </div>
 <script>
