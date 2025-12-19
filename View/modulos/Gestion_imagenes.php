@@ -6,6 +6,7 @@
 
 // Incluir configuración centralizada de sesión y conexión a BD
 require_once __DIR__ . '/../../conexionBD/session_config.php';
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
 // Verificar autenticación básica
 if (!isset($_SESSION['usuario'])) {
@@ -13,20 +14,29 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
-// Verificar permisos: Pantalla 0 (Admin), 5 (Panel Admin) y 13 (Gestión de Imágenes) pueden acceder
-$pantallaUsuario = intval($_SESSION['pantalla'] ?? -1);
-$pantallasPermitidas = [0, 5, 13];
+// Verificar permisos usando tabla usuario_modulos
+$usuario = $_SESSION['usuario'];
+$tienePermiso = false;
 
-if (!in_array($pantallaUsuario, $pantallasPermitidas)) {
-    // Mostrar error informativo en lugar de redirigir
+// Verificar si el usuario tiene el módulo 'gestion_imagenes' asignado
+$sqlPermiso = "SELECT COUNT(*) as cnt FROM usuario_modulos WHERE usuario = ? AND modulo = 'gestion_imagenes' AND activo = 1";
+$stmtPermiso = sqlsrv_query($conn, $sqlPermiso, [$usuario]);
+
+if ($stmtPermiso) {
+    $row = sqlsrv_fetch_array($stmtPermiso, SQLSRV_FETCH_ASSOC);
+    $tienePermiso = ($row['cnt'] > 0);
+    sqlsrv_free_stmt($stmtPermiso);
+}
+
+if (!$tienePermiso) {
     die("
     <html>
     <head><title>Acceso Denegado</title></head>
     <body style='font-family: Arial; padding: 2rem; text-align: center;'>
         <h1 style='color: #E63946;'>⚠️ Acceso Denegado</h1>
         <p>No tienes permisos para acceder a este módulo.</p>
-        <p><strong>Tu pantalla asignada:</strong> {$pantallaUsuario}</p>
-        <p><strong>Pantallas permitidas:</strong> 0 (Admin), 13 (Gestión Imágenes)</p>
+        <p>El módulo <strong>Gestión de Imágenes</strong> no está asignado a tu usuario.</p>
+        <p>Contacta a un administrador para que te asigne este módulo.</p>
         <p><a href='../../View/pantallas/Portal.php'>Volver al Portal</a></p>
     </body>
     </html>
