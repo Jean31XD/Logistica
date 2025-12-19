@@ -18,38 +18,45 @@ if (empty($factura)) {
     exit();
 }
 
+if (!$conn) {
+    echo json_encode(['error' => 'Error de conexión a la base de datos']);
+    exit();
+}
+
 try {
-    // Obtener datos principales de la factura
+    // Obtener datos principales de la factura (columnas que sabemos que existen)
     $sqlFactura = "
         SELECT 
             Factura, Fecha, Validar AS Estado, Transportista, 
             Usuario AS Usuario_ALM, Usuario_de_recepcion AS Usuario_CC,
             Fecha_scanner AS Fecha_Recibido, recepcion AS Fecha_Recepcion_CC,
-            zona AS Localizacion, monto
+            zona AS Localizacion
         FROM custinvoicejour 
         WHERE Factura = ?";
     
     $stmtFactura = sqlsrv_query($conn, $sqlFactura, [$factura]);
     
     if ($stmtFactura === false) {
-        throw new Exception('Error al consultar factura');
+        $errors = sqlsrv_errors();
+        echo json_encode(['error' => 'Error en consulta principal', 'details' => $errors]);
+        exit();
     }
     
     $facturaData = sqlsrv_fetch_array($stmtFactura, SQLSRV_FETCH_ASSOC);
     
     if (!$facturaData) {
-        echo json_encode(['error' => 'Factura no encontrada']);
+        echo json_encode(['error' => 'Factura no encontrada: ' . $factura]);
         exit();
     }
     
     // Formatear fechas
-    if ($facturaData['Fecha'] && is_object($facturaData['Fecha'])) {
+    if (isset($facturaData['Fecha']) && $facturaData['Fecha'] && is_object($facturaData['Fecha'])) {
         $facturaData['Fecha'] = $facturaData['Fecha']->format('d/m/Y');
     }
-    if ($facturaData['Fecha_Recibido'] && is_object($facturaData['Fecha_Recibido'])) {
+    if (isset($facturaData['Fecha_Recibido']) && $facturaData['Fecha_Recibido'] && is_object($facturaData['Fecha_Recibido'])) {
         $facturaData['Fecha_Recibido'] = $facturaData['Fecha_Recibido']->format('d/m/Y H:i');
     }
-    if ($facturaData['Fecha_Recepcion_CC'] && is_object($facturaData['Fecha_Recepcion_CC'])) {
+    if (isset($facturaData['Fecha_Recepcion_CC']) && $facturaData['Fecha_Recepcion_CC'] && is_object($facturaData['Fecha_Recepcion_CC'])) {
         $facturaData['Fecha_Recepcion_CC'] = $facturaData['Fecha_Recepcion_CC']->format('d/m/Y H:i');
     }
     
