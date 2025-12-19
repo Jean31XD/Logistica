@@ -88,10 +88,35 @@ try {
     require_once __DIR__ . '/../conexionBD/session_config.php';
     error_log("subir_imagen.php: session_config.php cargado");
 
-    // 2. Verificar autenticación
+    // 2. Verificar autenticación básica (solo que esté logueado)
     error_log("subir_imagen.php: Verificando autenticación");
-    verificarAutenticacion([0, 13]);
-    error_log("subir_imagen.php: Autenticación OK");
+    if (!isset($_SESSION['usuario'])) {
+        error_log("subir_imagen.php: Usuario no autenticado");
+        enviarRespuesta(false, 'No autenticado. Inicie sesión.', null, 401);
+    }
+    error_log("subir_imagen.php: Autenticación OK - Usuario: " . $_SESSION['usuario']);
+    
+    // 3. Verificar permisos usando tabla usuario_modulos
+    error_log("subir_imagen.php: Verificando permiso del módulo");
+    require_once __DIR__ . '/../conexionBD/conexion.php';
+    
+    $usuario = $_SESSION['usuario'];
+    $tienePermiso = false;
+    
+    $sqlPermiso = "SELECT COUNT(*) as cnt FROM usuario_modulos WHERE usuario = ? AND modulo = 'gestion_imagenes' AND activo = 1";
+    $stmtPermiso = sqlsrv_query($conn, $sqlPermiso, [$usuario]);
+    
+    if ($stmtPermiso) {
+        $row = sqlsrv_fetch_array($stmtPermiso, SQLSRV_FETCH_ASSOC);
+        $tienePermiso = ($row['cnt'] > 0);
+        sqlsrv_free_stmt($stmtPermiso);
+    }
+    
+    if (!$tienePermiso) {
+        error_log("subir_imagen.php: Usuario $usuario NO tiene permiso para gestion_imagenes");
+        enviarRespuesta(false, 'No tienes permiso para subir imágenes', null, 403);
+    }
+    error_log("subir_imagen.php: Permiso verificado OK");
 
     // 3. Validar CSRF token
     error_log("subir_imagen.php: Validando CSRF token");
