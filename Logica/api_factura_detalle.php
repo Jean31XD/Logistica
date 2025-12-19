@@ -1,7 +1,7 @@
 <?php
 /**
  * API para obtener detalles de una factura específica
- * Devuelve las líneas de la factura y datos principales
+ * Devuelve las líneas de la factura desde Facturas_lineas
  */
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
@@ -24,7 +24,7 @@ if (!$conn) {
 }
 
 try {
-    // Obtener datos principales de la factura (columnas básicas)
+    // Obtener datos principales de la factura
     $sqlFactura = "
         SELECT 
             Factura, Fecha, Validar, Transportista, 
@@ -37,14 +37,14 @@ try {
     
     if ($stmtFactura === false) {
         $errors = sqlsrv_errors();
-        echo json_encode(['error' => 'Error en consulta: ' . json_encode($errors)]);
+        echo json_encode(['error' => 'Error en consulta custinvoicejour: ' . json_encode($errors)]);
         exit();
     }
     
     $facturaData = sqlsrv_fetch_array($stmtFactura, SQLSRV_FETCH_ASSOC);
     
     if (!$facturaData) {
-        echo json_encode(['error' => 'Factura no encontrada: ' . $factura]);
+        echo json_encode(['error' => 'Factura no encontrada en custinvoicejour: ' . $factura]);
         exit();
     }
     
@@ -59,16 +59,21 @@ try {
         $facturaData['recepcion'] = $facturaData['recepcion']->format('d/m/Y H:i');
     }
     
-    // Obtener líneas de la factura
+    // Obtener líneas de la factura desde Facturas_lineas
+    // Columnas: invoiceid, lineamount, lineamounttax, inventlocationid, invoicingname
     $sqlLineas = "
         SELECT 
+            invoiceid,
+            invoicedate,
+            lineamount,
+            lineamounttax,
+            (lineamount + lineamounttax) AS LineTotal,
+            inventlocationid AS Almacen,
+            invoicingname AS Cliente,
             itemid AS Codigo,
             itemname AS Descripcion,
             qty AS Cantidad,
-            salesunit AS Unidad,
-            salespricemst AS Precio,
-            linetotalmst AS Total,
-            inventlocationid AS Almacen
+            salesunit AS Unidad
         FROM Facturas_lineas 
         WHERE invoiceid = ?
         ORDER BY linenum";
@@ -76,18 +81,35 @@ try {
     $stmtLineas = sqlsrv_query($conn, $sqlLineas, [$factura]);
     
     $lineas = [];
+    $totalMonto = 0;
+    $totalImpuesto = 0;
+    $cliente = '';
+    $almacenFactura = '';
+    
     if ($stmtLineas !== false) {
         while ($row = sqlsrv_fetch_array($stmtLineas, SQLSRV_FETCH_ASSOC)) {
             $lineas[] = $row;
+            $totalMonto += floatval($row['lineamount'] ?? 0);
+            $totalImpuesto += floatval($row['lineamounttax'] ?? 0);
+            if (empty($cliente) && !empty($row['Cliente'])) {
+                $cliente = $row['Cliente'];
+            }
+            if (empty($almacenFactura) && !empty($row['Almacen'])) {
+                $almacenFactura = $row['Almacen'];
+            }
         }
+    } else {
+        $errors = sqlsrv_errors();
+        echo json_encode(['error' => 'Error en consulta Facturas_lineas: ' . json_encode($errors)]);
+        exit();
     }
     
-    // Calcular totales
-    $totalMonto = 0;
+    // Añadir cliente y almacén al facturaData
+    $facturaData['Cliente'] = $cliente;
+    $facturaData['Almacen'] = $almacenFactura;
+    
     $totalItems = count($lineas);
-    foreach ($lineas as $linea) {
-        $totalMonto += floatval($linea['Total'] ?? 0);
-    }
+    $totalConImpuesto = $totalMonto + $totalImpuesto;
     
     echo json_encode([
         'success' => true,
@@ -95,7 +117,9 @@ try {
         'lineas' => $lineas,
         'totales' => [
             'items' => $totalItems,
-            'monto' => number_format($totalMonto, 2, '.', ',')
+            'subtotal' => number_format($totalMonto, 2, '.', ','),
+            'impuesto' => number_format($totalImpuesto, 2, '.', ','),
+            'total' => number_format($totalConImpuesto, 2, '.', ',')
         ]
     ], JSON_UNESCAPED_UNICODE);
     
