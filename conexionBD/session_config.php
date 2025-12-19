@@ -112,9 +112,16 @@ function verificarAutenticacion($pantallasPermitidas = []) {
     }
 
     // Si se especifican pantallas permitidas, verificar permisos
-    if (!empty($pantallasPermitidas) && !in_array($_SESSION['pantalla'], $pantallasPermitidas)) {
-        header("Location: " . getLoginUrl());
-        exit();
+    if (!empty($pantallasPermitidas)) {
+        // Convertir pantalla de sesión a int para comparación robusta
+        $pantallaUsuario = intval($_SESSION['pantalla'] ?? -1);
+        // Convertir array a ints también
+        $pantallasPermitidas = array_map('intval', $pantallasPermitidas);
+        
+        if (!in_array($pantallaUsuario, $pantallasPermitidas, false)) {
+            header("Location: " . getLoginUrl());
+            exit();
+        }
     }
 }
 
