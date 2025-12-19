@@ -9,6 +9,8 @@ require_once __DIR__ . '/../../conexionBD/session_config.php';
 // Verificar autenticación y permisos (pantallas: 0=Admin, 2=Facturas, 3=CXC, 5=PanelAdmin)
 verificarAutenticacion([0, 2, 3, 5]);
 
+// Generar token CSRF
+$csrfToken = generarTokenCSRF();
 // Incluir conexión a BD
 require_once __DIR__ . '/../../conexionBD/conexion.php';
 
@@ -383,10 +385,11 @@ include __DIR__ . '/../templates/header.php';
 </div>
 
 <?php
-$additionalJS = <<<'JS'
+$additionalJS = <<<JS
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+const CSRF_TOKEN = '{$csrfToken}';
 let paginaActual = 1;
 
 $(document).ready(function () {
@@ -477,6 +480,7 @@ function validarFactura() {
     const formData = new FormData();
     formData.append('factura', factura);
     formData.append('transportista', transportista);
+    formData.append('csrf_token', CSRF_TOKEN);
 
     fetch('../../Logica/Validar_factura.php', {
         method: 'POST',
