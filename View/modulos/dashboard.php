@@ -895,11 +895,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         const USER_TYPE = <?php echo json_encode($USER_TYPE); ?>;
         const USER_WAREHOUSE = <?php echo json_encode($USER_WAREHOUSE); ?>;
         
-        // Ruta base para APIs (vacío en Azure, con subcarpeta en local)
-        const API_BASE = <?php 
-            $isAzure = strpos($_SERVER['HTTP_HOST'] ?? '', 'azurewebsites.net') !== false;
-            echo json_encode($isAzure ? '' : '/MACO.AppLogistica.Web-1');
-        ?> + '/Logica/api_get_data.php';
+        // Ruta base para APIs (usa helper centralizado)
+        const API_BASE = <?php echo json_encode(getBasePath()); ?> + '/Logica/api_get_data.php';
 
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart, deliveryComparisonChart;
         let currentView = 'overview';
