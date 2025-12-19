@@ -1474,10 +1474,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                     <span class="transportista-nombre-text">${transportista}</span>
                                 </div>
                                 <div class="transportista-stats-compact">
-                                    <div class="stat-group"><span class="stat-label-mini">Total</span><span class="stat-badge total">${totalAsignadas}</span></div>
-                                    <div class="stat-group"><span class="stat-label-mini">Entreg.</span><span class="stat-badge success">${totalEntregadas}</span></div>
-                                    <div class="stat-group"><span class="stat-label-mini">Desp.</span><span class="stat-badge warning">${totalDespachadas}</span></div>
-                                    <div class="stat-group"><span class="stat-label-mini">%</span><span class="stat-badge ${porcentajeEntrega >= 90 ? 'success' : porcentajeEntrega >= 70 ? 'warning' : 'danger'}">${porcentajeEntrega}%</span></div>
+                                    <span class="stat-badge total">${totalAsignadas}</span>
+                                    <span class="stat-badge success">${totalEntregadas}</span>
+                                    <span class="stat-badge warning">${totalDespachadas}</span>
+                                    <span class="stat-badge ${porcentajeEntrega >= 90 ? 'success' : porcentajeEntrega >= 70 ? 'warning' : 'danger'}">${porcentajeEntrega}%</span>
                                     <i class="fas fa-chevron-down expand-icon"></i>
                                 </div>
                             </div>
