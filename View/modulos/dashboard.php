@@ -1426,7 +1426,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 }
 
                 // Construir cards expandibles para cada camión
-                let transportistasHTML = '<div class="transportistas-container">';
+                let transportistasHTML = '';
 
                 // Solo mostrar camiones que tengan facturas asignadas
                 const trucksWithInvoices = Object.keys(asignadasByTruck).filter(truck => {
@@ -1602,8 +1602,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                             </div>
                         </div>`;
                 });
-
-                transportistasHTML += `</div>`;
                 transportistasContainer.innerHTML = transportistasHTML;
 
                 // Actualizar contadores totales en el header
