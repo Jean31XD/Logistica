@@ -1413,9 +1413,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 // Despachadas (rojas) = Facturas pendientes de entrega
                 // Entregadas (verdes) = Facturas ya entregadas (en custinvoicejour)
                 Object.keys(asignadasByTruck).sort().forEach(truck => {
-                    // Usar nombre de transportista en lugar de placa/chasis
-                    const nombreTransportista = transportistaByTruck[truck] || truck;
-                    truckLabels.push(nombreTransportista);
+                    truckLabels.push(truck);
                     despachadasData.push(dispatchedByTruck[truck] || 0);
                     entregadasData.push(entregadasByTruck[truck] || 0);
                 });

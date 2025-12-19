@@ -920,11 +920,10 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%) !important;
-    color: #fff !important;
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+    color: #fff;
     cursor: pointer;
     transition: var(--transition);
-    min-height: 60px;
 }
 
 .transportista-header:hover {
