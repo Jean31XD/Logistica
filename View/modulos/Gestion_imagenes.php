@@ -437,6 +437,8 @@ include __DIR__ . '/../templates/header.php';
             <div class="results-container" id="results-container">
                 <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
                     <i class="fas fa-check-circle"></i> Resultados
+                </h3>
+                <div id="results-list"></div>
             </div>
         </div>
     </div>
