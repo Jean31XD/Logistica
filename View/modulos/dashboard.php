@@ -1950,23 +1950,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             fechaFinInput.value = lastDay;
         };
 
-        // Función para cargar lista de almacenes (solo para admin)
-        const populateAlmacenFilter = async () => {
-            if (!almacenFilterInput) return;
-            try {
-                const response = await fetch('../../Logica/api_get_data.php?view=almacenes');
-                if (!response.ok) return;
-                const almacenes = await response.json();
-                if (almacenes.error) return;
-                almacenes.forEach(almacen => {
-                    const option = document.createElement('option');
-                    option.value = almacen.inventlocationid;
-                    option.textContent = almacen.inventlocationid;
-                    almacenFilterInput.appendChild(option);
-                });
-            } catch (e) { console.error('Error cargando almacenes:', e); }
-        };
-
         // --- INICIALIZACIÓN ---
         setDateDefaults();
         initializeCharts();
