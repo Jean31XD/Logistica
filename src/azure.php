@@ -1,6 +1,6 @@
 <?php
 // src/azure.php
-header('Content-Type: text/html; charset=utf-8');
+// header('Content-Type: text/html; charset=utf-8'); // Comentado: causa conflicto con respuestas JSON
 
 use MicrosoftAzure\Storage\Blob\BlobRestProxy;
 use MicrosoftAzure\Storage\Common\Exceptions\ServiceException;
