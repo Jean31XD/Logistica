@@ -105,7 +105,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSS Externo del Dashboard -->
-    <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="stylesheet" href="<?php echo getBasePath(); ?>/View/assets/css/dashboard.css">
     <style>
         :root {
             --sidebar-bg: #1D3557; --main-bg: #F7FAFC; --card-bg: #ffffff;
