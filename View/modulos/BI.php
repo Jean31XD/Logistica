@@ -516,15 +516,12 @@ include __DIR__ . '/../templates/header.php';
                 </div>
                 
                 <!-- Tabla de Líneas -->
-                <h4 style="margin: 1rem 0;"><i class="fas fa-list"></i> Líneas de la Factura</h4>
+                <h4 style="margin: 1rem 0;"><i class="fas fa-list"></i> Detalle de Montos</h4>
                 <div class="table-responsive">
                     <table class="bi-table">
                         <thead>
                             <tr>
-                                <th>Código</th>
-                                <th>Descripción</th>
-                                <th>Cantidad</th>
-                                <th>Unidad</th>
+                                <th>Almacén</th>
                                 <th>Monto</th>
                                 <th>Impuesto</th>
                                 <th>Total</th>
@@ -771,17 +768,14 @@ function abrirDetalleFactura(factura) {
             if (response.lineas && response.lineas.length > 0) {
                 response.lineas.forEach(function(linea) {
                     lineasHtml += '<tr>';
-                    lineasHtml += '<td>' + (linea.Codigo || '—') + '</td>';
-                    lineasHtml += '<td>' + (linea.Descripcion || '—') + '</td>';
-                    lineasHtml += '<td>' + (linea.Cantidad || 0) + '</td>';
-                    lineasHtml += '<td>' + (linea.Unidad || '—') + '</td>';
+                    lineasHtml += '<td>' + (linea.Almacen || '—') + '</td>';
                     lineasHtml += '<td>$' + parseFloat(linea.lineamount || 0).toFixed(2) + '</td>';
                     lineasHtml += '<td>$' + parseFloat(linea.lineamounttax || 0).toFixed(2) + '</td>';
                     lineasHtml += '<td>$' + parseFloat(linea.LineTotal || 0).toFixed(2) + '</td>';
                     lineasHtml += '</tr>';
                 });
             } else {
-                lineasHtml = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#64748B;">No hay líneas de detalle</td></tr>';
+                lineasHtml = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:#64748B;">No hay detalles disponibles</td></tr>';
             }
             $('#lineas-body').html(lineasHtml);
             
