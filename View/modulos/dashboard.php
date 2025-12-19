@@ -880,12 +880,37 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
                 <!-- Vista mejorada de transportistas -->
                 <div class="card" style="margin-top: 2rem;">
-                    <h2>Detalle de Entregas por Camión</h2>
-                    <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Haz clic en cualquier camión para ver sus entregas detalladas. Cada camión muestra su chasis y transportista asignado.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h2 style="margin: 0;">Detalle de Entregas por Camión</h2>
+                            <p style="color: var(--text-secondary); margin: 0.5rem 0 0;">Haz clic en cualquier camión para ver sus entregas detalladas.</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span id="trucksInfo" style="color: var(--text-secondary); font-size: 0.85rem;">0 camiones</span>
+                        </div>
+                    </div>
 
                     <!-- Cards expandibles de cada transportista -->
                     <div id="transportistasContainer">
                         <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Cargando detalles de transportistas...</p>
+                    </div>
+                    
+                    <!-- Controles de Paginación -->
+                    <div id="trucksPagination" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #F8FAFC; border-top: 1px solid var(--border); margin-top: 1rem; border-radius: 0 0 var(--radius-md) var(--radius-md);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label style="font-size: 0.85rem; color: var(--text-secondary);">Mostrar:</label>
+                            <select id="trucksPerPage" style="padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <div id="trucksPageInfo" style="color: var(--text-secondary); font-size: 0.85rem;">Página 1 de 1</div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="trucksPrevPage" disabled style="padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem;">← Anterior</button>
+                            <button id="trucksNextPage" style="padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem;">Siguiente →</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1573,7 +1598,55 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                             </div>
                         </div>`;
                 });
+
+                // Guardar todos los camiones para paginación
+                window.allTrucksHTML = [];
+                trucksWithInvoices.forEach((truck, index) => {
+                    window.allTrucksHTML.push({
+                        truck: truck,
+                        html: document.createElement('div')
+                    });
+                });
+
+                // Configuración de paginación
+                window.trucksCurrentPage = 1;
+                window.trucksPerPageValue = parseInt(document.getElementById('trucksPerPage')?.value || 10);
+                window.totalTrucks = trucksWithInvoices.length;
+                
+                // Función para renderizar página actual
+                window.renderTrucksPage = function() {
+                    const start = (window.trucksCurrentPage - 1) * window.trucksPerPageValue;
+                    const end = start + window.trucksPerPageValue;
+                    const totalPages = Math.ceil(window.totalTrucks / window.trucksPerPageValue);
+                    
+                    // Mostrar/ocultar cards según página
+                    const allCards = transportistasContainer.querySelectorAll('.transportista-card');
+                    allCards.forEach((card, idx) => {
+                        if (idx >= start && idx < end) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    
+                    // Actualizar info
+                    const trucksInfo = document.getElementById('trucksInfo');
+                    if (trucksInfo) trucksInfo.textContent = `${window.totalTrucks} camiones`;
+                    
+                    const pageInfo = document.getElementById('trucksPageInfo');
+                    if (pageInfo) pageInfo.textContent = `Página ${window.trucksCurrentPage} de ${totalPages}`;
+                    
+                    // Actualizar botones
+                    const prevBtn = document.getElementById('trucksPrevPage');
+                    const nextBtn = document.getElementById('trucksNextPage');
+                    if (prevBtn) prevBtn.disabled = window.trucksCurrentPage <= 1;
+                    if (nextBtn) nextBtn.disabled = window.trucksCurrentPage >= totalPages;
+                };
+
                 transportistasContainer.innerHTML = transportistasHTML;
+                
+                // Renderizar primera página
+                window.renderTrucksPage();
 
             } catch (error) {
                 console.error('Error cargando detalles de entregas:', error);
@@ -2107,6 +2180,28 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             detailsLimit = parseInt(e.target.value);
             detailsCurrentPage = 1;
             applyFiltersAndFetchData();
+        });
+
+        // Event listeners para paginación de camiones
+        document.getElementById('trucksPrevPage')?.addEventListener('click', () => {
+            if (window.trucksCurrentPage > 1) {
+                window.trucksCurrentPage--;
+                window.renderTrucksPage();
+            }
+        });
+        
+        document.getElementById('trucksNextPage')?.addEventListener('click', () => {
+            const totalPages = Math.ceil(window.totalTrucks / window.trucksPerPageValue);
+            if (window.trucksCurrentPage < totalPages) {
+                window.trucksCurrentPage++;
+                window.renderTrucksPage();
+            }
+        });
+        
+        document.getElementById('trucksPerPage')?.addEventListener('change', (e) => {
+            window.trucksPerPageValue = parseInt(e.target.value);
+            window.trucksCurrentPage = 1;
+            window.renderTrucksPage();
         });
     });
 </script>
