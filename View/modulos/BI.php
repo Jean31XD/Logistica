@@ -23,6 +23,13 @@ $zonas = [];
 $zstmt = sqlsrv_query($conn, "SELECT DISTINCT zona FROM custinvoicejour WHERE zona IS NOT NULL ORDER BY zona");
 while ($z = sqlsrv_fetch_array($zstmt, SQLSRV_FETCH_ASSOC)) $zonas[] = $z['zona'];
 
+// Cargar almacenes
+$almacenes = [];
+$astmt = sqlsrv_query($conn, "SELECT DISTINCT inventlocationid FROM Facturas_lineas WHERE inventlocationid IS NOT NULL AND inventlocationid <> '' ORDER BY inventlocationid");
+if ($astmt) {
+    while ($a = sqlsrv_fetch_array($astmt, SQLSRV_FETCH_ASSOC)) $almacenes[] = $a['inventlocationid'];
+}
+
 // Valores iniciales
 $filtroTransportista = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? date('Y-m-d');
@@ -32,6 +39,7 @@ $usuario = $_GET['usuario'] ?? '';
 $buscarFactura = $_GET['factura'] ?? '';
 $prefijo = $_GET['prefijo'] ?? '';
 $zona = $_GET['zona'] ?? '';
+$almacen = $_GET['almacen'] ?? '';
 
 $pageTitle = "Reporte de Facturas Recibidas | MACO";
 $containerClass = "maco-container-fluid";
@@ -423,6 +431,16 @@ include __DIR__ . '/../templates/header.php';
         </div>
         
         <div class="bi-filter-group">
+            <label>Almacén</label>
+            <select name="almacen" id="almacen">
+                <option value="">Todos</option>
+                <?php foreach ($almacenes as $a): ?>
+                <option value="<?= htmlspecialchars($a) ?>" <?= $almacen === $a ? 'selected' : '' ?>><?= htmlspecialchars($a) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="bi-filter-group">
             <label>Prefijo</label>
             <select name="prefijo">
                 <option value="">Todos</option>
@@ -455,6 +473,7 @@ include __DIR__ . '/../templates/header.php';
                     <th>Transportista</th>
                     <th>Usuario ALM</th>
                     <th>Usuario CC</th>
+                    <th>Almacén</th>
                     <th>Zona</th>
                 </tr>
             </thead>
@@ -470,7 +489,7 @@ include __DIR__ . '/../templates/header.php';
 <script>
 $(document).ready(function() {
     // Inicializar Select2
-    $('#listaTransportistas, #usuario, #zona').select2({
+    $('#listaTransportistas, #usuario, #zona, #almacen').select2({
         placeholder: 'Seleccionar...',
         allowClear: true,
         width: '100%'

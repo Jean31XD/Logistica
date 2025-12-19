@@ -10,7 +10,7 @@ if (!$conn) {
     exit();
 }
 
-// --- Lógica de Filtros (exactamente la misma que tenías) ---
+// --- Lógica de Filtros ---
 $filtroTransportista = $_GET['transportista'] ?? '';
 $desde = $_GET['desde'] ?? date('Y-m-d');
 $hasta = $_GET['hasta'] ?? date('Y-m-d');
@@ -20,6 +20,7 @@ $entregadasCC = isset($_GET['entregadasCC']);
 $buscarFactura = $_GET['factura'] ?? '';
 $prefijo = $_GET['prefijo'] ?? '';
 $zona = $_GET['zona'] ?? '';
+$almacen = $_GET['almacen'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
 $limit = 50;
 $offset = ($page - 1) * $limit;
@@ -33,27 +34,31 @@ try {
     exit();
 }
 
-$where = "WHERE Fecha BETWEEN ? AND ? AND Transportista NOT LIKE '%Contado%'";
+// --- Construcción de WHERE para custinvoicejour ---
+$where = "WHERE c.Fecha BETWEEN ? AND ? AND c.Transportista NOT LIKE '%Contado%'";
 $params = [$fechaDesde->format('Y-m-d'), $fechaHasta->format('Y-m-d')];
-if ($estado === 'vacio') $where .= " AND (Validar IS NULL OR LTRIM(RTRIM(Validar)) = '')";
-elseif (!empty($estado)) { $where .= " AND Validar = ?"; $params[] = $estado; }
-if (!empty($usuario)) { $where .= " AND Usuario = ?"; $params[] = $usuario; }
-if ($entregadasCC) $where .= " AND Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> ''";
-if (!empty($filtroTransportista)) { $where .= " AND Transportista = ?"; $params[] = $filtroTransportista; }
-if (!empty($buscarFactura)) { $where .= " AND Factura LIKE ?"; $params[] = '%' . $buscarFactura . '%'; }
-if ($prefijo === 'NC') $where .= " AND Factura LIKE 'NC%'";
-if ($prefijo === 'FT') $where .= " AND Factura LIKE 'FT%'";
-if (!empty($zona)) { $where .= " AND zona = ?"; $params[] = $zona; }
+if ($estado === 'vacio') $where .= " AND (c.Validar IS NULL OR LTRIM(RTRIM(c.Validar)) = '')";
+elseif (!empty($estado)) { $where .= " AND c.Validar = ?"; $params[] = $estado; }
+if (!empty($usuario)) { $where .= " AND c.Usuario = ?"; $params[] = $usuario; }
+if ($entregadasCC) $where .= " AND c.Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(c.Usuario_de_recepcion)) <> ''";
+if (!empty($filtroTransportista)) { $where .= " AND c.Transportista = ?"; $params[] = $filtroTransportista; }
+if (!empty($buscarFactura)) { $where .= " AND c.Factura LIKE ?"; $params[] = '%' . $buscarFactura . '%'; }
+if ($prefijo === 'NC') $where .= " AND c.Factura LIKE 'NC%'";
+if ($prefijo === 'FT') $where .= " AND c.Factura LIKE 'FT%'";
+if (!empty($zona)) { $where .= " AND c.zona = ?"; $params[] = $zona; }
+if (!empty($almacen)) { $where .= " AND fl.inventlocationid = ?"; $params[] = $almacen; }
 
-// --- Obtener Resumen y Total ---
+// --- Obtener Resumen y Total (con JOIN para filtro almacén) ---
 $resumen_sql = "
 SELECT
-    COUNT(*) as TotalFacturas,
-    SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
-    SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
-    SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
-    SUM(CASE WHEN Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC
-FROM custinvoicejour $where";
+    COUNT(DISTINCT c.Factura) as TotalFacturas,
+    SUM(CASE WHEN c.Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
+    SUM(CASE WHEN c.Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
+    SUM(CASE WHEN c.Validar IS NULL OR LTRIM(RTRIM(c.Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
+    SUM(CASE WHEN c.Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(c.Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC
+FROM custinvoicejour c
+LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
+$where";
 $resumen_stmt = sqlsrv_query($conn, $resumen_sql, $params);
 if ($resumen_stmt === false) {
     header('HTTP/1.1 500 Internal Server Error');
@@ -65,11 +70,15 @@ $resumen['NoCompletadas'] = ($resumen['RE'] ?? 0) + ($resumen['SinEstado'] ?? 0)
 $total_rows = $resumen['TotalFacturas'] ?? 0;
 $total_pages = $total_rows > 0 ? ceil($total_rows / $limit) : 1;
 
-// --- Obtener datos para la tabla ---
+// --- Obtener datos para la tabla (con almacén) ---
 $sql = "
-SELECT Factura, Fecha, Validar AS Estado, Transportista, Fecha_scanner AS Recepcion_ALM,
-       Usuario AS Usuario_ALM, recepcion AS Recepcion_CC, Usuario_de_recepcion AS Usuario_CC, zona AS Localizacion
-FROM custinvoicejour $where ORDER BY Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+SELECT c.Factura, c.Fecha, c.Validar AS Estado, c.Transportista, c.Fecha_scanner AS Recepcion_ALM,
+       c.Usuario AS Usuario_ALM, c.recepcion AS Recepcion_CC, c.Usuario_de_recepcion AS Usuario_CC, 
+       c.zona AS Localizacion, fl.inventlocationid AS Almacen
+FROM custinvoicejour c
+LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
+$where 
+ORDER BY c.Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 $params[] = $offset;
 $params[] = $limit;
 $stmt = sqlsrv_query($conn, $sql, $params);
@@ -95,34 +104,31 @@ if ($stmt && $total_rows > 0) {
             <td><?= htmlspecialchars($row['Transportista'] ?? '—') ?></td>
             <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '—') ?></td>
             <td><?= htmlspecialchars($row['Usuario_CC'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($row['Almacen'] ?? '—') ?></td>
             <td><?= htmlspecialchars($row['Localizacion'] ?? '—') ?></td>
         </tr>
         <?php
     }
 } else {
-    echo '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-secondary);">No se encontraron resultados con los filtros aplicados.</td></tr>';
+    echo '<tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--text-secondary);">No se encontraron resultados con los filtros aplicados.</td></tr>';
 }
 $tablaHtml = ob_get_clean();
 
 // --- Generar HTML de la paginación ---
 ob_start();
 if ($total_pages > 1) {
-    // Mostrar páginas alrededor de la actual
     $start = max(1, $page - 2);
     $end = min($total_pages, $page + 2);
 
-    // Botón anterior
     if ($page > 1) {
         echo '<button class="page-btn" data-page="' . ($page - 1) . '">← Anterior</button>';
     }
 
-    // Páginas numeradas
     for ($i = $start; $i <= $end; $i++) {
         $active = ($i == $page) ? 'active' : '';
         echo '<button class="page-btn ' . $active . '" data-page="' . $i . '">' . $i . '</button>';
     }
 
-    // Botón siguiente
     if ($page < $total_pages) {
         echo '<button class="page-btn" data-page="' . ($page + 1) . '">Siguiente →</button>';
     }
