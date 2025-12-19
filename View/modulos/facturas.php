@@ -1,6 +1,6 @@
 <?php
 /**
- * Reporte de Facturas Recibidas - Business Intelligence
+ * Validación de Facturas
  */
 
 // Incluir configuración centralizada de sesión
@@ -30,7 +30,7 @@ if (in_array($_SESSION['pantalla'], [0, 2, 3, 5])) {
     }
 }
 
-$pageTitle = "Reporte de Facturas Recibidas | MACO";
+$pageTitle = "Validación de Facturas | MACO";
 $containerClass = "maco-container-fluid";
 $additionalCSS = <<<'CSS'
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -287,8 +287,8 @@ include __DIR__ . '/../templates/header.php';
 <!-- Header del reporte -->
 <div class="bi-header">
     <div>
-        <h1><i class="fas fa-chart-bar"></i> Reporte de Facturas Recibidas</h1>
-        <p>Business Intelligence - Validación y gestión de facturas</p>
+        <h1><i class="fas fa-check-circle"></i> Validación de Facturas</h1>
+        <p>Valida y procesa facturas escaneadas</p>
     </div>
     <div class="bi-header-stats">
         <div class="bi-stat-box">
@@ -298,10 +298,6 @@ include __DIR__ . '/../templates/header.php';
         <div class="bi-stat-box">
             <span class="number" id="kpi-completadas">--</span>
             <span class="label">Completadas</span>
-        </div>
-        <div class="bi-stat-box">
-            <span class="number" id="kpi-pendientes">--</span>
-            <span class="label">Pendientes</span>
         </div>
     </div>
 </div>
