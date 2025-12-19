@@ -764,6 +764,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 </div>
             </header>
             
+            <!-- Tabs de Navegación -->
+            <nav class="header-tabs">
+                <a href="#" class="tab-item active" data-view="overview">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Resumen General</span>
+                </a>
+                <a href="#" class="tab-item" data-view="trends">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Tendencias</span>
+                </a>
+                <a href="#" class="tab-item" data-view="performance">
+                    <i class="fas fa-truck"></i>
+                    <span>Rendimiento</span>
+                </a>
+                <a href="#" class="tab-item" data-view="financial">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>Financiero</span>
+                </a>
+            </nav>
+            
             <div class="content-area">
 
             <div id="view-overview" class="view-container active">
@@ -2017,6 +2037,42 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     financial: 'Análisis Financiero',
                     drivers: 'Rendimiento de Choferes',
                     details: 'Detalle de Facturas'
+                };
+                mainTitle.textContent = viewTitles[targetView] || 'Dashboard';
+                
+                currentView = targetView;
+                applyFiltersAndFetchData();
+                
+                // Sincronizar tabs del header
+                document.querySelectorAll('.header-tabs .tab-item').forEach(t => t.classList.remove('active'));
+                document.querySelector(`.header-tabs .tab-item[data-view="${targetView}"]`)?.classList.add('active');
+            });
+        });
+
+        // Event listeners para tabs del header
+        document.querySelectorAll('.header-tabs .tab-item').forEach(tab => {
+            tab.addEventListener('click', e => {
+                e.preventDefault();
+                
+                const targetView = tab.dataset.view;
+                
+                // Actualizar tabs
+                document.querySelectorAll('.header-tabs .tab-item').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Actualizar sidebar
+                document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+                document.querySelector(`.sidebar-nav a[data-view="${targetView}"]`)?.classList.add('active');
+                
+                // Cambiar vista
+                document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${targetView}`).classList.add('active');
+                
+                const viewTitles = {
+                    overview: 'Resumen de Facturas',
+                    trends: 'Tendencias Diarias de Registros',
+                    performance: 'Análisis de Rendimiento y Calidad',
+                    financial: 'Análisis Financiero'
                 };
                 mainTitle.textContent = viewTitles[targetView] || 'Dashboard';
                 
