@@ -1468,37 +1468,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     transportistasHTML += `
                         <div class="transportista-card" id="truck-${index}" data-camion="${truck}" data-nombre="${transportista}" data-chasis="${chasis}" data-placa="${placa}">
                             <div class="transportista-header" onclick="toggleTransportista('truck-${index}')">
-                                <div class="transportista-nombre">
-                                    <i class="fas fa-truck"></i>
-                                    <div>
-                                        <div style="font-size: 1.1rem; font-weight: 700;">${placa}</div>
-                                        <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 0.25rem;">
-                                            <i class="fas fa-user" style="margin-right: 0.25rem;"></i>${transportista}
-                                        </div>
-                                        <div style="font-size: 0.7rem; opacity: 0.75; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
-                                            <div><i class="fas fa-barcode" style="margin-right: 0.25rem;"></i> Chasis: ${chasis}</div>
-                                            <div><i class="fas fa-cog" style="margin-right: 0.25rem;"></i> Modelo: ${modelo}</div>
-                                            <div><i class="fas fa-hashtag" style="margin-right: 0.25rem;"></i> Ficha: ${ficha}</div>
-                                        </div>
-                                    </div>
+                                <div class="transportista-info">
+                                    <span class="transportista-placa">${placa}</span>
+                                    <span class="transportista-separator">|</span>
+                                    <span class="transportista-nombre-text">${transportista}</span>
                                 </div>
-                                <div class="transportista-stats">
-                                    <div class="stat-item">
-                                        <div class="stat-label">Total</div>
-                                        <div class="stat-value" style="color: rgba(255,255,255,0.9);">${totalAsignadas}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Entregadas</div>
-                                        <div class="stat-value" style="color: #48BB78;">${totalEntregadas}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Despachadas</div>
-                                        <div class="stat-value" style="color: #ED8936;">${totalDespachadas}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">% Entrega</div>
-                                        <div class="stat-value" style="color: ${porcentajeEntrega >= 90 ? '#48BB78' : porcentajeEntrega >= 70 ? '#ECC94B' : '#FC8181'};">${porcentajeEntrega}%</div>
-                                    </div>
+                                <div class="transportista-stats-compact">
+                                    <span class="stat-badge total">${totalAsignadas}</span>
+                                    <span class="stat-badge success">${totalEntregadas}</span>
+                                    <span class="stat-badge warning">${totalDespachadas}</span>
+                                    <span class="stat-badge ${porcentajeEntrega >= 90 ? 'success' : porcentajeEntrega >= 70 ? 'warning' : 'danger'}">${porcentajeEntrega}%</span>
                                     <i class="fas fa-chevron-down expand-icon"></i>
                                 </div>
                             </div>

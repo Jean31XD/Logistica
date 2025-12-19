@@ -921,16 +921,75 @@ header h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%) !important;
-    color: #fff !important;
+    padding: 0.75rem 1rem;
+    background: #fff !important;
+    color: var(--text-dark) !important;
     cursor: pointer;
     transition: var(--transition);
-    min-height: 60px;
+    border-bottom: 1px solid var(--border);
 }
 
 .transportista-header:hover {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    background: #F8FAFC !important;
+}
+
+.transportista-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.transportista-placa {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--secondary);
+}
+
+.transportista-separator {
+    color: #CBD5E0;
+    font-weight: 300;
+}
+
+.transportista-nombre-text {
+    color: var(--text-body);
+    font-size: 0.85rem;
+}
+
+.transportista-stats-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.stat-badge.total {
+    background: #E2E8F0;
+    color: var(--text-dark);
+}
+
+.stat-badge.success {
+    background: #C6F6D5;
+    color: #22543D;
+}
+
+.stat-badge.warning {
+    background: #FEEBC8;
+    color: #744210;
+}
+
+.stat-badge.danger {
+    background: #FED7D7;
+    color: #742A2A;
 }
 
 .transportista-nombre {
