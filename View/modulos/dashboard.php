@@ -780,14 +780,47 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             <div class="content-area">
 
             <div id="view-overview" class="view-container active">
-                <div class="grid-layout">
+                <!-- KPIs Grid Mejorado -->
+                <div class="kpi-grid">
                     <div class="kpi-card" id="kpi-total-emitidas">
-                        <h2>Total Emitidas</h2>
-                        <p id="total-emitidas">--</p>
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #3B82F6, #1D4ED8);">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h2>Total Emitidas</h2>
+                            <p id="total-emitidas">--</p>
+                            <span class="kpi-label">Facturas en el período</span>
+                        </div>
                     </div>
                     <div class="kpi-card" id="kpi-sin-estado">
-                        <h2>Sin Estado Asignado</h2>
-                        <p id="sin-estado">--</p>
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h2>Sin Estado</h2>
+                            <p id="sin-estado">--</p>
+                            <span class="kpi-label">Pendientes de procesar</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" id="kpi-entregadas">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #22C55E, #16A34A);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h2>Entregadas</h2>
+                            <p id="total-entregadas">--</p>
+                            <span class="kpi-label">Completadas exitosamente</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card" id="kpi-despachadas">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h2>Despachadas</h2>
+                            <p id="total-despachadas">--</p>
+                            <span class="kpi-label">En camino al cliente</span>
+                        </div>
                     </div>
                 </div>
                 <div class="card" style="margin-top: 1.5rem;">
