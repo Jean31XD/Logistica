@@ -1002,12 +1002,13 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    background: linear-gradient(135deg, var(--secondary) 0%, #2E4A6F 100%);
-    color: #fff;
+    background: #fff;
+    color: var(--text-dark);
+    border-bottom: 2px solid var(--border);
 }
 
 .truck-details-title h2 {
-    color: #fff;
+    color: var(--text-dark);
     margin: 0;
     font-size: 1.1rem;
     display: flex;
@@ -1037,7 +1038,7 @@ header h1 {
 
 .stat-box {
     text-align: center;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--primary);
     padding: 0.75rem 1.25rem;
     border-radius: var(--radius-md);
     min-width: 80px;
