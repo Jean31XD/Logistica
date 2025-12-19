@@ -688,7 +688,7 @@ header h1 {
 
 .kpi-card {
     background: var(--bg-card);
-    padding: 1.25rem;
+    padding: 1.5rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
@@ -696,9 +696,6 @@ header h1 {
     overflow: hidden;
     cursor: pointer;
     transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
 }
 
 .kpi-card::before {
@@ -747,57 +744,19 @@ header h1 {
 }
 
 .kpi-card p {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 800;
-    color: var(--text-dark);
+    color: var(--primary);
     margin: 0;
     line-height: 1;
     letter-spacing: -1px;
-}
-
-.kpi-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 1.5rem;
-    flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.kpi-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.kpi-content h2 {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-}
-
-.kpi-content h2::before {
-    display: none;
-}
-
-.kpi-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-top: 4px;
-    display: block;
 }
 
 .kpi-trend {
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
     font-size: 0.75rem;
     font-weight: 600;
 }
