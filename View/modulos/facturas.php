@@ -1,6 +1,6 @@
 <?php
 /**
- * Recepción de Facturas - MACO Design System
+ * Reporte de Facturas Recibidas - Business Intelligence
  */
 
 // Incluir configuración centralizada de sesión
@@ -22,7 +22,7 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
 
 // Cargar usuarios si la pantalla es 0, 2 o 5
 $usuarios = [];
-if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
+if (in_array($_SESSION['pantalla'], [0, 2, 3, 5])) {
     $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL";
     $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
     while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
@@ -30,158 +30,253 @@ if (in_array($_SESSION['pantalla'], [0, 2, 5])) {
     }
 }
 
-$pageTitle = "Recepción de Facturas | MACO";
-$containerClass = "maco-container-fluid"; // Contenedor fluido para este layout especial
+$pageTitle = "Reporte de Facturas Recibidas | MACO";
+$containerClass = "maco-container-fluid";
 $additionalCSS = <<<'CSS'
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    /* Layout especial para pantalla de facturas */
-    .facturas-layout {
-        display: flex;
-        gap: 2rem;
-        margin-top: 1rem;
+    :root {
+        --bi-primary: #E63946;
+        --bi-secondary: #1D3557;
+        --bi-accent: #457B9D;
+        --bi-success: #22C55E;
+        --bi-warning: #F59E0B;
+        --bi-bg: #F1F5F9;
+        --bi-card: #FFFFFF;
+        --bi-border: #E2E8F0;
+        --bi-text: #1E293B;
+        --bi-muted: #64748B;
     }
 
-    .facturas-main {
-        flex: 1;
-        min-width: 0; /* Permite que flex funcione correctamente */
+    body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bi-bg);
     }
 
-    .facturas-sidebar {
-        width: 350px;
-        flex-shrink: 0;
-    }
-
-    .sidebar-card {
-        background: white;
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        box-shadow: var(--shadow);
-        position: sticky;
-        top: 1rem;
-    }
-
-    .sidebar-logo {
-        text-align: center;
+    /* Header del reporte */
+    .bi-header {
+        background: linear-gradient(135deg, var(--bi-secondary) 0%, var(--bi-accent) 100%);
+        color: #fff;
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
         margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .sidebar-logo img {
-        max-width: 180px;
-        height: auto;
+    .bi-header h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }
 
-    .form-group {
-        margin-bottom: 1rem;
+    .bi-header p {
+        margin: 0.25rem 0 0;
+        opacity: 0.85;
+        font-size: 0.9rem;
     }
 
-    .form-group label {
+    .bi-header-stats {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .bi-stat-box {
+        text-align: center;
+        background: rgba(255,255,255,0.15);
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+    }
+
+    .bi-stat-box .number {
+        font-size: 1.5rem;
+        font-weight: 800;
         display: block;
+    }
+
+    .bi-stat-box .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    /* Filtros en topbar */
+    .bi-filters {
+        background: var(--bi-card);
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .bi-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 140px;
+    }
+
+    .bi-filter-group label {
+        font-size: 0.7rem;
         font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
+        color: var(--bi-muted);
+        text-transform: uppercase;
     }
 
-    .form-control, .form-select {
-        width: 100%;
-        padding: 0.625rem 0.875rem;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        font-size: 0.875rem;
-        transition: all 0.2s ease;
+    .bi-filter-group input,
+    .bi-filter-group select {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--bi-border);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        background: #fff;
     }
 
-    .form-control:focus, .form-select:focus {
+    .bi-filter-group input:focus,
+    .bi-filter-group select:focus {
         outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+        border-color: var(--bi-primary);
+        box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
     }
 
-    .input-group {
+    .bi-filter-actions {
         display: flex;
         gap: 0.5rem;
+        margin-left: auto;
     }
 
-    .input-group .form-control {
-        flex: 1;
+    .bi-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
     }
 
-    .input-group .btn {
-        flex-shrink: 0;
+    .bi-btn-primary {
+        background: var(--bi-primary);
+        color: #fff;
     }
 
-    .select2-container--default .select2-selection--single {
-        height: 38px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
+    .bi-btn-primary:hover {
+        background: #c53030;
     }
 
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 36px;
-        padding-left: 12px;
+    .bi-btn-success {
+        background: var(--bi-success);
+        color: #fff;
     }
 
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 36px;
+    /* Tabla moderna */
+    .bi-table-container {
+        background: var(--bi-card);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
 
     .table-facturas {
-        background: white;
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        box-shadow: var(--shadow);
+        width: 100%;
+        border-collapse: collapse;
     }
 
     .table-facturas thead {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: white;
+        background: var(--bi-secondary);
+        color: #fff;
     }
 
     .table-facturas thead th {
         padding: 1rem;
         font-weight: 600;
         text-align: center;
-        border: none;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .table-facturas tbody td {
         padding: 0.875rem;
-        vertical-align: middle;
         text-align: center;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--bi-border);
+        font-size: 0.85rem;
     }
 
     .table-facturas tbody tr:hover {
-        background-color: var(--bg-hover);
+        background: #F8FAFC;
     }
 
     .table-facturas tbody tr.table-success {
-        background-color: rgba(25, 135, 84, 0.1) !important;
-        border-left: 4px solid var(--success);
+        background: rgba(34, 197, 94, 0.1) !important;
+        border-left: 4px solid var(--bi-success);
     }
 
-    .estado-validar {
-        padding: 0.5rem;
-        border-radius: var(--radius);
-        border: 1px solid var(--border);
-        font-size: 0.875rem;
-        min-width: 120px;
+    /* Select2 estilos */
+    .select2-container--default .select2-selection--single {
+        height: 36px;
+        border: 1px solid var(--bi-border);
+        border-radius: 6px;
     }
 
-    @media (max-width: 992px) {
-        .facturas-layout {
-            flex-direction: column;
-        }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 34px;
+        font-size: 0.85rem;
+    }
 
-        .facturas-sidebar {
-            width: 100%;
-            order: -1; /* Sidebar primero en móvil */
-        }
+    /* Paginación */
+    #paginacion {
+        padding: 1rem;
+        display: flex;
+        justify-content: center;
+    }
 
-        .sidebar-card {
-            position: static;
-        }
+    /* Input grupo para recibir factura */
+    .bi-receive-box {
+        background: linear-gradient(135deg, var(--bi-success) 0%, #16A34A 100%);
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .bi-receive-box label {
+        color: #fff;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .bi-receive-box input {
+        flex: 1;
+        max-width: 200px;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+
+    .bi-receive-box button {
+        background: #fff;
+        color: var(--bi-success);
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
     }
 </style>
 CSS;
@@ -189,98 +284,102 @@ CSS;
 include __DIR__ . '/../templates/header.php';
 ?>
 
-<h1 class="maco-title maco-title-gradient">
-    <i class="fas fa-file-invoice"></i>
-    Recepción de Facturas
-</h1>
-
-<p class="maco-subtitle">
-    Validación y gestión de facturas recibidas
-</p>
-
-<div class="facturas-layout">
-    <div class="facturas-main">
-        <div id="contenedorFacturas"></div>
-        <div id="paginacion" class="mt-3 d-flex justify-content-center"></div>
+<!-- Header del reporte -->
+<div class="bi-header">
+    <div>
+        <h1><i class="fas fa-chart-bar"></i> Reporte de Facturas Recibidas</h1>
+        <p>Business Intelligence - Validación y gestión de facturas</p>
     </div>
-
-    <aside class="facturas-sidebar">
-        <div class="sidebar-card">
-            <div class="sidebar-logo">
-                <img src="../../IMG/LOGO MC - NEGRO.png" alt="Logo MACO">
-            </div>
-
-            <div class="form-group">
-                <label for="listaTransportistas">Transportista:</label>
-                <select id="listaTransportistas" class="form-select">
-                    <option value="">-- Todos --</option>
-                    <?php foreach ($transportistas as $t): ?>
-                        <option value="<?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>">
-                            <?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="fechaInicio">Desde:</label>
-                <input type="date" id="fechaInicio" class="form-control" />
-            </div>
-
-            <div class="form-group">
-                <label for="fechaFin">Hasta:</label>
-                <input type="date" id="fechaFin" class="form-control" />
-            </div>
-
-            <div class="form-group">
-                <label for="fechaRecibido">Fecha recibido:</label>
-                <input type="date" id="fechaRecibido" class="form-control" />
-            </div>
-
-            <div class="form-group">
-                <label for="fechaRecepcion">Fecha recepción:</label>
-                <input type="date" id="fechaRecepcion" class="form-control" />
-            </div>
-
-            <div class="form-group">
-                <label for="filtroEstatus">Estatus:</label>
-                <select id="filtroEstatus" class="form-select">
-                    <option value="">-- Todos --</option>
-                    <option value="Completada">Completada</option>
-                    <option value="RE">RE</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="buscarFactura">Buscar Factura:</label>
-                <input type="text" id="buscarFactura" class="form-control" placeholder="Ej: 12345678901" maxlength="11" />
-            </div>
-
-            <?php if (in_array($_SESSION['pantalla'], [0, 2, 5])): ?>
-                <div class="form-group">
-                    <label for="filtroUsuario">Usuario:</label>
-                    <select id="filtroUsuario" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <?php foreach ($usuarios as $u): ?>
-                            <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            <?php endif; ?>
-
-            <div class="form-group">
-                <label for="inputFactura">Recibir Factura:</label>
-                <div class="input-group">
-                    <input type="text" id="inputFactura" class="form-control" placeholder="11 dígitos" maxlength="11" />
-                    <button class="maco-btn maco-btn-success" onclick="validarFactura()" title="Recibir factura">
-                        <i class="fas fa-check"></i>
-                    </button>
-                </div>
-            </div>
+    <div class="bi-header-stats">
+        <div class="bi-stat-box">
+            <span class="number" id="kpi-total">--</span>
+            <span class="label">Total</span>
         </div>
-    </aside>
+        <div class="bi-stat-box">
+            <span class="number" id="kpi-completadas">--</span>
+            <span class="label">Completadas</span>
+        </div>
+        <div class="bi-stat-box">
+            <span class="number" id="kpi-pendientes">--</span>
+            <span class="label">Pendientes</span>
+        </div>
+    </div>
+</div>
+
+<!-- Caja para recibir facturas -->
+<div class="bi-receive-box">
+    <label><i class="fas fa-barcode"></i> Recibir Factura:</label>
+    <input type="text" id="inputFactura" placeholder="Ingrese 11 dígitos" maxlength="11" />
+    <button onclick="validarFactura()"><i class="fas fa-check"></i> Validar</button>
+</div>
+
+<!-- Filtros horizontales -->
+<div class="bi-filters">
+    <div class="bi-filter-group" style="min-width: 200px;">
+        <label>Transportista</label>
+        <select id="listaTransportistas">
+            <option value="">-- Todos --</option>
+            <?php foreach ($transportistas as $t): ?>
+                <option value="<?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($t, ENT_QUOTES, 'UTF-8') ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    
+    <div class="bi-filter-group">
+        <label>Desde</label>
+        <input type="date" id="fechaInicio" />
+    </div>
+    
+    <div class="bi-filter-group">
+        <label>Hasta</label>
+        <input type="date" id="fechaFin" />
+    </div>
+    
+    <div class="bi-filter-group">
+        <label>Fecha Recibido</label>
+        <input type="date" id="fechaRecibido" />
+    </div>
+    
+    <div class="bi-filter-group">
+        <label>Fecha Recepción</label>
+        <input type="date" id="fechaRecepcion" />
+    </div>
+    
+    <div class="bi-filter-group">
+        <label>Estatus</label>
+        <select id="filtroEstatus">
+            <option value="">-- Todos --</option>
+            <option value="Completada">Completada</option>
+            <option value="RE">RE</option>
+        </select>
+    </div>
+    
+    <?php if (in_array($_SESSION['pantalla'], [0, 2, 3, 5])): ?>
+    <div class="bi-filter-group">
+        <label>Usuario</label>
+        <select id="filtroUsuario">
+            <option value="">-- Todos --</option>
+            <?php foreach ($usuarios as $u): ?>
+                <option value="<?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($u, ENT_QUOTES, 'UTF-8') ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <?php endif; ?>
+    
+    <div class="bi-filter-group">
+        <label>Buscar Factura</label>
+        <input type="text" id="buscarFactura" placeholder="Ej: 12345678901" maxlength="11" />
+    </div>
+</div>
+
+<!-- Tabla de resultados -->
+<div class="bi-table-container">
+    <div id="contenedorFacturas"></div>
+    <div id="paginacion"></div>
 </div>
 
 <?php
