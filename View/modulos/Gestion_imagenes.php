@@ -6,7 +6,32 @@
 
 // Incluir configuración centralizada de sesión y conexión a BD
 require_once __DIR__ . '/../../conexionBD/session_config.php';
-verificarAutenticacion([0, 13]); // Pantalla 0 (Admin) y Pantalla 13 (Gestión de Imágenes) pueden acceder
+
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permisos: Pantalla 0 (Admin), 5 (Panel Admin) y 13 (Gestión de Imágenes) pueden acceder
+$pantallaUsuario = intval($_SESSION['pantalla'] ?? -1);
+$pantallasPermitidas = [0, 5, 13];
+
+if (!in_array($pantallaUsuario, $pantallasPermitidas)) {
+    // Mostrar error informativo en lugar de redirigir
+    die("
+    <html>
+    <head><title>Acceso Denegado</title></head>
+    <body style='font-family: Arial; padding: 2rem; text-align: center;'>
+        <h1 style='color: #E63946;'>⚠️ Acceso Denegado</h1>
+        <p>No tienes permisos para acceder a este módulo.</p>
+        <p><strong>Tu pantalla asignada:</strong> {$pantallaUsuario}</p>
+        <p><strong>Pantallas permitidas:</strong> 0 (Admin), 13 (Gestión Imágenes)</p>
+        <p><a href='../../View/pantallas/Portal.php'>Volver al Portal</a></p>
+    </body>
+    </html>
+    ");
+}
 
 // Cargar autoloader de Composer para Azure SDK
 $composer_autoload = __DIR__ . '/../../vendor/autoload.php';
