@@ -1,13 +1,12 @@
 <?php
 /**
- * Business Intelligence - MACO Design System
+ * Reporte de Facturas Recibidas - Business Intelligence
  * Dashboard de análisis y métricas
  */
 
 // Incluir configuración centralizada de sesión y conexión a BD
 require_once __DIR__ . '/../../conexionBD/session_config.php';
 verificarAutenticacion(); // Acceso general para usuarios autenticados
-
 
 require_once __DIR__ . '/../../conexionBD/conexion.php';
 
@@ -34,253 +33,232 @@ $buscarFactura = $_GET['factura'] ?? '';
 $prefijo = $_GET['prefijo'] ?? '';
 $zona = $_GET['zona'] ?? '';
 
-$pageTitle = "Business Intelligence | MACO";
+$pageTitle = "Reporte de Facturas Recibidas | MACO";
 $containerClass = "maco-container-fluid";
 $additionalCSS = <<<'CSS'
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
-        --bi-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --bi-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        --bi-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        --bi-gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --bi-primary: #E63946;
+        --bi-secondary: #1D3557;
+        --bi-accent: #457B9D;
+        --bi-success: #22C55E;
+        --bi-warning: #F59E0B;
+        --bi-danger: #EF4444;
+        --bi-bg: #F1F5F9;
+        --bi-card: #FFFFFF;
+        --bi-border: #E2E8F0;
+        --bi-text: #1E293B;
+        --bi-muted: #64748B;
     }
 
+    body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bi-bg);
+    }
+
+    /* Header Moderno */
     .bi-header {
-        background: var(--primary);
-        padding: 3rem 2rem;
-        border-radius: var(--radius-xl);
-        margin-bottom: 2rem;
-        color: white;
-        text-align: center;
-        box-shadow: var(--shadow-xl);
-    }
-
-    .bi-header h1 {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-    }
-
-    .bi-header p {
-        font-size: 1.125rem;
-        opacity: 0.95;
-    }
-
-    .filters-card {
-        background: white;
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        box-shadow: var(--shadow-lg);
-        margin-bottom: 2rem;
-    }
-
-    .filters-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+        background: linear-gradient(135deg, var(--bi-secondary) 0%, var(--bi-accent) 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
         margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--gray-200);
+        color: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .filters-header h2 {
+    .bi-header-info h1 {
+        margin: 0;
         font-size: 1.5rem;
         font-weight: 700;
-        color: var(--text-primary);
-        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }
 
-    .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.25rem;
+    .bi-header-info p {
+        margin: 0.25rem 0 0;
+        opacity: 0.85;
+        font-size: 0.9rem;
     }
 
-    .filter-group label {
+    /* KPIs en el Header */
+    .bi-kpi-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .bi-kpi-box {
+        text-align: center;
+        background: rgba(255,255,255,0.15);
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+    }
+
+    .bi-kpi-box .number {
+        font-size: 1.5rem;
+        font-weight: 800;
         display: block;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
     }
 
-    .form-control, .form-select {
-        padding: 0.75rem;
-        border: 2px solid var(--gray-200);
-        border-radius: var(--radius);
-        font-size: 0.95rem;
-        transition: all 0.2s ease;
+    .bi-kpi-box .label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+        letter-spacing: 0.5px;
     }
 
-    .form-control:focus, .form-select:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+    /* Filtros Horizontales */
+    .bi-filters {
+        background: var(--bi-card);
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
     }
 
-    .select2-container--bootstrap-5 .select2-selection {
-        border: 2px solid var(--gray-200) !important;
-        border-radius: var(--radius) !important;
-        padding: 0.5rem !important;
-    }
-
-    .select2-container--bootstrap-5 .select2-selection:focus {
-        border-color: var(--primary) !important;
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: white;
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        box-shadow: var(--shadow-lg);
+    .bi-filters-row {
         display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        transition: all 0.3s ease;
-        border-left: 5px solid;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
     }
 
-    .stat-card:nth-child(1) { border-left-color: #3b82f6; }
-    .stat-card:nth-child(2) { border-left-color: #10b981; }
-    .stat-card:nth-child(3) { border-left-color: #ef4444; }
-    .stat-card:nth-child(4) { border-left-color: #f59e0b; }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-xl);
-    }
-
-    .stat-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: var(--radius-lg);
+    .bi-filter-group {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 130px;
+        flex: 1;
     }
 
-    .stat-card:nth-child(1) .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .stat-card:nth-child(2) .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .stat-card:nth-child(3) .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-    .stat-card:nth-child(4) .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .bi-filter-group.wide {
+        min-width: 180px;
+    }
 
-    .stat-info h5 {
-        font-size: 0.875rem;
+    .bi-filter-group label {
+        font-size: 0.65rem;
         font-weight: 600;
-        color: var(--text-secondary);
-        margin: 0 0 0.5rem 0;
+        color: var(--bi-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    .stat-info p {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin: 0;
+    .bi-filter-group input,
+    .bi-filter-group select {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--bi-border);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        background: #fff;
     }
 
-    .table-card {
-        background: white;
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        box-shadow: var(--shadow-lg);
+    .bi-filter-group input:focus,
+    .bi-filter-group select:focus {
+        outline: none;
+        border-color: var(--bi-primary);
+        box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
     }
 
-    .table-header {
+    /* Select2 compacto */
+    .select2-container .select2-selection--single {
+        height: 36px !important;
+        border: 1px solid var(--bi-border) !important;
+        border-radius: 6px !important;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: 34px !important;
+        font-size: 0.85rem !important;
+        padding-left: 10px !important;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 34px !important;
+    }
+
+    /* Tabla Moderna */
+    .bi-table-container {
+        background: var(--bi-card);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .bi-table-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--gray-200);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--bi-border);
     }
 
-    .table-header h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
+    .bi-table-header h2 {
         margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--bi-text);
     }
 
     .bi-table {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
+        border-collapse: collapse;
+    }
+
+    .bi-table thead {
+        background: var(--bi-secondary);
+        color: #fff;
     }
 
     .bi-table thead th {
-        background: var(--primary);
-        color: white;
-        padding: 1rem;
+        padding: 0.875rem 1rem;
         text-align: left;
         font-weight: 600;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    .bi-table thead th:first-child {
-        border-top-left-radius: var(--radius);
-    }
-
-    .bi-table thead th:last-child {
-        border-top-right-radius: var(--radius);
-    }
-
     .bi-table tbody td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--gray-200);
-        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--bi-border);
+        font-size: 0.85rem;
+        color: var(--bi-text);
     }
 
     .bi-table tbody tr:hover {
-        background: var(--gray-50);
+        background: #F8FAFC;
     }
 
-    .factura-link {
-        color: var(--primary);
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .factura-link:hover {
-        text-decoration: underline;
-    }
-
+    /* Badges de Estado */
     .badge-status {
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
         font-weight: 600;
         text-transform: uppercase;
     }
 
     .badge-completada {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
+        background: rgba(34, 197, 94, 0.15);
+        color: #16A34A;
     }
 
     .badge-re {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
+        color: #DC2626;
     }
 
     .badge-vacio {
-        background: rgba(107, 114, 128, 0.1);
-        color: #6b7280;
+        background: rgba(107, 114, 128, 0.15);
+        color: #4B5563;
     }
 
+    /* Loader */
     #loader {
         display: none;
         text-align: center;
@@ -288,59 +266,70 @@ $additionalCSS = <<<'CSS'
     }
 
     .spinner {
-        width: 48px;
-        height: 48px;
-        border: 4px solid var(--gray-200);
-        border-top-color: var(--primary);
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--bi-border);
+        border-top-color: var(--bi-primary);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
+        margin: 0 auto;
     }
 
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
 
+    /* Paginación */
     .pagination-custom {
         display: flex;
         justify-content: center;
         gap: 0.5rem;
-        margin-top: 2rem;
+        padding: 1rem;
         flex-wrap: wrap;
     }
 
     .page-btn {
-        padding: 0.5rem 1rem;
-        border: 2px solid var(--gray-200);
+        padding: 0.5rem 0.875rem;
+        border: 1px solid var(--bi-border);
         background: white;
-        color: var(--text-primary);
-        border-radius: var(--radius);
+        color: var(--bi-text);
+        border-radius: 6px;
         font-weight: 600;
+        font-size: 0.85rem;
         cursor: pointer;
         transition: all 0.2s ease;
     }
 
     .page-btn:hover:not(.active) {
-        background: var(--gray-100);
-        border-color: var(--gray-300);
+        background: #F1F5F9;
+        border-color: var(--bi-accent);
     }
 
     .page-btn.active {
-        background: var(--primary);
+        background: var(--bi-primary);
         color: white;
-        border-color: var(--primary);
+        border-color: var(--bi-primary);
     }
 
+    /* Responsive */
     @media (max-width: 768px) {
-        .bi-header h1 {
-            font-size: 2rem;
+        .bi-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
         }
 
-        .filter-grid {
-            grid-template-columns: 1fr;
+        .bi-kpi-row {
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .stats-grid {
-            grid-template-columns: 1fr;
+        .bi-filters-row {
+            flex-direction: column;
+        }
+
+        .bi-filter-group {
+            width: 100%;
         }
     }
 </style>
@@ -348,141 +337,112 @@ CSS;
 include __DIR__ . '/../templates/header.php';
 ?>
 
-<!-- Header BI -->
-<div class="bi-header animate__animated animate__fadeIn">
-    <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-    <h1>Business Intelligence</h1>
-    <p>Dashboard de análisis y métricas del sistema de facturación</p>
-</div>
-
-<!-- Filtros -->
-<div class="filters-card animate__animated animate__fadeInUp">
-    <div class="filters-header">
-        <i class="fas fa-filter" style="font-size: 1.5rem; color: var(--primary);"></i>
-        <h2>Filtros de Búsqueda</h2>
+<!-- Header con KPIs -->
+<div class="bi-header">
+    <div class="bi-header-info">
+        <h1><i class="fas fa-chart-bar"></i> Reporte de Facturas Recibidas</h1>
+        <p>Business Intelligence - Análisis avanzado de facturas y operaciones</p>
     </div>
-
-    <form id="filtroForm" method="get" autocomplete="off">
-        <div class="filter-grid">
-            <div class="filter-group">
-                <label><i class="fas fa-calendar me-2"></i>Desde</label>
-                <input type="date" name="desde" value="<?= htmlspecialchars($desde) ?>" class="form-control">
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-calendar me-2"></i>Hasta</label>
-                <input type="date" name="hasta" value="<?= htmlspecialchars($hasta) ?>" class="form-control">
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-file-invoice me-2"></i>Factura</label>
-                <input type="text" name="factura" value="<?= htmlspecialchars($buscarFactura) ?>" class="form-control" placeholder="Buscar factura...">
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-check-circle me-2"></i>Estado</label>
-                <select name="estado" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="Completada" <?= $estado === 'Completada' ? 'selected' : '' ?>>Completada</option>
-                    <option value="RE" <?= $estado === 'RE' ? 'selected' : '' ?>>RE</option>
-                    <option value="vacio" <?= $estado === 'vacio' ? 'selected' : '' ?>>Sin Estado</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-truck me-2"></i>Transportista</label>
-                <select name="transportista" id="listaTransportistas" class="form-select">
-                    <option value="">Todos</option>
-                    <?php foreach ($transportistas as $t): ?>
-                    <option value="<?= htmlspecialchars($t) ?>" <?= $filtroTransportista === $t ? 'selected' : '' ?>><?= htmlspecialchars($t) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-user me-2"></i>Usuario ALM</label>
-                <select name="usuario" id="usuario" class="form-select">
-                    <option value="">Todos</option>
-                    <?php foreach ($usuarios as $u): ?>
-                    <option value="<?= htmlspecialchars($u) ?>" <?= $usuario === $u ? 'selected' : '' ?>><?= htmlspecialchars($u) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-map-marker-alt me-2"></i>Localización</label>
-                <select name="zona" id="zona" class="form-select">
-                    <option value="">Todas</option>
-                    <?php foreach ($zonas as $z): ?>
-                    <option value="<?= htmlspecialchars($z) ?>" <?= $zona === $z ? 'selected' : '' ?>><?= htmlspecialchars($z) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label><i class="fas fa-tag me-2"></i>Prefijo</label>
-                <select name="prefijo" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="NC" <?= $prefijo === 'NC' ? 'selected' : '' ?>>Solo NC</option>
-                    <option value="FT" <?= $prefijo === 'FT' ? 'selected' : '' ?>>Solo FT</option>
-                </select>
-            </div>
+    <div class="bi-kpi-row">
+        <div class="bi-kpi-box">
+            <span class="number" id="total-facturas">--</span>
+            <span class="label">Total</span>
         </div>
-    </form>
-</div>
-
-<!-- Estadísticas -->
-<div class="stats-grid animate__animated animate__fadeInUp">
-    <div class="stat-card">
-        <div class="stat-icon">
-            <i class="fas fa-file-invoice-dollar"></i>
+        <div class="bi-kpi-box">
+            <span class="number" id="total-completadas">--</span>
+            <span class="label">Completadas</span>
         </div>
-        <div class="stat-info">
-            <h5>Total Facturas</h5>
-            <p id="total-facturas">0</p>
+        <div class="bi-kpi-box">
+            <span class="number" id="total-no-completadas">--</span>
+            <span class="label">Pendientes</span>
         </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon">
-            <i class="fas fa-check-double"></i>
-        </div>
-        <div class="stat-info">
-            <h5>Completadas</h5>
-            <p id="total-completadas">0</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon">
-            <i class="fas fa-triangle-exclamation"></i>
-        </div>
-        <div class="stat-info">
-            <h5>No Completadas</h5>
-            <p id="total-no-completadas">0</p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon">
-            <i class="fas fa-building-columns"></i>
-        </div>
-        <div class="stat-info">
-            <h5>Entregadas CxC</h5>
-            <p id="total-entregadas-cxc">0</p>
+        <div class="bi-kpi-box">
+            <span class="number" id="total-entregadas-cxc">--</span>
+            <span class="label">CxC</span>
         </div>
     </div>
 </div>
 
-<!-- Tabla -->
-<div class="table-card animate__animated animate__fadeInUp">
-    <div class="table-header">
-        <h2><i class="fas fa-table me-2"></i>Listado de Facturas</h2>
+<!-- Filtros Horizontales -->
+<form id="filtroForm" method="get" autocomplete="off">
+<div class="bi-filters">
+    <div class="bi-filters-row">
+        <div class="bi-filter-group">
+            <label>Desde</label>
+            <input type="date" name="desde" value="<?= htmlspecialchars($desde) ?>">
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Hasta</label>
+            <input type="date" name="hasta" value="<?= htmlspecialchars($hasta) ?>">
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Factura</label>
+            <input type="text" name="factura" value="<?= htmlspecialchars($buscarFactura) ?>" placeholder="Buscar...">
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Estado</label>
+            <select name="estado">
+                <option value="">Todos</option>
+                <option value="Completada" <?= $estado === 'Completada' ? 'selected' : '' ?>>Completada</option>
+                <option value="RE" <?= $estado === 'RE' ? 'selected' : '' ?>>RE</option>
+                <option value="vacio" <?= $estado === 'vacio' ? 'selected' : '' ?>>Sin Estado</option>
+            </select>
+        </div>
+        
+        <div class="bi-filter-group wide">
+            <label>Transportista</label>
+            <select name="transportista" id="listaTransportistas">
+                <option value="">Todos</option>
+                <?php foreach ($transportistas as $t): ?>
+                <option value="<?= htmlspecialchars($t) ?>" <?= $filtroTransportista === $t ? 'selected' : '' ?>><?= htmlspecialchars($t) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Usuario ALM</label>
+            <select name="usuario" id="usuario">
+                <option value="">Todos</option>
+                <?php foreach ($usuarios as $u): ?>
+                <option value="<?= htmlspecialchars($u) ?>" <?= $usuario === $u ? 'selected' : '' ?>><?= htmlspecialchars($u) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Zona</label>
+            <select name="zona" id="zona">
+                <option value="">Todas</option>
+                <?php foreach ($zonas as $z): ?>
+                <option value="<?= htmlspecialchars($z) ?>" <?= $zona === $z ? 'selected' : '' ?>><?= htmlspecialchars($z) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Prefijo</label>
+            <select name="prefijo">
+                <option value="">Todos</option>
+                <option value="NC" <?= $prefijo === 'NC' ? 'selected' : '' ?>>Solo NC</option>
+                <option value="FT" <?= $prefijo === 'FT' ? 'selected' : '' ?>>Solo FT</option>
+            </select>
+        </div>
+    </div>
+</div>
+</form>
+
+<!-- Tabla de Resultados -->
+<div class="bi-table-container">
+    <div class="bi-table-header">
+        <h2><i class="fas fa-table"></i> Listado de Facturas</h2>
     </div>
 
     <div id="loader">
         <div class="spinner"></div>
-        <p style="margin-top: 1rem; color: var(--text-secondary);">Cargando datos...</p>
+        <p style="margin-top: 1rem; color: var(--bi-muted);">Cargando datos...</p>
     </div>
 
     <div class="table-responsive" id="tabla-container">
@@ -495,7 +455,7 @@ include __DIR__ . '/../templates/header.php';
                     <th>Transportista</th>
                     <th>Usuario ALM</th>
                     <th>Usuario CC</th>
-                    <th>Localización</th>
+                    <th>Zona</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -513,7 +473,6 @@ $(document).ready(function() {
     $('#listaTransportistas, #usuario, #zona').select2({
         placeholder: 'Seleccionar...',
         allowClear: true,
-        theme: 'bootstrap-5',
         width: '100%'
     });
 
@@ -551,7 +510,7 @@ $(document).ready(function() {
                 if (textStatus !== 'abort') {
                     $('#loader').hide();
                     $('#tabla-container').show();
-                    $('#tabla-container tbody').html('<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:3rem;">Error al cargar los datos. Por favor, intente de nuevo.</td></tr>');
+                    $('#tabla-container tbody').html('<tr><td colspan="7" style="text-align:center;color:var(--bi-danger);padding:3rem;">Error al cargar los datos. Intente de nuevo.</td></tr>');
                     console.error("Error en AJAX:", textStatus, errorThrown);
                 }
             },

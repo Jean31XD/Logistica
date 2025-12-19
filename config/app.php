@@ -158,10 +158,10 @@ return [
             'color' => '#E63946'
         ],
         'business_intelligence' => [
-            'name' => 'Business Intelligence',
-            'description' => 'Dashboard de métricas y KPIs. Análisis avanzado de facturas y operaciones.',
+            'name' => 'Reporte de Facturas Recibidas',
+            'description' => 'Business Intelligence - Análisis avanzado de facturas y operaciones.',
             'page' => 'BI.php',
-            'icon' => 'fa-chart-pie',
+            'icon' => 'fa-chart-bar',
             'tag' => 'BI',
             'color' => '#E63946'
         ],
