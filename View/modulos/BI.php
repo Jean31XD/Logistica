@@ -750,12 +750,12 @@ function abrirDetalleFactura(factura) {
             
             // Llenar info general
             const f = response.factura;
-            $('#info-estado').html('<span class="badge-status ' + getBadgeClass(f.Estado) + '">' + (f.Estado || 'Sin Estado') + '</span>');
+            $('#info-estado').html('<span class="badge-status ' + getBadgeClass(f.Validar) + '">' + (f.Validar || 'Sin Estado') + '</span>');
             $('#info-fecha').text(f.Fecha || '—');
             $('#info-transportista').text(f.Transportista || '—');
-            $('#info-almacen').text(f.Localizacion || '—');
-            $('#info-usuario-alm').text(f.Usuario_ALM || '—');
-            $('#info-usuario-cc').text(f.Usuario_CC || '—');
+            $('#info-almacen').text(f.zona || '—');
+            $('#info-usuario-alm').text(f.Usuario || '—');
+            $('#info-usuario-cc').text(f.Usuario_de_recepcion || '—');
             
             // Totales
             $('#total-items').text(response.totales.items);

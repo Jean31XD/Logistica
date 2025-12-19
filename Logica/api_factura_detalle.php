@@ -24,13 +24,12 @@ if (!$conn) {
 }
 
 try {
-    // Obtener datos principales de la factura (columnas que sabemos que existen)
+    // Obtener datos principales de la factura (columnas básicas)
     $sqlFactura = "
         SELECT 
-            Factura, Fecha, Validar AS Estado, Transportista, 
-            Usuario AS Usuario_ALM, Usuario_de_recepcion AS Usuario_CC,
-            Fecha_scanner AS Fecha_Recibido, recepcion AS Fecha_Recepcion_CC,
-            zona AS Localizacion
+            Factura, Fecha, Validar, Transportista, 
+            Usuario, Usuario_de_recepcion,
+            Fecha_scanner, recepcion, zona
         FROM custinvoicejour 
         WHERE Factura = ?";
     
@@ -38,7 +37,7 @@ try {
     
     if ($stmtFactura === false) {
         $errors = sqlsrv_errors();
-        echo json_encode(['error' => 'Error en consulta principal', 'details' => $errors]);
+        echo json_encode(['error' => 'Error en consulta: ' . json_encode($errors)]);
         exit();
     }
     
@@ -53,11 +52,11 @@ try {
     if (isset($facturaData['Fecha']) && $facturaData['Fecha'] && is_object($facturaData['Fecha'])) {
         $facturaData['Fecha'] = $facturaData['Fecha']->format('d/m/Y');
     }
-    if (isset($facturaData['Fecha_Recibido']) && $facturaData['Fecha_Recibido'] && is_object($facturaData['Fecha_Recibido'])) {
-        $facturaData['Fecha_Recibido'] = $facturaData['Fecha_Recibido']->format('d/m/Y H:i');
+    if (isset($facturaData['Fecha_scanner']) && $facturaData['Fecha_scanner'] && is_object($facturaData['Fecha_scanner'])) {
+        $facturaData['Fecha_scanner'] = $facturaData['Fecha_scanner']->format('d/m/Y H:i');
     }
-    if (isset($facturaData['Fecha_Recepcion_CC']) && $facturaData['Fecha_Recepcion_CC'] && is_object($facturaData['Fecha_Recepcion_CC'])) {
-        $facturaData['Fecha_Recepcion_CC'] = $facturaData['Fecha_Recepcion_CC']->format('d/m/Y H:i');
+    if (isset($facturaData['recepcion']) && $facturaData['recepcion'] && is_object($facturaData['recepcion'])) {
+        $facturaData['recepcion'] = $facturaData['recepcion']->format('d/m/Y H:i');
     }
     
     // Obtener líneas de la factura
