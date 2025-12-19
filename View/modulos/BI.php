@@ -516,11 +516,13 @@ include __DIR__ . '/../templates/header.php';
                 </div>
                 
                 <!-- Tabla de Líneas -->
-                <h4 style="margin: 1rem 0;"><i class="fas fa-list"></i> Detalle de Montos</h4>
+                <h4 style="margin: 1rem 0;"><i class="fas fa-boxes"></i> Productos de la Factura</h4>
                 <div class="table-responsive">
                     <table class="bi-table">
                         <thead>
                             <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
                                 <th>Almacén</th>
                                 <th>Monto</th>
                                 <th>Impuesto</th>
@@ -768,6 +770,8 @@ function abrirDetalleFactura(factura) {
             if (response.lineas && response.lineas.length > 0) {
                 response.lineas.forEach(function(linea) {
                     lineasHtml += '<tr>';
+                    lineasHtml += '<td>' + (linea.Codigo || '—') + '</td>';
+                    lineasHtml += '<td>' + (linea.Descripcion || '—') + '</td>';
                     lineasHtml += '<td>' + (linea.Almacen || '—') + '</td>';
                     lineasHtml += '<td>$' + parseFloat(linea.lineamount || 0).toFixed(2) + '</td>';
                     lineasHtml += '<td>$' + parseFloat(linea.lineamounttax || 0).toFixed(2) + '</td>';
@@ -775,7 +779,7 @@ function abrirDetalleFactura(factura) {
                     lineasHtml += '</tr>';
                 });
             } else {
-                lineasHtml = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:#64748B;">No hay detalles disponibles</td></tr>';
+                lineasHtml = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#64748B;">No hay productos disponibles</td></tr>';
             }
             $('#lineas-body').html(lineasHtml);
             

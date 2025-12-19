@@ -60,11 +60,13 @@ try {
     }
     
     // Obtener líneas de la factura desde Facturas_lineas
-    // Solo columnas que existen: invoiceid, invoicedate, lineamount, lineamounttax, inventlocationid, invoicingname
+    // Columnas: invoiceid, invoicedate, lineamount, lineamounttax, inventlocationid, invoicingname, itemid, name
     $sqlLineas = "
         SELECT 
             invoiceid,
             invoicedate,
+            itemid AS Codigo,
+            name AS Descripcion,
             lineamount,
             lineamounttax,
             (lineamount + lineamounttax) AS LineTotal,
