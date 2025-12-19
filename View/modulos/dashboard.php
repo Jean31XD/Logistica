@@ -879,13 +879,42 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 </div>
 
                 <!-- Vista mejorada de transportistas -->
-                <div class="card" style="margin-top: 2rem;">
-                    <h2>Detalle de Entregas por Camión</h2>
-                    <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Haz clic en cualquier camión para ver sus entregas detalladas. Cada camión muestra su chasis y transportista asignado.</p>
+                <div class="card truck-details-card" style="margin-top: 2rem;">
+                    <div class="truck-details-header">
+                        <div class="truck-details-title">
+                            <h2><i class="fas fa-truck"></i> Detalle de Entregas por Camión</h2>
+                            <p>Haz clic en cualquier camión para ver sus entregas detalladas</p>
+                        </div>
+                        <div class="truck-details-stats" id="truckStats">
+                            <div class="stat-box">
+                                <span class="stat-number" id="totalTrucks">0</span>
+                                <span class="stat-label">Camiones</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-number" id="totalDeliveries">0</span>
+                                <span class="stat-label">Entregas</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Barra de búsqueda -->
+                    <div class="truck-search-bar">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="truckSearchInput" placeholder="Buscar por nombre de transportista, chasis o número...">
+                            <button type="button" id="clearTruckSearch" class="clear-search-btn" style="display:none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="search-results-info" id="searchResultsInfo"></div>
+                    </div>
 
                     <!-- Cards expandibles de cada transportista -->
-                    <div id="transportistasContainer">
-                        <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Cargando detalles de transportistas...</p>
+                    <div id="transportistasContainer" class="transportistas-container">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando detalles de transportistas...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2110,6 +2139,65 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             detailsCurrentPage = 1;
             applyFiltersAndFetchData();
         });
+
+        // --- Búsqueda de camiones ---
+        const truckSearchInput = document.getElementById('truckSearchInput');
+        const clearTruckSearch = document.getElementById('clearTruckSearch');
+        const searchResultsInfo = document.getElementById('searchResultsInfo');
+
+        if (truckSearchInput) {
+            truckSearchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const transportistaCards = document.querySelectorAll('.transportista-card');
+                let visibleCount = 0;
+                let totalCount = transportistaCards.length;
+
+                // Mostrar/ocultar botón clear
+                clearTruckSearch.style.display = searchTerm ? 'block' : 'none';
+
+                transportistaCards.forEach(card => {
+                    const nombre = card.dataset.nombre?.toLowerCase() || '';
+                    const chasis = card.dataset.chasis?.toLowerCase() || '';
+                    const texto = card.textContent.toLowerCase();
+                    
+                    if (nombre.includes(searchTerm) || chasis.includes(searchTerm) || texto.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Actualizar info de resultados
+                if (searchTerm) {
+                    searchResultsInfo.innerHTML = `Mostrando <span class="highlight">${visibleCount}</span> de ${totalCount} camiones`;
+                } else {
+                    searchResultsInfo.innerHTML = '';
+                }
+
+                // Mensaje si no hay resultados
+                const container = document.getElementById('transportistasContainer');
+                let noResults = container.querySelector('.no-results-message');
+                if (visibleCount === 0 && searchTerm) {
+                    if (!noResults) {
+                        noResults = document.createElement('div');
+                        noResults.className = 'no-results-message';
+                        noResults.innerHTML = '<i class="fas fa-search"></i><p>No se encontraron camiones con ese término</p>';
+                        container.appendChild(noResults);
+                    }
+                    noResults.style.display = 'block';
+                } else if (noResults) {
+                    noResults.style.display = 'none';
+                }
+            });
+
+            // Clear search
+            clearTruckSearch.addEventListener('click', () => {
+                truckSearchInput.value = '';
+                truckSearchInput.dispatchEvent(new Event('input'));
+                truckSearchInput.focus();
+            });
+        }
     });
 </script>
 
