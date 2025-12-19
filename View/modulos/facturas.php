@@ -299,6 +299,10 @@ include __DIR__ . '/../templates/header.php';
             <span class="number" id="kpi-completadas">--</span>
             <span class="label">Completadas</span>
         </div>
+        <div class="bi-stat-box">
+            <span class="number" id="kpi-pendientes">--</span>
+            <span class="label">Pendientes</span>
+        </div>
     </div>
 </div>
 
@@ -449,6 +453,11 @@ function cargarFacturas(pagina = 1) {
         }
         document.getElementById('contenedorFacturas').innerHTML = data.html;
         document.getElementById('paginacion').innerHTML = data.paginacion;
+        
+        // Actualizar KPIs
+        document.getElementById('kpi-total').textContent = data.kpiTotal || 0;
+        document.getElementById('kpi-completadas').textContent = data.kpiCompletadas || 0;
+        document.getElementById('kpi-pendientes').textContent = data.kpiPendientes || 0;
     })
     .catch(error => {
         console.error('Error:', error);

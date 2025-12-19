@@ -73,6 +73,35 @@ if ($stmtCount !== false) {
 }
 $totalPaginas = ceil($totalFilas / $limite);
 
+// === KPIs por transportista ===
+$kpiTotal = 0;
+$kpiCompletadas = 0;
+$kpiPendientes = 0;
+
+// Construir filtros base para KPIs (solo transportista y fechas)
+$sqlKpi = "SELECT 
+    COUNT(*) AS Total,
+    SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
+    SUM(CASE WHEN Validar IS NULL OR Validar = '' OR Validar = 'RE' THEN 1 ELSE 0 END) AS Pendientes
+FROM custinvoicejour WHERE 1=1";
+$paramsKpi = [];
+
+if ($transportista) {
+    $sqlKpi .= " AND Transportista = ?";
+    $paramsKpi[] = $transportista;
+}
+$sqlKpi .= " AND Fecha BETWEEN ? AND ?";
+$paramsKpi[] = $desde;
+$paramsKpi[] = $hasta;
+
+$stmtKpi = sqlsrv_query($conn, $sqlKpi, $paramsKpi);
+if ($stmtKpi !== false) {
+    $rowKpi = sqlsrv_fetch_array($stmtKpi, SQLSRV_FETCH_ASSOC);
+    $kpiTotal = $rowKpi['Total'] ?? 0;
+    $kpiCompletadas = $rowKpi['Completadas'] ?? 0;
+    $kpiPendientes = $rowKpi['Pendientes'] ?? 0;
+}
+
 // === Consulta de datos ===
 $sql = "SELECT Factura, Fecha, Validar, Transportista, Fecha_scanner, Usuario, recepcion, Usuario_de_recepcion
         FROM custinvoicejour WHERE 1=1";
@@ -221,7 +250,10 @@ echo json_encode([
     'paginacion' => $paginacion,
     'totalFilas' => $totalFilas,
     'totalPaginas' => $totalPaginas,
-    'paginaActual' => $pagina
+    'paginaActual' => $pagina,
+    'kpiTotal' => $kpiTotal,
+    'kpiCompletadas' => $kpiCompletadas,
+    'kpiPendientes' => $kpiPendientes
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
 sqlsrv_close($conn);
