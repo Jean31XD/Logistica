@@ -894,6 +894,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         // --- MODIFICACIÓN: Pasar variables de sesión de PHP a JavaScript ---
         const USER_TYPE = <?php echo json_encode($USER_TYPE); ?>;
         const USER_WAREHOUSE = <?php echo json_encode($USER_WAREHOUSE); ?>;
+        
+        // Ruta base para APIs (vacío en Azure, con subcarpeta en local)
+        const API_BASE = <?php 
+            $isAzure = strpos($_SERVER['HTTP_HOST'] ?? '', 'azurewebsites.net') !== false;
+            echo json_encode($isAzure ? '' : '/MACO.AppLogistica.Web-1');
+        ?> + '/Logica/api_get_data.php';
 
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart, deliveryComparisonChart;
         let currentView = 'overview';
@@ -1135,7 +1141,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         const populateAlmacenFilter = async () => {
             // Esta función solo se llamará si es admin
             try {
-                const response = await fetch('../../Logica/api_get_data.php?view=almacenes');
+                const response = await fetch(API_BASE + '?view=almacenes');
                 if (response.status === 401) { window.location.href = 'dashboard.php'; return; }
                 if (!response.ok) throw new Error('No se pudo cargar la lista de almacenes');
                 const almacenes = await response.json();
@@ -1156,7 +1162,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             loaderEl.classList.add('loading');
             try {
                 // El 'almacen' que se pasa aquí ya está decidido (o del admin o del usuario)
-                const url = `../../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
+                const url = `${API_BASE}?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
                 const response = await fetch(url);
 
                 if (response.status === 401) { // 401 Unauthorized (sesión de dashboard expirada)
