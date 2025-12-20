@@ -33,93 +33,189 @@ $homeUrl = '../pantallas/Portal.php';
     <!-- JsBarcode -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary: #E63946;
-            --primary-dark: #D62839;
-            --accent: #457B9D;
-            --accent-dark: #1D3557;
-            --success: #10B981;
+            --et-primary: #E63946;
+            --et-secondary: #1D3557;
+            --et-accent: #457B9D;
+            --et-success: #22C55E;
+            --et-bg: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
+            --et-card: #FFFFFF;
+            --et-border: #E2E8F0;
+            --et-text: #2D3748;
+            --et-muted: #718096;
+            --et-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
         }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--gray-100);
-            color: #2D3748;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--et-bg);
+            color: var(--et-text);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
-            position: relative;
         }
-            50% { transform: translateY(-30px) translateX(30px); }
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.98);
-            padding: 3rem;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+
+        /* Header estilo dashboard */
+        .et-header {
+            background: linear-gradient(135deg, var(--et-secondary) 0%, var(--et-accent) 100%);
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            color: #fff;
             width: 100%;
             max-width: 700px;
-            position: relative;
-            z-index: 10;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .et-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .et-header p {
+            margin: 0.25rem 0 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+        }
+
+        .et-home-btn {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             backdrop-filter: blur(10px);
         }
-        h1 {
-            color: var(--primary);
-            text-align: center;
-            margin-bottom: 2rem;
-            font-weight: 800;
-            font-size: 2.5rem;
+
+        .et-home-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
         }
-        label {
+
+        /* Card principal */
+        .et-card {
+            background: linear-gradient(135deg, #fff 0%, #F7FAFC 100%);
+            border-radius: 16px;
+            box-shadow: var(--et-shadow-lg);
+            width: 100%;
+            max-width: 700px;
+            overflow: hidden;
+            border-left: 6px solid var(--et-primary);
+        }
+
+        .et-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--et-border);
+            background: rgba(247, 250, 252, 0.5);
+        }
+
+        .et-card-header i { color: var(--et-primary); font-size: 1.1rem; }
+        .et-card-header h3 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--et-text); }
+
+        .et-card-body {
+            padding: 1.5rem;
+        }
+
+        /* Formulario */
+        .et-form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .et-form-group label {
             display: block;
-            font-weight: 700;
-            color: var(--accent-dark);
+            font-weight: 600;
+            color: var(--et-text);
             margin-bottom: 0.5rem;
-            margin-top: 1.5rem;
-            font-size: 1.1rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .ts-control {
-            padding: 1.25rem 1.5rem !important;
-            font-size: 1.2rem;
-            border-radius: 12px;
-            border: 2px solid #E2E8F0 !important;
-            background: #F7FAFC !important;
-            transition: all 0.3s ease;
-        }
-        .ts-control:focus-within {
-            border-color: var(--primary) !important;
-            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
-        }
 
-        #quantity {
-            border-radius: 12px;
-            padding: 1.25rem 1.5rem !important;
-            font-size: 1.2rem;
+        .et-form-group input,
+        .et-form-group select {
             width: 100%;
-            margin: 0.5rem 0 1.5rem 0;
-            display: block;
-            border: 2px solid #E2E8F0;
-            background: #F7FAFC;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-        #quantity:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--et-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #fff;
+            transition: all 0.2s;
+            font-weight: 500;
         }
 
-        /* Contenedor de la etiqueta */
+        .et-form-group input:focus,
+        .et-form-group select:focus {
+            outline: none;
+            border-color: var(--et-primary);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+        }
+
+        /* Tom Select override */
+        .ts-control {
+            padding: 0.75rem 1rem !important;
+            font-size: 1rem !important;
+            border-radius: 8px !important;
+            border: 2px solid var(--et-border) !important;
+            background: #fff !important;
+        }
+
+        .ts-control:focus-within {
+            border-color: var(--et-primary) !important;
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1) !important;
+        }
+
+        .ts-dropdown {
+            background: #fff !important;
+            border: 2px solid var(--et-primary) !important;
+            border-radius: 8px !important;
+            box-shadow: var(--et-shadow-lg) !important;
+        }
+
+        .ts-dropdown .option {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--et-border);
+        }
+
+        .ts-dropdown .option:hover,
+        .ts-dropdown .option.active {
+            background: rgba(230, 57, 70, 0.1);
+            color: var(--et-primary);
+        }
+
+        /* Contenedor de etiqueta (preview) */
         #label-container {
             width: 2in;
             height: 4in;
-            border: 2px dashed var(--accent);
+            border: 2px dashed var(--et-accent);
             margin: 1.5rem auto;
             padding: 10px;
             box-sizing: border-box;
@@ -132,171 +228,94 @@ $homeUrl = '../pantallas/Portal.php';
             border-radius: 8px;
         }
 
-        #label-logo {
-            max-height: 40px;
-            margin-bottom: 2px;
-            object-fit: contain;
-        }
+        #label-logo { max-height: 40px; margin-bottom: 2px; object-fit: contain; }
+        #product-name { font-weight: bold; font-size: 10px; margin: 5px 0; line-height: 1.2; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        #unit-quantity { font-size: 14px; font-weight: bold; margin: 5px 0; }
+        #barcode-image { max-width: 60%; height: auto; }
 
-        #product-name {
-            font-weight: bold;
-            font-size: 10px;
-            margin: 5px 0;
-            line-height: 1.2;
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        #unit-quantity {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-
-        #barcode-image {max-width: 60%; height: auto;}
-
-        #print-button {
+        /* Botón imprimir */
+        .et-btn-print {
             display: block;
             width: 100%;
             padding: 1rem 1.5rem;
-            background: var(--success);
+            background: linear-gradient(135deg, var(--et-success), #16a34a);
             color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 1.125rem;
+            border-radius: 8px;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             visibility: hidden;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-        #print-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-        }
-        #print-button:active {
-            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
         }
 
-        #label {
+        .et-btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        /* Logo */
+        .et-logo {
             width: 100%;
-            max-width: 200px;
+            max-width: 180px;
             height: auto;
-            margin: 0 auto 2rem auto;
+            margin: 0 auto 1rem auto;
             display: block;
         }
 
-        /* Botón de inicio */
-        .home-btn {
-            background: var(--accent);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 4px 12px rgba(69, 123, 157, 0.3);
-        }
-        .home-btn:hover {
-            background: #5FA3C7;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(69, 123, 157, 0.4);
-        }
-        .home-btn:active {
-            transform: translateY(0);
-        }
-
-        /* Campo de búsqueda resaltado */
-        #product-search, .ts-control {
-            background-color: #F7FAFC !important;
-            color: #2D3748 !important;
-            border: 2px solid #E2E8F0 !important;
-            border-radius: 12px;
-            padding: 0.875rem 1rem !important;
-            font-size: 1rem;
-            width: 100%;
-            margin: 0.5rem 0 0 0;
-            display: block;
-            font-weight: 600;
-        }
-
-        .ts-dropdown {
-            background-color: #fff !important;
-            color: #2D3748 !important;
-            border: 2px solid var(--primary) !important;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        .ts-dropdown .option {
-            padding: 0.875rem 1rem;
-            border-bottom: 1px solid #E2E8F0;
-        }
-        .ts-dropdown .option:hover, .ts-dropdown .option.active {
-            background: rgba(230, 57, 70, 0.1);
-            color: var(--primary);
-        }
-
-
-        @page {
-            size: 2in 4in; 
-            margin: 0;
-        }
+        @page { size: 2in 4in; margin: 0; }
 
         @media print {
-            body > *:not(#label-container) {display: none;}
-            .home-btn {display: none;}
-            
-            html, body {
-                margin: 0 !important; 
-                padding: 0 !important;
-                height: 4in;
-                display: block;
-            }
+            body > *:not(#label-container) { display: none; }
+            .et-header, .et-card, .et-home-btn { display: none !important; }
+            html, body { margin: 0 !important; padding: 0 !important; height: 4in; display: block; }
+            #label-container { visibility: visible; position: absolute; bottom: 0; left: 0; width: 100%; height: auto; margin: 0; padding: 0; border: none; box-shadow: none; }
+        }
 
-            #label-container {
-                visibility: visible; 
-                position: absolute; 
-                bottom: 0; 
-                left: 0;
-                width: 100%;
-                height: auto;
-                margin: 0;
-                padding: 0; 
-                border: none;
-                box-shadow: none;
-            }
+        @media (max-width: 768px) {
+            .et-header { flex-direction: column; text-align: center; gap: 1rem; }
+            body { padding: 1rem; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <img id="label" src="../../IMG/Logo Listo - Negro.png" alt="Logo" onerror="this.style.display='none'">
-
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h1 style="margin: 0;">🏷️ Generador de Etiquetas</h1>
-        <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="home-btn" title="Volver al Menú Principal">
-            <i class="fas fa-home"></i> Inicio
-        </a>
+<!-- HEADER -->
+<div class="et-header">
+    <div>
+        <h1><i class="fas fa-tags"></i> Sistema de Etiquetado</h1>
+        <p>Generador de etiquetas con código de barras</p>
     </div>
+    <a href="<?php echo htmlspecialchars($homeUrl); ?>" class="et-home-btn">
+        <i class="fas fa-home"></i> Inicio
+    </a>
+</div>
 
-    <label for="product-search">Busca un Producto:</label>
-    <select id="product-search" placeholder="Escribe para buscar..."></select>
+<!-- CARD PRINCIPAL -->
+<div class="et-card">
+    <div class="et-card-header">
+        <i class="fas fa-barcode"></i>
+        <h3>Generar Etiqueta</h3>
+    </div>
+    <div class="et-card-body">
+        <img class="et-logo" src="../../IMG/Logo Listo - Negro.png" alt="Logo" onerror="this.style.display='none'">
 
-    <label for="quantity">Cantidad:</label>
-    <input type="number" id="quantity" min="1" value="1">
+        <div class="et-form-group">
+            <label for="product-search">Buscar Producto</label>
+            <select id="product-search" placeholder="Escribe para buscar..."></select>
+        </div>
 
-    <button id="print-button" onclick="window.print()">Imprimir Etiqueta</button>
+        <div class="et-form-group">
+            <label for="quantity">Cantidad</label>
+            <input type="number" id="quantity" min="1" value="1">
+        </div>
+
+        <button id="print-button" class="et-btn-print" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimir Etiqueta
+        </button>
+    </div>
 </div>
 
 <!-- Etiqueta generada -->
