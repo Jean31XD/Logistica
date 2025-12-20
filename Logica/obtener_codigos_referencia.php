@@ -7,8 +7,21 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0, 5, 12]); // Admin, Admin-limitado, Códigos de Referencia
 require_once __DIR__ . '/../conexionBD/conexion.php';
+
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'No autenticado']);
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('codigos_referencia', $conn)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Sin permisos']);
+    exit();
+}
 
 try {
     // Obtener parámetros
