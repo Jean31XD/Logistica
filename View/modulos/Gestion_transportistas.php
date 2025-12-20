@@ -5,7 +5,19 @@
  */
 
 require_once __DIR__ . '/../../conexionBD/session_config.php';
-verificarAutenticacion();
+require_once __DIR__ . '/../../conexionBD/conexion.php';
+
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('gestion_transportistas', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 $csrfToken = generarTokenCSRF();
 

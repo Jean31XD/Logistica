@@ -6,9 +6,19 @@
 
 // Incluir configuración centralizada de sesión y conexión a BD
 require_once __DIR__ . '/../../conexionBD/session_config.php';
-verificarAutenticacion(); // Acceso general para usuarios autenticados
-
 require_once __DIR__ . '/../../conexionBD/conexion.php';
+
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('business_intelligence', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 // Obtenemos los datos para los SELECT
 $transportistas = [];
