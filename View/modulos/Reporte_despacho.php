@@ -871,7 +871,7 @@ $(document).ready(function() {
                 tbodyEmpresas.empty();
                 
                 if (data.topEmpresas && data.topEmpresas.length > 0) {
-                    $('#statTotalEmpresas').text(data.topEmpresas.length);
+                    // El statTotalEmpresas se actualiza en cargarResumen con COUNT(DISTINCT)
                     
                     data.topEmpresas.forEach((e, index) => {
                         tbodyEmpresas.append(`
