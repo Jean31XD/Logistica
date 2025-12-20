@@ -197,22 +197,6 @@ return [
             'tag' => 'OVERVIEW',
             'color' => '#E63946'
         ],
-        'codigos_barras' => [
-            'name' => 'Códigos de Barras',
-            'description' => 'Escaneo y asignación de códigos de barras a artículos. Control de inventario.',
-            'page' => 'Codigos_de_barras.php',
-            'icon' => 'fa-barcode',
-            'tag' => 'INVENTARIO',
-            'color' => '#E63946'
-        ],
-        'codigos_referencia' => [
-            'name' => 'Códigos de Referencia',
-            'description' => 'Visualización completa de códigos de barras asignados. Exportación a Excel disponible.',
-            'page' => 'Codigos_referencia.php',
-            'icon' => 'fa-list-alt',
-            'tag' => 'REPORTES',
-            'color' => '#E63946'
-        ],
         'gestion_imagenes' => [
             'name' => 'Gestión de Imágenes',
             'description' => 'Administra imágenes de productos en Azure Blob Storage. Sube, visualiza y elimina imágenes.',
