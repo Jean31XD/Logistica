@@ -5,7 +5,12 @@
  */
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0, 13]); // Administradores y Gestión de Imágenes
+require_once __DIR__ . '/../conexionBD/conexion.php';
+
+if (!isset($_SESSION['usuario']) || !tieneModulo('gestion_imagenes', $conn)) {
+    http_response_code(403);
+    die(json_encode(['success' => false, 'error' => 'Sin permisos']));
+}
 
 // Validar CSRF token
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

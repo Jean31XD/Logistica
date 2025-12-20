@@ -8,8 +8,12 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0, 1, 5, 11]); // Admin, Despacho, Admin-limitado, Códigos de Barras
 require_once __DIR__ . '/../conexionBD/conexion.php';
+
+if (!isset($_SESSION['usuario']) || !tieneModulo('codigos_barras', $conn)) {
+    http_response_code(403);
+    die(json_encode(['success' => false, 'message' => 'Sin permisos']));
+}
 
 try {
     // Obtener parámetros de paginación y búsqueda

@@ -1,7 +1,12 @@
 <?php
 require_once __DIR__ . '/../../conexionBD/session_config.php';
-verificarAutenticacion([1]); // Solo pantalla 1 puede acceder
 require_once __DIR__ . '/../../conexionBD/conexion.php';
+
+// Verificar permisos usando usuario_modulos
+if (!isset($_SESSION['usuario']) || !tieneModulo('despacho_factura', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 // CSRF token
 $csrfToken = generarTokenCSRF();

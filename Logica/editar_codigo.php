@@ -7,8 +7,12 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0, 5, 12]); // Admin, Admin-limitado, Códigos de Referencia
 require_once __DIR__ . '/../conexionBD/conexion.php';
+
+if (!isset($_SESSION['usuario']) || !tieneModulo('codigos_referencia', $conn)) {
+    http_response_code(403);
+    die(json_encode(['success' => false, 'message' => 'Sin permisos']));
+}
 
 try {
     // Verificar que sea POST

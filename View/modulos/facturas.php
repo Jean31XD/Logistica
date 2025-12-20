@@ -5,14 +5,22 @@
 
 // Incluir configuración centralizada de sesión
 require_once __DIR__ . '/../../conexionBD/session_config.php';
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
-// Verificar autenticación y permisos (pantallas: 0=Admin, 2=Facturas, 3=CXC, 5=PanelAdmin)
-verificarAutenticacion([0, 2, 3, 5]);
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('validacion_facturas', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 // Generar token CSRF
 $csrfToken = generarTokenCSRF();
-// Incluir conexión a BD
-require_once __DIR__ . '/../../conexionBD/conexion.php';
 
 // Cargar transportistas
 $query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";
