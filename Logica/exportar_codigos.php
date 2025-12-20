@@ -21,9 +21,10 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
-// Verificar permisos (0=Admin, 5=Admin-limitado, 12=Códigos de Referencia)
-$pantalla = $_SESSION['pantalla'] ?? -1;
-if (!in_array($pantalla, [0, 5, 12])) {
+// Verificar permisos usando usuario_modulos
+require_once __DIR__ . '/../conexionBD/conexion.php';
+$tienePermiso = tieneModulo('codigos_referencia', $conn) || tieneModulo('codigos_barras', $conn);
+if (!$tienePermiso) {
     ob_end_clean();
     header("Location: " . getLoginUrl());
     exit();

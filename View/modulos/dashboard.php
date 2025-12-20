@@ -15,23 +15,11 @@ if (!$conn) {
 date_default_timezone_set('America/Santo_Domingo');
 
 $usuario = $_SESSION['usuario'];
-$pantalla = $_SESSION['pantalla'] ?? -1;
 
-// Si es admin (pantalla 0), tiene acceso completo
-$tienePermiso = ($pantalla == 0);
+// Verificar permiso usando solo usuario_modulos
+$tienePermiso = tieneModulo('dashboard_general', $conn);
 $USER_WAREHOUSE = '';
-$USER_TYPE = 'admin';
-
-if (!$tienePermiso) {
-    // Verificar si tiene el módulo dashboard_general asignado
-    $sql = "SELECT modulo FROM usuario_modulos WHERE usuario = ? AND modulo = 'dashboard_general' AND activo = 1";
-    $stmt = sqlsrv_query($conn, $sql, [$usuario]);
-    
-    if ($stmt !== false) {
-        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        $tienePermiso = ($row !== null);
-    }
-}
+$USER_TYPE = $tienePermiso ? 'admin' : 'user';
 
 if (!$tienePermiso) {
     // No tiene permiso, redirigir a Portal

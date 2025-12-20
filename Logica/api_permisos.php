@@ -146,15 +146,8 @@ switch ($action) {
     case 'get_user_modules':
         // Obtener módulos activos del usuario actual (para Admin.php)
         $usuario = $_SESSION['usuario'] ?? '';
-        $pantalla = $_SESSION['pantalla'] ?? -1;
         
-        // Si es admin (pantalla 0), tiene acceso a todo
-        if ($pantalla == 0) {
-            $resultado = array_keys($modulosDisponibles);
-            echo json_encode(['success' => true, 'modulos' => $resultado, 'is_admin' => true]);
-            exit;
-        }
-        
+        // Consultar módulos asignados en usuario_modulos
         $sql = "SELECT modulo FROM usuario_modulos WHERE usuario = ? AND activo = 1";
         $stmt = sqlsrv_query($conn, $sql, [$usuario]);
         
@@ -168,7 +161,10 @@ switch ($action) {
             $modulos[] = $row['modulo'];
         }
         
-        echo json_encode(['success' => true, 'modulos' => $modulos, 'is_admin' => false]);
+        // is_admin se determina si tiene el módulo gestion_usuarios
+        $isAdmin = in_array('gestion_usuarios', $modulos);
+        
+        echo json_encode(['success' => true, 'modulos' => $modulos, 'is_admin' => $isAdmin]);
         break;
         
     default:

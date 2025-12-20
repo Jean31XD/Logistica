@@ -1,21 +1,21 @@
 <?php
 require_once __DIR__ . '/../../conexionBD/session_config.php';
-verificarAutenticacion([8, 0]); // Solo pantallas 8 y 0
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
-// Mapeo de pantallas a su página principal/inicio
-$homePage = [
-    0 => 'Admin.php',
-    1 => 'Inicio_gestion.php',
-    2 => 'facturas.php',
-    3 => 'CXC.php',
-    4 => 'Reporte.php',
-    5 => 'Paneladmin.php',
-    6 => 'BI.php',
-    8 => 'Listo-etiquetas.php',
-    9 => 'dashboard.php'
-];
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
 
-$homeUrl = $homePage[$_SESSION['pantalla'] ?? 0] ?? 'Inicio.php';
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('sistema_etiquetado', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
+
+// URL de home siempre al Portal
+$homeUrl = '../pantallas/Portal.php';
 ?>
 
 
