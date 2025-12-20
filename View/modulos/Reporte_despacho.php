@@ -21,6 +21,9 @@ if (!tieneModulo('reporte_despacho', $conn)) {
 
 $pageTitle = "Reporte de Despacho | MACO";
 $additionalCSS = '
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 ';
@@ -35,15 +38,17 @@ include __DIR__ . '/../templates/header.php';
         --rd-success: #22C55E;
         --rd-warning: #F59E0B;
         --rd-danger: #EF4444;
-        --rd-bg: #F1F5F9;
+        --rd-bg: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
         --rd-card: #FFFFFF;
         --rd-border: #E2E8F0;
-        --rd-text: #1E293B;
-        --rd-muted: #64748B;
+        --rd-text: #2D3748;
+        --rd-muted: #718096;
+        --rd-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        --rd-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
     }
 
     body {
-        font-family: 'Inter', var(--font-family);
+        font-family: 'Plus Jakarta Sans', 'Inter', var(--font-family);
         background: var(--rd-bg);
     }
 
@@ -194,28 +199,36 @@ include __DIR__ . '/../templates/header.php';
         margin: 0.15rem 0 0;
     }
 
-    /* Tarjetas */
+    /* Tarjetas estilo Dashboard */
     .rd-card {
-        background: var(--rd-card);
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        background: linear-gradient(135deg, #fff 0%, #F7FAFC 100%);
+        border-radius: 16px;
+        box-shadow: var(--rd-shadow-lg);
         overflow: hidden;
+        border-left: 6px solid var(--rd-primary);
+        transition: all 0.3s ease;
+    }
+
+    .rd-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
     }
 
     .rd-card-header {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
-        padding: 1rem 1.25rem;
+        gap: 0.75rem;
+        padding: 1.25rem 1.5rem;
         border-bottom: 1px solid var(--rd-border);
+        background: rgba(247, 250, 252, 0.5);
     }
 
-    .rd-card-header i { color: var(--rd-primary); font-size: 1rem; }
-    .rd-card-header h3 { font-size: 0.9rem; font-weight: 700; margin: 0; color: var(--rd-text); }
+    .rd-card-header i { color: var(--rd-primary); font-size: 1.1rem; }
+    .rd-card-header h3 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--rd-text); }
     
-    .rd-card-body { padding: 1.25rem; }
-    .chart-container { height: 260px; position: relative; }
-    .chart-container.tall { height: 300px; }
+    .rd-card-body { padding: 1.5rem; }
+    .chart-container { height: 320px; position: relative; }
+    .chart-container.tall { height: 360px; }
 
     /* Grid de Charts */
     .rd-chart-grid {
