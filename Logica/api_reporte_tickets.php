@@ -122,6 +122,20 @@ try {
                     ];
                 }
             }
+
+            // Total de empresas únicas atendidas
+            $sqlEmpresas = "
+                SELECT COUNT(DISTINCT Empresa) AS TotalEmpresas
+                FROM analisis
+                WHERE Fecha_de_Creacion >= ?
+                    AND Fecha_de_Creacion <= DATEADD(DAY, 1, CAST(? AS DATE))
+                    AND Empresa IS NOT NULL
+                    AND Empresa != ''
+            ";
+            $stmtEmpresas = sqlsrv_query($conn, $sqlEmpresas, [$fechaInicio, $fechaFin]);
+            if ($stmtEmpresas && $row = sqlsrv_fetch_array($stmtEmpresas, SQLSRV_FETCH_ASSOC)) {
+                $response['totalEmpresas'] = $row['TotalEmpresas'] ?? 0;
+            }
             break;
 
         case 'tendencia_diaria':

@@ -717,6 +717,7 @@ $(document).ready(function() {
                 $('#statTiempoRetencion').text(formatearTiempo(data.tiempoPromedioRetencion || 0));
                 $('#statSeFue').text(data.ticketsSeFue || 0);
                 $('#statMontoTotal').text(formatearMonto(data.montoTotal || 0));
+                $('#statTotalEmpresas').text(data.totalEmpresas || 0);
                 
                 // Tabla de montos por almacén
                 const tbodyAlmacen = $('#tablaAlmacenes tbody');
