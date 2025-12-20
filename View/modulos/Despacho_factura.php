@@ -5,9 +5,19 @@
 
 // Incluir configuración centralizada de sesión
 require_once __DIR__ . '/../../conexionBD/session_config.php';
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
-// Verificar autenticación y permisos (pantallas: 0=Admin, 1=Gestión, 5=PanelAdmin)
-verificarAutenticacion([0, 1, 5]);
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('despacho_factura', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 $pageTitle = "Despacho de Tickets | MACO";
 $additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';
