@@ -6,11 +6,15 @@
  */
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0, 1, 5]); // Admin, Gestión, PanelAdmin
 
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
+
+if (!isset($_SESSION['usuario']) || !tieneModulo('reporte_despacho', $conn)) {
+    http_response_code(403);
+    die(json_encode(['success' => false, 'error' => 'Sin permisos']));
+}
 
 if (!$conn) {
     http_response_code(500);

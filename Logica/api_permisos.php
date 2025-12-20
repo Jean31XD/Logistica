@@ -14,7 +14,19 @@
  */
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion([0]); // Solo administradores
+require_once __DIR__ . '/../conexionBD/conexion.php';
+
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    http_response_code(401);
+    die(json_encode(['success' => false, 'error' => 'No autenticado']));
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('gestion_usuarios', $conn)) {
+    http_response_code(403);
+    die(json_encode(['success' => false, 'error' => 'Sin permisos']));
+}
 
 // Validar CSRF para POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

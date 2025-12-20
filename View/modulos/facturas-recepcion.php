@@ -1,7 +1,18 @@
 <?php
 require_once __DIR__ . '/../../conexionBD/session_config.php';
-verificarAutenticacion([0, 3, 5]); // Solo pantallas 0, 3, 5
 require_once __DIR__ . '/../../conexionBD/conexion.php';
+
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('recepcion_documentos', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 $csrfToken = generarTokenCSRF();
 
