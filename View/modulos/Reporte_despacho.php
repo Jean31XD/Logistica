@@ -29,472 +29,480 @@ include __DIR__ . '/../templates/header.php';
 
 <style>
     :root {
-        --section-gap: 3rem;
+        --rd-primary: #E63946;
+        --rd-secondary: #1D3557;
+        --rd-accent: #457B9D;
+        --rd-success: #22C55E;
+        --rd-warning: #F59E0B;
+        --rd-danger: #EF4444;
+        --rd-bg: #F1F5F9;
+        --rd-card: #FFFFFF;
+        --rd-border: #E2E8F0;
+        --rd-text: #1E293B;
+        --rd-muted: #64748B;
     }
 
-    .report-hero {
-        background: linear-gradient(135deg, var(--primary) 0%, #c1121f 100%);
-        padding: 2.5rem;
-        border-radius: var(--radius-xl);
-        color: white;
-        margin-bottom: 2rem;
-        text-align: center;
+    body {
+        font-family: 'Inter', var(--font-family);
+        background: var(--rd-bg);
     }
-    .report-hero h1 { font-size: 2.25rem; font-weight: 700; margin: 0 0 0.5rem; }
-    .report-hero p { opacity: 0.9; margin: 0; font-size: 1.1rem; }
 
-    /* Filtros */
-    .filters-bar {
-        background: white;
-        padding: 1.25rem 2rem;
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-lg);
-        margin-bottom: var(--section-gap);
+    /* Header Moderno */
+    .rd-header {
+        background: linear-gradient(135deg, var(--rd-secondary) 0%, var(--rd-accent) 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        color: #fff;
         display: flex;
-        gap: 2rem;
+        justify-content: space-between;
+        align-items: center;
         flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .rd-header-info h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .rd-header-info p {
+        margin: 0.25rem 0 0;
+        opacity: 0.85;
+        font-size: 0.9rem;
+    }
+
+    /* KPIs en el Header */
+    .rd-kpi-row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .rd-kpi-box {
+        text-align: center;
+        background: rgba(255,255,255,0.15);
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+        min-width: 80px;
+    }
+
+    .rd-kpi-box .number {
+        font-size: 1.35rem;
+        font-weight: 800;
+        display: block;
+    }
+
+    .rd-kpi-box .label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+        letter-spacing: 0.5px;
+    }
+
+    /* Filtros Horizontales */
+    .rd-filters {
+        background: var(--rd-card);
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        display: flex;
         align-items: center;
         justify-content: center;
-        border: 2px solid var(--border);
+        gap: 2rem;
+        flex-wrap: wrap;
     }
-    .filter-item { display: flex; align-items: center; gap: 0.75rem; }
-    .filter-item label {
-        font-weight: 700;
-        color: var(--text-primary);
-        font-size: 0.9rem;
+
+    .rd-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
     }
-    .filter-item input {
-        padding: 0.625rem 1rem;
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
-        font-size: 0.9rem;
-        transition: all 0.3s;
-        font-weight: 500;
+
+    .rd-filter-group label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--rd-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-    .filter-item input:focus {
-        border-color: var(--primary);
+
+    .rd-filter-group input {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--rd-border);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        background: #fff;
+    }
+
+    .rd-filter-group input:focus {
         outline: none;
-        box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+        border-color: var(--rd-primary);
+        box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
     }
+
     .loading-indicator {
         display: none;
-        color: var(--primary);
+        color: var(--rd-primary);
         font-weight: 600;
+        font-size: 0.85rem;
     }
     .loading-indicator.active { display: flex; align-items: center; gap: 0.5rem; }
 
     /* Secciones */
-    .section {
-        margin-bottom: var(--section-gap);
+    .rd-section {
+        margin-bottom: 1.5rem;
     }
-    .section-header {
+
+    .rd-section-header {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 3px solid var(--primary);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--rd-border);
     }
-    .section-icon {
-        width: 50px;
-        height: 50px;
-        background: var(--primary);
+
+    .rd-section-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--rd-secondary);
         color: white;
-        border-radius: var(--radius-lg);
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1rem;
     }
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: var(--text-primary);
+
+    .rd-section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--rd-text);
         margin: 0;
     }
-    .section-subtitle {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        margin: 0.25rem 0 0;
+
+    .rd-section-subtitle {
+        font-size: 0.75rem;
+        color: var(--rd-muted);
+        margin: 0.15rem 0 0;
     }
 
-    /* KPIs Grid */
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-    }
-    .kpi-card {
-        background: white;
-        border-radius: var(--radius-xl);
-        padding: 2rem;
-        box-shadow: var(--shadow-lg);
-        text-align: center;
-        position: relative;
+    /* Tarjetas */
+    .rd-card {
+        background: var(--rd-card);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         overflow: hidden;
-        transition: all 0.3s;
-        border: 2px solid transparent;
     }
-    .kpi-card:hover {
-        transform: translateY(-5px);
-        border-color: var(--primary);
-    }
-    .kpi-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 5px;
-    }
-    .kpi-card.blue::before { background: #3b82f6; }
-    .kpi-card.green::before { background: #10b981; }
-    .kpi-card.yellow::before { background: #f59e0b; }
-    .kpi-card.red::before { background: #ef4444; }
-    .kpi-card.purple::before { background: #8b5cf6; }
-    .kpi-card.cyan::before { background: #06b6d4; }
-    
-    .kpi-icon {
-        width: 60px; height: 60px;
-        margin: 0 auto 1rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center; justify-content: center;
-        font-size: 1.5rem;
-        color: white;
-    }
-    .kpi-icon.blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-    .kpi-icon.green { background: linear-gradient(135deg, #10b981, #059669); }
-    .kpi-icon.yellow { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .kpi-icon.red { background: linear-gradient(135deg, #ef4444, #dc2626); }
-    .kpi-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-    .kpi-icon.cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
-    
-    .kpi-value { font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-    .kpi-label { font-size: 0.9rem; color: var(--text-secondary); margin: 0.5rem 0 0; font-weight: 600; }
 
-    /* Chart Cards */
-    .chart-grid {
+    .rd-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--rd-border);
+    }
+
+    .rd-card-header i { color: var(--rd-primary); font-size: 1rem; }
+    .rd-card-header h3 { font-size: 0.9rem; font-weight: 700; margin: 0; color: var(--rd-text); }
+    
+    .rd-card-body { padding: 1.25rem; }
+    .chart-container { height: 260px; position: relative; }
+    .chart-container.tall { height: 300px; }
+
+    /* Grid de Charts */
+    .rd-chart-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 1.5rem;
     }
-    .chart-card {
-        background: white;
-        border-radius: var(--radius-xl);
-        padding: 1.5rem;
-        box-shadow: var(--shadow-lg);
-    }
-    .chart-card.full-width { grid-column: span 2; }
-    .chart-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border);
-    }
-    .chart-header i { color: var(--primary); font-size: 1.25rem; }
-    .chart-header h3 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-primary); }
-    .chart-container { height: 280px; position: relative; }
 
-    /* Data Cards */
-    .data-card {
-        background: white;
-        border-radius: var(--radius-xl);
-        padding: 1.5rem;
-        box-shadow: var(--shadow-lg);
-        margin-bottom: 1.5rem;
-    }
-    .data-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid var(--border);
-    }
-    .data-header-left { display: flex; align-items: center; gap: 0.75rem; }
-    .data-header i { color: var(--primary); font-size: 1.25rem; }
-    .data-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+    .rd-chart-grid .full-width { grid-column: span 2; }
 
-    /* Tables */
-    .report-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    .report-table th {
-        background: linear-gradient(135deg, var(--primary), #c1121f);
-        color: white;
-        padding: 1rem;
+    /* Tablas */
+    .rd-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .rd-table thead {
+        background: var(--rd-secondary);
+        color: #fff;
+    }
+
+    .rd-table thead th {
+        padding: 0.75rem 1rem;
         text-align: left;
-        font-weight: 700;
-        font-size: 0.8rem;
+        font-weight: 600;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    .report-table th:first-child { border-radius: var(--radius-lg) 0 0 0; }
-    .report-table th:last-child { border-radius: 0 var(--radius-lg) 0 0; }
-    .report-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.9rem;
-        vertical-align: middle;
+
+    .rd-table tbody td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--rd-border);
+        font-size: 0.85rem;
+        color: var(--rd-text);
     }
-    .report-table tbody tr:hover { background: var(--bg-hover); }
-    .report-table tbody tr:last-child td { border-bottom: none; }
-    
+
+    .rd-table tbody tr:hover { background: #F8FAFC; }
+
     /* Badges */
     .time-badge {
         display: inline-block;
-        padding: 0.35rem 0.75rem;
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
-        font-weight: 700;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
     }
-    .time-badge.fast { background: #dcfce7; color: #166534; }
-    .time-badge.normal { background: #fef9c3; color: #854d0e; }
-    .time-badge.slow { background: #fee2e2; color: #991b1b; }
+    .time-badge.fast { background: rgba(34, 197, 94, 0.15); color: #16A34A; }
+    .time-badge.normal { background: rgba(245, 158, 11, 0.15); color: #D97706; }
+    .time-badge.slow { background: rgba(239, 68, 68, 0.15); color: #DC2626; }
 
     .rank-badge {
-        width: 32px; height: 32px;
+        width: 28px; height: 28px;
         display: inline-flex;
         align-items: center; justify-content: center;
         border-radius: 50%;
         font-weight: 800;
-        font-size: 0.9rem;
+        font-size: 0.75rem;
         color: white;
     }
     .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
     .rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); }
     .rank-3 { background: linear-gradient(135deg, #cd7c2f, #b45309); }
-    .rank-other { background: var(--gray-400); font-size: 0.75rem; }
+    .rank-other { background: var(--rd-muted); font-size: 0.65rem; }
 
     .status-badge {
-        padding: 0.35rem 0.75rem;
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
-        font-weight: 700;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
     }
-    .status-ok { background: #dcfce7; color: #166534; }
-    .status-warning { background: #fef9c3; color: #854d0e; }
-    .status-danger { background: #fee2e2; color: #991b1b; }
+    .status-ok { background: rgba(34, 197, 94, 0.15); color: #16A34A; }
+    .status-warning { background: rgba(245, 158, 11, 0.15); color: #D97706; }
+    .status-danger { background: rgba(239, 68, 68, 0.15); color: #DC2626; }
 
-    /* Clientes expandibles */
+    /* Filas expandibles */
     .expandable-row { cursor: pointer; transition: background 0.2s; }
-    .expandable-row:hover { background: var(--bg-hover); }
+    .expandable-row:hover { background: #F8FAFC; }
     .expandable-row td:first-child::before {
         content: '▶';
         margin-right: 0.5rem;
-        font-size: 0.7rem;
+        font-size: 0.6rem;
         transition: transform 0.2s;
+        display: inline-block;
     }
-    .expandable-row.expanded td:first-child::before { transform: rotate(90deg); display: inline-block; }
+    .expandable-row.expanded td:first-child::before { transform: rotate(90deg); }
     
     .detail-row { display: none; }
     .detail-row.show { display: table-row; }
     .detail-content {
         background: #f8fafc;
-        padding: 1.25rem;
-        border-radius: var(--radius);
+        padding: 1rem;
+        border-radius: 6px;
     }
-    .client-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
+    .client-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .client-row {
         background: white;
-        border: 1px solid var(--border);
-        border-left: 4px solid var(--primary);
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius);
+        border: 1px solid var(--rd-border);
+        border-left: 3px solid var(--rd-primary);
+        padding: 0.6rem 0.9rem;
+        border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         transition: all 0.2s;
     }
-    .client-row:hover {
-        background: var(--bg-hover);
-        transform: translateX(5px);
-    }
-    .client-row .empresa-name {
-        font-weight: 600;
-        color: var(--text-primary);
-    }
+    .client-row:hover { background: #f1f5f9; transform: translateX(3px); }
+    .client-row .empresa-name { font-weight: 600; color: var(--rd-text); }
     .client-row .ticket-count {
-        background: var(--primary);
+        background: var(--rd-primary);
         color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: var(--radius-full);
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: 0.7rem;
     }
 
+    /* Responsive */
     @media (max-width: 1024px) {
-        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-        .chart-grid { grid-template-columns: 1fr; }
-        .chart-card.full-width { grid-column: span 1; }
+        .rd-chart-grid { grid-template-columns: 1fr; }
+        .rd-chart-grid .full-width { grid-column: span 1; }
     }
-    @media (max-width: 640px) {
-        .kpi-grid { grid-template-columns: 1fr; }
+
+    @media (max-width: 768px) {
+        .rd-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        .rd-kpi-row { justify-content: center; }
+        .rd-filters { flex-direction: column; gap: 1rem; }
     }
 </style>
 
-<!-- HERO -->
-<div class="report-hero animate__animated animate__fadeIn">
-    <h1><i class="fas fa-chart-line me-3"></i>Reporte de Despacho</h1>
-    <p>Análisis completo de rendimiento, tiempos y tendencias</p>
+<!-- HEADER CON KPIs -->
+<div class="rd-header">
+    <div class="rd-header-info">
+        <h1><i class="fas fa-chart-line"></i> Reporte de Despacho</h1>
+        <p>Análisis de rendimiento, tiempos y tendencias</p>
+    </div>
+    <div class="rd-kpi-row">
+        <div class="rd-kpi-box">
+            <span class="number" id="statDespachados">--</span>
+            <span class="label">Despachados</span>
+        </div>
+        <div class="rd-kpi-box">
+            <span class="number" id="statTiempoPromedio">--</span>
+            <span class="label">Tiempo Prom.</span>
+        </div>
+        <div class="rd-kpi-box">
+            <span class="number" id="statTotalUsuarios">--</span>
+            <span class="label">Usuarios</span>
+        </div>
+        <div class="rd-kpi-box">
+            <span class="number" id="statEnRetencion">--</span>
+            <span class="label">En Retención</span>
+        </div>
+        <div class="rd-kpi-box">
+            <span class="number" id="statSeFue">--</span>
+            <span class="label">Se Fue</span>
+        </div>
+        <div class="rd-kpi-box">
+            <span class="number" id="statMontoTotal">--</span>
+            <span class="label">Monto Total</span>
+        </div>
+    </div>
 </div>
 
 <!-- FILTROS -->
-<div class="filters-bar">
-    <div class="filter-item">
-        <label><i class="fas fa-calendar me-2"></i>Fecha Inicio:</label>
+<div class="rd-filters">
+    <div class="rd-filter-group">
+        <label>Fecha Inicio</label>
         <input type="date" id="filtroFechaInicio" value="<?= date('Y-m-d', strtotime('-30 days')) ?>">
     </div>
-    <div class="filter-item">
-        <label><i class="fas fa-calendar-check me-2"></i>Fecha Fin:</label>
+    <div class="rd-filter-group">
+        <label>Fecha Fin</label>
         <input type="date" id="filtroFechaFin" value="<?= date('Y-m-d') ?>">
     </div>
     <div class="loading-indicator" id="loadingIndicator">
-        <i class="fas fa-circle-notch fa-spin"></i> Cargando datos...
+        <i class="fas fa-circle-notch fa-spin"></i> Cargando...
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 1: RESUMEN GENERAL -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon"><i class="fas fa-tachometer-alt"></i></div>
-        <div>
-            <h2 class="section-title">Resumen General</h2>
-            <p class="section-subtitle">Métricas principales del período seleccionado</p>
+<!-- ESTADÍSTICAS ADICIONALES -->
+<div class="rd-chart-grid" style="margin-bottom: 1.5rem;">
+    <div class="rd-card">
+        <div class="rd-card-header">
+            <i class="fas fa-hourglass-half"></i>
+            <h3>Tiempo Prom. Retención</h3>
+        </div>
+        <div class="rd-card-body" style="text-align: center; padding: 1.5rem;">
+            <p style="font-size: 2rem; font-weight: 800; color: var(--rd-danger); margin: 0;" id="statTiempoRetencion">0 min</p>
         </div>
     </div>
-
-    <div class="kpi-grid">
-        <div class="kpi-card blue">
-            <div class="kpi-icon blue"><i class="fas fa-check-double"></i></div>
-            <p class="kpi-value" id="statDespachados">0</p>
-            <p class="kpi-label">Tickets Despachados</p>
+    <div class="rd-card">
+        <div class="rd-card-header">
+            <i class="fas fa-building"></i>
+            <h3>Empresas Atendidas</h3>
         </div>
-        <div class="kpi-card green">
-            <div class="kpi-icon green"><i class="fas fa-stopwatch"></i></div>
-            <p class="kpi-value" id="statTiempoPromedio">0 min</p>
-            <p class="kpi-label">Tiempo Promedio de Atención</p>
-        </div>
-        <div class="kpi-card purple">
-            <div class="kpi-icon purple"><i class="fas fa-user-friends"></i></div>
-            <p class="kpi-value" id="statTotalUsuarios">0</p>
-            <p class="kpi-label">Usuarios Activos</p>
-        </div>
-        <div class="kpi-card yellow">
-            <div class="kpi-icon yellow"><i class="fas fa-pause"></i></div>
-            <p class="kpi-value" id="statEnRetencion">0</p>
-            <p class="kpi-label">Tickets en Retención Actual</p>
-        </div>
-        <div class="kpi-card red">
-            <div class="kpi-icon red"><i class="fas fa-hourglass-end"></i></div>
-            <p class="kpi-value" id="statTiempoRetencion">0 min</p>
-            <p class="kpi-label">Tiempo Promedio de Retención</p>
-        </div>
-        <div class="kpi-card cyan">
-            <div class="kpi-icon cyan"><i class="fas fa-building"></i></div>
-            <p class="kpi-value" id="statTotalEmpresas">0</p>
-            <p class="kpi-label">Empresas Atendidas</p>
-        </div>
-        <div class="kpi-card" style="border-left: 4px solid #f97316;">
-            <div class="kpi-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);"><i class="fas fa-running"></i></div>
-            <p class="kpi-value" id="statSeFue">0</p>
-            <p class="kpi-label">"Se Fue" (Cliente no esperó)</p>
-        </div>
-        <div class="kpi-card" style="border-left: 4px solid #22c55e;">
-            <div class="kpi-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);"><i class="fas fa-dollar-sign"></i></div>
-            <p class="kpi-value" id="statMontoTotal">$0</p>
-            <p class="kpi-label">Monto Total Despachado</p>
+        <div class="rd-card-body" style="text-align: center; padding: 1.5rem;">
+            <p style="font-size: 2rem; font-weight: 800; color: var(--rd-accent); margin: 0;" id="statTotalEmpresas">0</p>
         </div>
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 1.5: COMPORTAMIENTO EN EL TIEMPO -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon" style="background: #3b82f6;"><i class="fas fa-chart-line"></i></div>
+<!-- SECCIÓN: COMPORTAMIENTO EN EL TIEMPO -->
+<div class="rd-section">
+    <div class="rd-section-header">
+        <div class="rd-section-icon" style="background: #3b82f6;"><i class="fas fa-chart-line"></i></div>
         <div>
-            <h2 class="section-title">Comportamiento en el Tiempo</h2>
-            <p class="section-subtitle">Tendencia diaria de tickets despachados vs retenciones</p>
+            <h2 class="rd-section-title">Comportamiento en el Tiempo</h2>
+            <p class="rd-section-subtitle">Tendencia diaria de tickets despachados vs retenciones</p>
         </div>
     </div>
 
-    <div class="chart-card" style="margin-bottom: 0;">
-        <div class="chart-header">
+    <div class="rd-card">
+        <div class="rd-card-header">
             <i class="fas fa-chart-area" style="color: #3b82f6;"></i>
             <h3>Despachos vs Retenciones por Día</h3>
         </div>
-        <div class="chart-container" style="height: 320px;">
-            <canvas id="chartTendencia"></canvas>
+        <div class="rd-card-body">
+            <div class="chart-container tall">
+                <canvas id="chartTendencia"></canvas>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 2: TENDENCIAS DE ATENCIÓN -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon"><i class="fas fa-chart-bar"></i></div>
+<!-- SECCIÓN: TENDENCIAS DE ATENCIÓN -->
+<div class="rd-section">
+    <div class="rd-section-header">
+        <div class="rd-section-icon"><i class="fas fa-chart-bar"></i></div>
         <div>
-            <h2 class="section-title">Tendencias de Atención</h2>
-            <p class="section-subtitle">Distribución y comparativa visual del rendimiento</p>
+            <h2 class="rd-section-title">Tendencias de Atención</h2>
+            <p class="rd-section-subtitle">Distribución y comparativa visual del rendimiento</p>
         </div>
     </div>
 
-    <div class="chart-grid">
-        <div class="chart-card">
-            <div class="chart-header">
+    <div class="rd-chart-grid">
+        <div class="rd-card">
+            <div class="rd-card-header">
                 <i class="fas fa-users"></i>
                 <h3>Tickets Despachados por Usuario</h3>
             </div>
-            <div class="chart-container">
-                <canvas id="chartTicketsUsuario"></canvas>
+            <div class="rd-card-body">
+                <div class="chart-container">
+                    <canvas id="chartTicketsUsuario"></canvas>
+                </div>
             </div>
         </div>
-        <div class="chart-card">
-            <div class="chart-header">
+        <div class="rd-card">
+            <div class="rd-card-header">
                 <i class="fas fa-clock"></i>
                 <h3>Clasificación de Tiempos</h3>
             </div>
-            <div class="chart-container">
-                <canvas id="chartTiempos"></canvas>
+            <div class="rd-card-body">
+                <div class="chart-container">
+                    <canvas id="chartTiempos"></canvas>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 3: RANKING DE USUARIOS -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon"><i class="fas fa-trophy"></i></div>
+<!-- SECCIÓN: RANKING DE USUARIOS -->
+<div class="rd-section">
+    <div class="rd-section-header">
+        <div class="rd-section-icon" style="background: #f59e0b;"><i class="fas fa-trophy"></i></div>
         <div>
-            <h2 class="section-title">Ranking de Usuarios</h2>
-            <p class="section-subtitle">Ordenados por tiempo promedio de atención (más rápido primero). Click en una fila para ver clientes atendidos.</p>
+            <h2 class="rd-section-title">Ranking de Usuarios</h2>
+            <p class="rd-section-subtitle">Ordenados por tiempo promedio (click para ver empresas atendidas)</p>
         </div>
     </div>
 
-    <div class="data-card">
+    <div class="rd-card">
         <div class="table-responsive">
-            <table class="report-table" id="tablaUsuarios">
+            <table class="rd-table" id="tablaUsuarios">
                 <thead>
                     <tr>
-                        <th style="width: 60px">Puesto</th>
+                        <th style="width: 50px">Puesto</th>
                         <th>Usuario</th>
-                        <th style="width: 100px">Tickets</th>
-                        <th style="width: 130px">Tiempo Promedio</th>
-                        <th style="width: 100px">Más Rápido</th>
-                        <th style="width: 100px">Más Lento</th>
-                        <th style="width: 120px">Empresas</th>
+                        <th style="width: 90px">Tickets</th>
+                        <th style="width: 110px">Tiempo Prom.</th>
+                        <th style="width: 90px">Más Rápido</th>
+                        <th style="width: 90px">Más Lento</th>
+                        <th style="width: 100px">Empresas</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -505,43 +513,41 @@ include __DIR__ . '/../templates/header.php';
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 4: EMPRESAS ATENDIDAS -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon"><i class="fas fa-building"></i></div>
+<!-- SECCIÓN: TOP EMPRESAS -->
+<div class="rd-section">
+    <div class="rd-section-header">
+        <div class="rd-section-icon" style="background: #06b6d4;"><i class="fas fa-building"></i></div>
         <div>
-            <h2 class="section-title">Top 10 Empresas</h2>
-            <p class="section-subtitle">Las empresas con mayor volumen de tickets despachados</p>
+            <h2 class="rd-section-title">Top 10 Empresas</h2>
+            <p class="rd-section-subtitle">Empresas con mayor volumen de tickets despachados</p>
         </div>
     </div>
 
-    <div class="chart-grid">
-        <div class="chart-card">
-            <div class="chart-header">
+    <div class="rd-chart-grid">
+        <div class="rd-card">
+            <div class="rd-card-header">
                 <i class="fas fa-chart-pie"></i>
                 <h3>Distribución por Empresa</h3>
             </div>
-            <div class="chart-container">
-                <canvas id="chartEmpresas"></canvas>
-            </div>
-        </div>
-        <div class="data-card" style="margin-bottom: 0;">
-            <div class="data-header">
-                <div class="data-header-left">
-                    <i class="fas fa-list-ol"></i>
-                    <h3>Detalle de Empresas</h3>
+            <div class="rd-card-body">
+                <div class="chart-container">
+                    <canvas id="chartEmpresas"></canvas>
                 </div>
             </div>
-            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                <table class="report-table" id="tablaEmpresas">
+        </div>
+        <div class="rd-card">
+            <div class="rd-card-header">
+                <i class="fas fa-list-ol"></i>
+                <h3>Detalle de Empresas</h3>
+            </div>
+            <div class="rd-card-body" style="max-height: 300px; overflow-y: auto; padding: 0;">
+                <table class="rd-table" id="tablaEmpresas">
                     <thead>
                         <tr>
-                            <th style="width: 50px">#</th>
+                            <th style="width: 40px">#</th>
                             <th>Empresa</th>
-                            <th style="width: 90px">Tickets</th>
-                            <th style="width: 100px">Usuarios</th>
+                            <th style="width: 80px">Tickets</th>
+                            <th style="width: 90px">Usuarios</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -553,33 +559,29 @@ include __DIR__ . '/../templates/header.php';
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 4.5: MONTO POR ALMACÉN -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon" style="background: #6366f1;"><i class="fas fa-warehouse"></i></div>
+<!-- SECCIÓN: MONTO POR ALMACÉN -->
+<div class="rd-section">
+    <div class="rd-section-header">
+        <div class="rd-section-icon" style="background: #6366f1;"><i class="fas fa-warehouse"></i></div>
         <div>
-            <h2 class="section-title">Monto por Almacén</h2>
-            <p class="section-subtitle">Distribución de montos despachados por ubicación de almacén</p>
+            <h2 class="rd-section-title">Monto por Almacén</h2>
+            <p class="rd-section-subtitle">Distribución de montos por ubicación de almacén</p>
         </div>
     </div>
 
-    <div class="data-card" style="margin-bottom: 0;">
-        <div class="data-header">
-            <div class="data-header-left">
-                <i class="fas fa-boxes"></i>
-                <h3>Detalle por Almacén</h3>
-            </div>
+    <div class="rd-card">
+        <div class="rd-card-header">
+            <i class="fas fa-boxes"></i>
+            <h3>Detalle por Almacén</h3>
         </div>
-        <div class="table-responsive">
-            <table class="report-table" id="tablaAlmacenes">
+        <div class="rd-card-body" style="padding: 0;">
+            <table class="rd-table" id="tablaAlmacenes">
                 <thead>
                     <tr>
-                        <th style="width: 50px">#</th>
+                        <th style="width: 40px">#</th>
                         <th>Almacén</th>
-                        <th style="width: 100px">Facturas</th>
-                        <th style="width: 150px">Monto Total</th>
+                        <th style="width: 90px">Facturas</th>
+                        <th style="width: 130px">Monto Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -590,43 +592,41 @@ include __DIR__ . '/../templates/header.php';
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- SECCIÓN 5: RETENCIONES -->
-<!-- ============================================== -->
-<div class="section">
-    <div class="section-header">
-        <div class="section-icon" style="background: #ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+<!-- SECCIÓN: RETENCIONES -->
+<div class="rd-section">
+    <div class="rd-section-header">
+        <div class="rd-section-icon" style="background: #ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
         <div>
-            <h2 class="section-title">Análisis de Retenciones</h2>
-            <p class="section-subtitle">Tickets que fueron retenidos y tiempos de espera por usuario</p>
+            <h2 class="rd-section-title">Análisis de Retenciones</h2>
+            <p class="rd-section-subtitle">Tickets retenidos y tiempos de espera por usuario</p>
         </div>
     </div>
 
-    <div class="chart-grid">
-        <div class="chart-card">
-            <div class="chart-header">
+    <div class="rd-chart-grid">
+        <div class="rd-card">
+            <div class="rd-card-header">
                 <i class="fas fa-chart-bar" style="color: #ef4444;"></i>
                 <h3>Retenciones por Usuario</h3>
             </div>
-            <div class="chart-container">
-                <canvas id="chartRetenciones"></canvas>
-            </div>
-        </div>
-        <div class="data-card" style="margin-bottom: 0;">
-            <div class="data-header">
-                <div class="data-header-left">
-                    <i class="fas fa-clock" style="color: #ef4444;"></i>
-                    <h3>Tiempos de Retención</h3>
+            <div class="rd-card-body">
+                <div class="chart-container">
+                    <canvas id="chartRetenciones"></canvas>
                 </div>
             </div>
-            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                <table class="report-table" id="tablaRetenciones">
+        </div>
+        <div class="rd-card">
+            <div class="rd-card-header">
+                <i class="fas fa-clock" style="color: #ef4444;"></i>
+                <h3>Tiempos de Retención</h3>
+            </div>
+            <div class="rd-card-body" style="max-height: 300px; overflow-y: auto; padding: 0;">
+                <table class="rd-table" id="tablaRetenciones">
                     <thead>
                         <tr>
                             <th>Usuario</th>
-                            <th style="width: 110px">Retenciones</th>
-                            <th style="width: 130px">Tiempo Prom.</th>
-                            <th style="width: 100px">Estado</th>
+                            <th style="width: 100px">Retenciones</th>
+                            <th style="width: 110px">Tiempo Prom.</th>
+                            <th style="width: 90px">Estado</th>
                         </tr>
                     </thead>
                     <tbody>
