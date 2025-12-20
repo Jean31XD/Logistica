@@ -6,9 +6,19 @@
 
 // Incluir configuración centralizada de sesión
 require_once __DIR__ . '/../../conexionBD/session_config.php';
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
-// Verificar autenticación (0=Admin, 1=Despacho, 5=Admin-limitado, 11=Códigos de Barras)
-verificarAutenticacion([0, 1, 5, 11]);
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('codigos_barras', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 $pageTitle = "Códigos de Barras | MACO";
 $additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';
