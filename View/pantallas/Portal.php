@@ -40,8 +40,6 @@ $modulosData = [
     'gestion_usuarios' => ['link' => '../modulos/Gestion_de_usuario.php', 'icon' => 'fa-users-cog'],
     'dashboard_general' => ['link' => '../modulos/dashboard.php', 'icon' => 'fa-tachometer-alt'],
     'listo_inventario' => ['link' => '../modulos/Listo_inventario.php', 'icon' => 'fa-warehouse'],
-    'codigos_barras' => ['link' => '../modulos/Codigos_de_barras.php', 'icon' => 'fa-barcode'],
-    'codigos_referencia' => ['link' => '../modulos/Codigos_referencia.php', 'icon' => 'fa-list-alt'],
     'gestion_imagenes' => ['link' => '../modulos/Gestion_imagenes.php', 'icon' => 'fa-images'],
     'gestion_transportistas' => ['link' => '../modulos/Gestion_transportistas.php', 'icon' => 'fa-truck'],
     'reporte_despacho' => ['link' => '../modulos/Reporte_despacho.php', 'icon' => 'fa-chart-line'],
