@@ -21,600 +21,493 @@ if (!tieneModulo('codigos_referencia', $conn)) {
 }
 
 $pageTitle = "Códigos de Referencia | MACO";
-$additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';
+$additionalCSS = '
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+';
 include __DIR__ . '/../templates/header.php';
 ?>
 
 <style>
-    /* Estilos modernos para panel de códigos de referencia */
+    :root {
+        --cr-primary: #E63946;
+        --cr-secondary: #1D3557;
+        --cr-accent: #457B9D;
+        --cr-success: #22C55E;
+        --cr-warning: #F59E0B;
+        --cr-danger: #EF4444;
+        --cr-bg: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
+        --cr-card: #FFFFFF;
+        --cr-border: #E2E8F0;
+        --cr-text: #2D3748;
+        --cr-muted: #718096;
+        --cr-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        --cr-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+
     body {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        font-family: 'Plus Jakarta Sans', 'Inter', var(--font-family);
+        background: var(--cr-bg);
     }
 
-    .panel-header {
-        background: white;
-        padding: 2rem;
-        border-radius: var(--radius-xl);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-        border-left: 5px solid var(--primary);
-    }
-
-    .header-content {
+    /* Header con KPIs en glassmorphism */
+    .cr-header {
+        background: linear-gradient(135deg, var(--cr-secondary) 0%, var(--cr-accent) 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 1.5rem;
+        color: #fff;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 1.5rem;
-    }
-
-    .header-title-section h1 {
-        font-size: 2.5rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, var(--primary), #ff6b6b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-    }
-
-    .header-title-section p {
-        color: var(--text-secondary);
-        font-size: 1.1rem;
-    }
-
-    .header-actions {
-        display: flex;
         gap: 1rem;
     }
 
-    .btn-export {
-        padding: 1rem 2rem;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        border: none;
-        border-radius: var(--radius-lg);
-        font-weight: 700;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.75rem;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-export::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-export:hover::before {
-        left: 100%;
-    }
-
-    .btn-export:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
-    }
-
-    .btn-export:active {
-        transform: translateY(-1px);
-    }
-
-    .search-filter-section {
-        background: white;
-        padding: 2rem;
-        border-radius: var(--radius-xl);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-        border-top: 4px solid var(--primary);
-    }
-
-    .search-filter-section h3 {
+    .cr-header-info h1 {
+        margin: 0;
         font-size: 1.5rem;
         font-weight: 700;
-        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .cr-header-info p {
+        margin: 0.25rem 0 0;
+        opacity: 0.85;
+        font-size: 0.9rem;
+    }
+
+    .cr-kpi-row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .cr-kpi-box {
+        text-align: center;
+        background: rgba(255,255,255,0.15);
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+        min-width: 90px;
+    }
+
+    .cr-kpi-box .number {
+        font-size: 1.5rem;
+        font-weight: 800;
+        display: block;
+    }
+
+    .cr-kpi-box .label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+        letter-spacing: 0.5px;
+    }
+
+    /* Filtros horizontales */
+    .cr-filters {
+        background: var(--cr-card);
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        box-shadow: var(--cr-shadow-lg);
         margin-bottom: 1.5rem;
-    }
-
-    .search-filter-section h3 i {
-        color: var(--primary);
-    }
-
-    .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        display: flex;
+        align-items: flex-end;
         gap: 1rem;
-        margin-top: 1rem;
+        flex-wrap: wrap;
+        border-left: 6px solid var(--cr-primary);
     }
 
-    .filter-item {
+    .cr-filter-group {
         display: flex;
         flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+        min-width: 180px;
     }
 
-    .filter-label {
+    .cr-filter-group label {
+        font-size: 0.65rem;
         font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
+        color: var(--cr-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    .filter-input, .filter-select {
-        padding: 0.75rem;
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
+    .cr-filter-group input,
+    .cr-filter-group select {
+        padding: 0.6rem 0.75rem;
+        border: 2px solid var(--cr-border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background: #fff;
+        transition: all 0.2s;
     }
 
-    .filter-input:focus, .filter-select:focus {
+    .cr-filter-group input:focus,
+    .cr-filter-group select:focus {
         outline: none;
-        border-color: var(--primary);
+        border-color: var(--cr-primary);
         box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
     }
 
-    .stats-bar {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+    .cr-btn-export {
+        padding: 0.6rem 1.5rem;
+        background: linear-gradient(135deg, var(--cr-success), #16a34a);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);
     }
 
-    .stat-box {
-        background: white;
-        padding: 2rem;
-        border-radius: var(--radius-xl);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .cr-btn-export:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(34, 197, 94, 0.4);
     }
 
-    .stat-box::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, var(--primary), #ff6b6b);
-    }
-
-    .stat-box:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 50px rgba(0,0,0,0.15);
-    }
-
-    .stat-box .stat-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.2;
-    }
-
-    .stat-box .stat-value {
-        font-size: 3rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, var(--primary), #ff6b6b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-box .stat-label {
-        font-size: 0.95rem;
-        color: var(--text-secondary);
+    .loading-indicator {
+        display: none;
+        color: var(--cr-primary);
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        font-size: 0.85rem;
     }
+    .loading-indicator.active { display: flex; align-items: center; gap: 0.5rem; }
 
-    .table-container {
-        background: white;
-        border-radius: var(--radius-xl);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    /* Card de tabla */
+    .cr-card {
+        background: linear-gradient(135deg, #fff 0%, #F7FAFC 100%);
+        border-radius: 16px;
+        box-shadow: var(--cr-shadow-lg);
         overflow: hidden;
+        border-left: 6px solid var(--cr-primary);
+        transition: all 0.3s ease;
     }
 
-    .table-codigos {
+    .cr-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    }
+
+    .cr-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--cr-border);
+        background: rgba(247, 250, 252, 0.5);
+    }
+
+    .cr-card-header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .cr-card-header i { color: var(--cr-primary); font-size: 1.1rem; }
+    .cr-card-header h3 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--cr-text); }
+
+    /* Tabla */
+    .cr-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-    .table-codigos thead {
-        background: linear-gradient(135deg, #1f2937, #374151);
-        color: white;
+    .cr-table thead {
+        background: var(--cr-secondary);
+        color: #fff;
     }
 
-    .table-codigos thead th {
-        padding: 1.25rem 1rem;
-        font-weight: 700;
+    .cr-table thead th {
+        padding: 0.875rem 1rem;
         text-align: left;
-        border: none;
-        white-space: nowrap;
+        font-weight: 600;
+        font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        font-size: 0.875rem;
     }
 
-    .table-codigos tbody td {
-        padding: 1.25rem 1rem;
-        border-bottom: 1px solid #f3f4f6;
-        vertical-align: middle;
+    .cr-table tbody td {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--cr-border);
+        font-size: 0.9rem;
+        color: var(--cr-text);
     }
 
-    .table-codigos tbody tr {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .cr-table tbody tr {
+        transition: all 0.2s ease;
     }
 
-    .table-codigos tbody tr:hover {
-        background: linear-gradient(90deg, #fef2f2, #fff);
-        transform: scale(1.01);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    .cr-table tbody tr:hover {
+        background: #F8FAFC;
     }
 
+    /* Badges */
     .badge-assigned {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        border-radius: var(--radius-full);
-        font-size: 0.875rem;
-        font-weight: 700;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(34, 197, 94, 0.15);
+        color: #16A34A;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
 
     .badge-unassigned {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-        border-radius: var(--radius-full);
-        font-size: 0.875rem;
-        font-weight: 700;
-        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(239, 68, 68, 0.15);
+        color: #DC2626;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
 
     .codigo-display {
         font-family: 'JetBrains Mono', 'Courier New', monospace;
         background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius-lg);
-        font-weight: 700;
-        font-size: 1rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
         letter-spacing: 1px;
-        border-left: 4px solid var(--primary);
-        display: inline-block;
+        border-left: 3px solid var(--cr-primary);
     }
 
+    /* Botones de acción */
     .action-buttons {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
 
     .btn-action {
-        padding: 0.5rem 1rem;
+        padding: 0.4rem 0.75rem;
         border: none;
-        border-radius: var(--radius);
+        border-radius: 6px;
         font-weight: 600;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.35rem;
     }
 
     .btn-edit {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        color: white;
-        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        background: rgba(59, 130, 246, 0.15);
+        color: #2563EB;
     }
-
     .btn-edit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+        background: #3b82f6;
+        color: white;
     }
 
     .btn-delete {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.15);
+        color: #DC2626;
     }
-
     .btn-delete:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4);
+        background: #ef4444;
+        color: white;
     }
 
-    .pagination-container {
-        background: white;
-        padding: 1.5rem;
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-        margin-top: 1.5rem;
+    /* Paginación */
+    .cr-pagination {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--cr-border);
         flex-wrap: wrap;
         gap: 1rem;
     }
 
     .pagination-info {
-        color: var(--text-secondary);
-        font-size: 0.95rem;
+        color: var(--cr-muted);
+        font-size: 0.85rem;
     }
 
     .pagination-controls {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.4rem;
         align-items: center;
     }
 
     .pagination-btn {
-        padding: 0.5rem 1rem;
-        border: 2px solid var(--primary);
+        padding: 0.5rem 0.875rem;
+        border: 1px solid var(--cr-border);
         background: white;
-        color: var(--primary);
-        border-radius: var(--radius);
-        cursor: pointer;
-        transition: all 0.2s ease;
+        color: var(--cr-text);
+        border-radius: 6px;
         font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
     .pagination-btn:hover:not(:disabled) {
-        background: var(--primary);
+        background: var(--cr-primary);
         color: white;
+        border-color: var(--cr-primary);
     }
 
     .pagination-btn:disabled {
         opacity: 0.4;
         cursor: not-allowed;
-        border-color: var(--border);
-        color: var(--text-secondary);
     }
 
     .pagination-btn.active {
-        background: var(--primary);
+        background: var(--cr-primary);
         color: white;
+        border-color: var(--cr-primary);
     }
 
+    /* Empty state */
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
-        color: var(--text-secondary);
+        color: var(--cr-muted);
     }
 
     .empty-state i {
-        font-size: 4rem;
+        font-size: 3rem;
         margin-bottom: 1rem;
         opacity: 0.3;
     }
 
-    .loading-spinner {
-        text-align: center;
-        padding: 2rem;
-    }
-
-    .loading-spinner i {
-        font-size: 3rem;
-        color: var(--primary);
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(100px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-
+    /* Responsive */
     @media (max-width: 768px) {
-        .header-content {
+        .cr-header {
             flex-direction: column;
-            align-items: stretch;
+            text-align: center;
         }
-
-        .header-actions {
-            width: 100%;
-        }
-
-        .btn-export {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .filter-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-bar {
-            grid-template-columns: 1fr;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .table-codigos {
-            font-size: 0.875rem;
-        }
-
-        .table-codigos thead th,
-        .table-codigos tbody td {
-            padding: 0.75rem 0.5rem;
-        }
-
-        .pagination-container {
-            flex-direction: column;
-        }
-
-        .pagination-controls {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
+        .cr-kpi-row { justify-content: center; }
+        .cr-filters { flex-direction: column; }
+        .cr-filter-group { width: 100%; }
+        .cr-pagination { flex-direction: column; }
     }
 </style>
-
-<!-- Encabezado principal -->
-<div class="panel-header">
-    <div class="header-content">
-        <div class="header-title-section">
-            <h1><i class="fas fa-barcode"></i> Códigos de Referencia</h1>
-            <p>Visualización completa de códigos de barras asignados</p>
+<!-- HEADER CON KPIs -->
+<div class="cr-header">
+    <div class="cr-header-info">
+        <h1><i class="fas fa-barcode"></i> Códigos de Referencia</h1>
+        <p>Visualización y gestión de códigos de barras</p>
+    </div>
+    <div class="cr-kpi-row">
+        <div class="cr-kpi-box">
+            <span class="number" id="totalRegistros">--</span>
+            <span class="label">Total</span>
+        </div>
+        <div class="cr-kpi-box">
+            <span class="number" id="totalAsignados">--</span>
+            <span class="label">Asignados</span>
+        </div>
+        <div class="cr-kpi-box">
+            <span class="number" id="totalSinAsignar">--</span>
+            <span class="label">Sin Asignar</span>
         </div>
     </div>
 </div>
 
-<!-- Estadísticas -->
-<div class="stats-bar">
-    <div class="stat-box animate__animated animate__fadeIn">
-        <div class="stat-value" id="totalRegistros">0</div>
-        <div class="stat-label">Total de Registros</div>
+<!-- FILTROS -->
+<div class="cr-filters">
+    <div class="cr-filter-group">
+        <label>Buscar por nombre</label>
+        <input type="text" id="searchNombre" placeholder="Nombre del artículo...">
     </div>
-    <div class="stat-box animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
-        <div class="stat-value" id="totalAsignados">0</div>
-        <div class="stat-label">Códigos Asignados</div>
+    <div class="cr-filter-group">
+        <label>Buscar por código</label>
+        <input type="text" id="searchCodigo" placeholder="Código de barras...">
     </div>
-    <div class="stat-box animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
-        <div class="stat-value" id="totalSinAsignar">0</div>
-        <div class="stat-label">Sin Asignar</div>
+    <div class="cr-filter-group" style="min-width: 130px; flex: 0.4;">
+        <label>Estado</label>
+        <select id="filterEstado">
+            <option value="">Todos</option>
+            <option value="asignado">Asignados</option>
+            <option value="sin_asignar">Sin asignar</option>
+        </select>
     </div>
-</div>
-
-<!-- Filtros y búsqueda -->
-<div class="search-filter-section animate__animated animate__fadeIn">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-        <h3 style="margin: 0; color: var(--text-primary);">
-            <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
-        </h3>
-        <div style="display: flex; gap: 1rem; align-items: center;">
-            <div id="autoRefreshIndicator" style="
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.5rem 1rem;
-                background: rgba(16, 185, 129, 0.1);
-                border: 2px solid #10b981;
-                border-radius: var(--radius-lg);
-                color: #10b981;
-                font-weight: 600;
-                font-size: 0.875rem;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            " onclick="toggleAutoRefresh()" title="Click para activar/desactivar actualización automática">
-                <i class="fas fa-sync fa-spin" style="font-size: 1rem;"></i>
-                <span>Auto-actualización activa</span>
-            </div>
-            <button type="button" id="btnExportar" class="btn-export">
-                <i class="fas fa-file-excel"></i>
-                Exportar a Excel
-            </button>
-        </div>
+    <div class="cr-filter-group" style="min-width: 100px; flex: 0.3;">
+        <label>Por página</label>
+        <select id="pageSize">
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
+        </select>
     </div>
-    <div class="filter-grid">
-        <div class="filter-item">
-            <label class="filter-label">Buscar por nombre</label>
-            <input type="text" id="searchNombre" class="filter-input" placeholder="Nombre del artículo...">
-        </div>
-        <div class="filter-item">
-            <label class="filter-label">Buscar por código</label>
-            <input type="text" id="searchCodigo" class="filter-input" placeholder="Código de barras...">
-        </div>
-        <div class="filter-item">
-            <label class="filter-label">Estado</label>
-            <select id="filterEstado" class="filter-select">
-                <option value="">Todos</option>
-                <option value="asignado">Con código asignado</option>
-                <option value="sin_asignar">Sin código asignar</option>
-            </select>
-        </div>
-        <div class="filter-item">
-            <label class="filter-label">Registros por página</label>
-            <select id="pageSize" class="filter-select">
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="250">250</option>
-            </select>
-        </div>
+    <button type="button" id="btnExportar" class="cr-btn-export">
+        <i class="fas fa-file-excel"></i> Exportar
+    </button>
+    <div class="loading-indicator" id="loadingIndicator">
+        <i class="fas fa-circle-notch fa-spin"></i> Cargando...
     </div>
 </div>
 
-<!-- Tabla de códigos -->
-<div class="table-container">
-    <div class="table-responsive">
-        <table class="table-codigos">
+<!-- TABLA DE CÓDIGOS -->
+<div class="cr-card">
+    <div class="cr-card-header">
+        <div class="cr-card-header-left">
+            <i class="fas fa-list-ol"></i>
+            <h3>Listado de Códigos</h3>
+        </div>
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="cr-table">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th style="width: 60px;">ID</th>
                     <th>Nombre del Artículo</th>
                     <th>Código de Barras</th>
-                    <th>Usuario Asignado</th>
-                    <th>Estado</th>
-                    <th style="text-align: center;">Acciones</th>
+                    <th>Usuario</th>
+                    <th style="width: 100px;">Estado</th>
+                    <th style="width: 120px; text-align: center;">Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaCodigos">
                 <tr>
-                    <td colspan="6" class="loading-spinner">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Cargando datos...</p>
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: var(--cr-muted);">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem;"></i>
+                        <p style="margin-top: 0.5rem;">Cargando datos...</p>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
-</div>
-
-<!-- Paginación -->
-<div class="pagination-container" id="paginationContainer">
-    <div class="pagination-info">
-        Mostrando <strong id="showingFrom">0</strong> - <strong id="showingTo">0</strong> de <strong id="totalItems">0</strong> registros
-    </div>
-    <div class="pagination-controls">
-        <button class="pagination-btn" id="btnFirst" title="Primera página">
-            <i class="fas fa-angle-double-left"></i>
-        </button>
-        <button class="pagination-btn" id="btnPrev" title="Anterior">
-            <i class="fas fa-angle-left"></i>
-        </button>
-        <span id="pageNumbers" style="display: flex; gap: 0.5rem;"></span>
-        <button class="pagination-btn" id="btnNext" title="Siguiente">
-            <i class="fas fa-angle-right"></i>
-        </button>
-        <button class="pagination-btn" id="btnLast" title="Última página">
-            <i class="fas fa-angle-double-right"></i>
-        </button>
+    <div class="cr-pagination" id="paginationContainer">
+        <div class="pagination-info">
+            Mostrando <strong id="showingFrom">0</strong> - <strong id="showingTo">0</strong> de <strong id="totalItems">0</strong> registros
+        </div>
+        <div class="pagination-controls">
+            <button class="pagination-btn" id="btnFirst" title="Primera página">
+                <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="pagination-btn" id="btnPrev" title="Anterior">
+                <i class="fas fa-angle-left"></i>
+            </button>
+            <span id="pageNumbers" style="display: flex; gap: 0.4rem;"></span>
+            <button class="pagination-btn" id="btnNext" title="Siguiente">
+                <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="pagination-btn" id="btnLast" title="Última página">
+                <i class="fas fa-angle-double-right"></i>
+            </button>
+        </div>
     </div>
 </div>
 
