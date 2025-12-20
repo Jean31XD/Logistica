@@ -78,29 +78,42 @@ function formatDate($date, string $format = 'd/m/Y'): string {
 
 /**
  * Verifica si el usuario tiene permiso para un módulo
+ * Usa la tabla usuario_modulos exclusivamente
+ * 
+ * @param string $modulo Nombre del módulo (ej: 'gestion_imagenes', 'validacion_facturas')
+ * @param resource $conn Conexión a la base de datos (opcional, se carga si no se pasa)
+ * @return bool
  */
-function tienePermisoModulo(string $modulo, $conn): bool {
+function tieneModulo(string $modulo, $conn = null): bool {
     if (!isset($_SESSION['usuario'])) {
         return false;
     }
     
-    // Admin (pantalla 0) tiene acceso a todo
-    if (($_SESSION['pantalla'] ?? -1) == 0) {
-        return true;
+    // Si no se pasa conexión, cargarla
+    if ($conn === null) {
+        require_once __DIR__ . '/conexion.php';
     }
     
-    $sql = "SELECT 1 FROM modulos_usuarios mu 
-            INNER JOIN modulos m ON mu.id_modulo = m.id_modulo 
-            WHERE mu.usuario = ? AND m.nombre_modulo = ?";
+    $sql = "SELECT COUNT(*) as cnt FROM usuario_modulos 
+            WHERE usuario = ? AND modulo = ? AND activo = 1";
     $stmt = sqlsrv_query($conn, $sql, [$_SESSION['usuario'], $modulo]);
     
     if ($stmt === false) {
         return false;
     }
     
-    $hasPermission = sqlsrv_fetch_array($stmt) !== null;
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    $hasPermission = ($row['cnt'] > 0);
     sqlsrv_free_stmt($stmt);
     
     return $hasPermission;
+}
+
+/**
+ * Verifica si el usuario tiene permiso para un módulo (alias para compatibilidad)
+ * @deprecated Usar tieneModulo() directamente
+ */
+function tienePermisoModulo(string $modulo, $conn): bool {
+    return tieneModulo($modulo, $conn);
 }
 ?>

@@ -22,9 +22,10 @@ while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
     $transportistas[] = $row['Transportista'];
 }
 
-// Cargar usuarios si la pantalla es 0, 2 o 5
+// Cargar usuarios si tiene módulo de validación de facturas (puede ver todos los usuarios)
 $usuarios = [];
-if (in_array($_SESSION['pantalla'], [0, 2, 3, 5])) {
+$puedeVerUsuarios = tieneModulo('validacion_facturas', $conn) || tieneModulo('gestion_usuarios', $conn);
+if ($puedeVerUsuarios) {
     $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL";
     $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
     while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
@@ -358,7 +359,7 @@ include __DIR__ . '/../templates/header.php';
         </select>
     </div>
     
-    <?php if (in_array($_SESSION['pantalla'], [0, 2, 3, 5])): ?>
+    <?php if ($puedeVerUsuarios): ?>
     <div class="bi-filter-group">
         <label>Usuario</label>
         <select id="filtroUsuario">

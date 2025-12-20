@@ -11,20 +11,9 @@ if (!$conn) {
     exit;
 }
 
-// Verificar permiso del módulo dashboard_general
+// Verificar permiso del módulo dashboard_general usando solo usuario_modulos
 $usuario = $_SESSION['usuario'];
-$pantalla = $_SESSION['pantalla'] ?? -1;
-
-$tienePermiso = ($pantalla == 0); // Admin tiene acceso
-
-if (!$tienePermiso) {
-    $sql = "SELECT modulo FROM usuario_modulos WHERE usuario = ? AND modulo = 'dashboard_general' AND activo = 1";
-    $stmt = sqlsrv_query($conn, $sql, [$usuario]);
-    if ($stmt !== false) {
-        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        $tienePermiso = ($row !== null);
-    }
-}
+$tienePermiso = tieneModulo('dashboard_general', $conn);
 
 if (!$tienePermiso) {
     http_response_code(401);
