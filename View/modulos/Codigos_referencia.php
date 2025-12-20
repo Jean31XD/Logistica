@@ -6,9 +6,19 @@
 
 // Incluir configuración centralizada de sesión
 require_once __DIR__ . '/../../conexionBD/session_config.php';
+require_once __DIR__ . '/../../conexionBD/conexion.php';
 
-// Verificar autenticación (0=Admin, 5=Admin-limitado, 12=Códigos de Referencia)
-verificarAutenticacion([0, 5, 12]);
+// Verificar autenticación básica
+if (!isset($_SESSION['usuario'])) {
+    header("Location: " . getLoginUrl());
+    exit();
+}
+
+// Verificar permiso usando usuario_modulos
+if (!tieneModulo('codigos_referencia', $conn)) {
+    header("Location: " . getBaseUrl() . "/View/pantallas/Portal.php?error=permisos");
+    exit();
+}
 
 $pageTitle = "Códigos de Referencia | MACO";
 $additionalCSS = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />';
