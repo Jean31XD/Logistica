@@ -684,10 +684,6 @@ include __DIR__ . '/../templates/header.php';
                 <i class="fas fa-desktop"></i>
                 <span>Ventanillas</span>
             </a>
-            <a href="?tab=codigos" class="nav-tab-item <?= $tabActiva === 'codigos' ? 'active' : '' ?>">
-                <i class="fas fa-key"></i>
-                <span>Códigos</span>
-            </a>
             <a href="?tab=permisos" class="nav-tab-item <?= $tabActiva === 'permisos' ? 'active' : '' ?>">
                 <i class="fas fa-shield-alt"></i>
                 <span>Permisos</span>
