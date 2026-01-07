@@ -71,27 +71,45 @@ try {
     if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
     if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
 
-    // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS ---
-    // (Tu CTE original no necesita cambios)
-    $cte_facturas = "
-    WITH Facturas_CTE AS (
-        SELECT
-            fl.invoiceid,
-            fl.inventlocationid, -- Se selecciona directamente el almacén
-            
-            -- Se agrupan los datos de la factura por almacén
-            MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
-            SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
-            MAX(fl.invoicingname) AS invoicingname
-            
-        FROM Facturas_lineas fl
-        -- Se agrupa por factura Y por almacén para tratar cada parte por separado
-        GROUP BY fl.invoiceid, fl.inventlocationid 
-    )
-    ";
+    // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS (OPTIMIZADA) ---
+    // La función buildFacturasCTE genera la CTE con filtros aplicados DENTRO de la sub-consulta
+    // para evitar escanear toda la tabla Facturas_lineas innecesariamente.
+    function buildFacturasCTE($fecha_inicio, $fecha_fin, $almacen) {
+        $whereClause = "";
+        $conditions = [];
+        
+        if (!empty($fecha_inicio) && !empty($fecha_fin)) {
+            $conditions[] = "fl.invoicedate BETWEEN '$fecha_inicio' AND '$fecha_fin'";
+        }
+        if (!empty($almacen)) {
+            $conditions[] = "fl.inventlocationid = '$almacen'";
+        }
+        
+        if (!empty($conditions)) {
+            $whereClause = "WHERE " . implode(" AND ", $conditions);
+        }
+        
+        return "
+        WITH Facturas_CTE AS (
+            SELECT
+                fl.invoiceid,
+                fl.inventlocationid,
+                MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
+                SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
+                MAX(fl.invoicingname) AS invoicingname
+            FROM Facturas_lineas fl
+            $whereClause
+            GROUP BY fl.invoiceid, fl.inventlocationid 
+        )
+        ";
+    }
+    
+    // Generar la CTE con los filtros aplicados
+    $cte_facturas = buildFacturasCTE($fecha_inicio, $fecha_fin, $almacen);
 
     // --- 3. CONSTRUCCIÓN DE FILTROS DINÁMICOS ---
-    // (Esta lógica ahora usa el $almacen forzado por la sesión)
+    // Nota: almacenSqlAnd ya no es necesario si el filtro está en la CTE,
+    // pero lo mantenemos para compatibilidad con consultas existentes que lo usan.
     $almacenParams = [];
     $almacenSqlAnd = '';
     if (!empty($almacen)) {

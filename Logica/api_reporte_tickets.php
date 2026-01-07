@@ -82,14 +82,18 @@ try {
             }
 
             // Monto total de facturas despachadas (usando Facturas_lineas)
+            // OPTIMIZADO: Se usa una sub-consulta para primero filtrar analisis
             $sqlMonto = "
                 SELECT 
                     COALESCE(SUM(f.lineamount), 0) AS MontoTotal
-                FROM analisis a
+                FROM (
+                    SELECT DISTINCT Factura 
+                    FROM analisis 
+                    WHERE Fecha_de_Creacion >= ?
+                        AND Fecha_de_Creacion <= DATEADD(DAY, 1, CAST(? AS DATE))
+                        AND Factura != 'Se fue'
+                ) a
                 INNER JOIN Facturas_lineas f ON a.Factura = f.invoiceid
-                WHERE a.Fecha_de_Creacion >= ?
-                    AND a.Fecha_de_Creacion <= DATEADD(DAY, 1, CAST(? AS DATE))
-                    AND a.Factura != 'Se fue'
             ";
             $stmtMonto = sqlsrv_query($conn, $sqlMonto, [$fechaInicio, $fechaFin]);
             if ($stmtMonto && $row = sqlsrv_fetch_array($stmtMonto, SQLSRV_FETCH_ASSOC)) {
@@ -97,16 +101,20 @@ try {
             }
 
             // Monto por almacén
+            // OPTIMIZADO: Se usa una sub-consulta para primero filtrar analisis
             $sqlMontoAlmacen = "
                 SELECT 
                     f.inventlocationid AS Almacen,
                     COALESCE(SUM(f.lineamount), 0) AS Monto,
                     COUNT(DISTINCT a.Factura) AS TotalFacturas
-                FROM analisis a
+                FROM (
+                    SELECT DISTINCT Factura 
+                    FROM analisis 
+                    WHERE Fecha_de_Creacion >= ?
+                        AND Fecha_de_Creacion <= DATEADD(DAY, 1, CAST(? AS DATE))
+                        AND Factura != 'Se fue'
+                ) a
                 INNER JOIN Facturas_lineas f ON a.Factura = f.invoiceid
-                WHERE a.Fecha_de_Creacion >= ?
-                    AND a.Fecha_de_Creacion <= DATEADD(DAY, 1, CAST(? AS DATE))
-                    AND a.Factura != 'Se fue'
                 GROUP BY f.inventlocationid
                 ORDER BY Monto DESC
             ";
