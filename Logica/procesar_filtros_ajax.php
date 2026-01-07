@@ -24,6 +24,7 @@ $almacen = $_GET['almacen'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
 $limit = 50;
 $offset = ($page - 1) * $limit;
+$filtroCxC = $_GET['filtroCxC'] ?? ''; // Nuevo filtro CxC
 
 try {
     $fechaDesde = new DateTime($desde);
@@ -47,6 +48,8 @@ if ($prefijo === 'NC') $where .= " AND c.Factura LIKE 'NC%'";
 if ($prefijo === 'FT') $where .= " AND c.Factura LIKE 'FT%'";
 if (!empty($zona)) { $where .= " AND c.zona = ?"; $params[] = $zona; }
 if (!empty($almacen)) { $where .= " AND fl.inventlocationid = ?"; $params[] = $almacen; }
+if ($filtroCxC === 'si') { $where .= " AND c.recepcion IS NOT NULL"; }
+elseif ($filtroCxC === 'no') { $where .= " AND c.recepcion IS NULL"; }
 
 // --- Obtener Resumen y Total (CORREGIDO) ---
 // PROBLEMA: No se puede usar COUNT(DISTINCT) con SUM(CASE)
@@ -57,7 +60,7 @@ SELECT
     SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
     SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
     SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
-    SUM(CASE WHEN Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC
+    SUM(CASE WHEN Usuario_de_recepcion IS NULL OR LTRIM(RTRIM(Usuario_de_recepcion)) = '' THEN 1 ELSE 0 END) AS PendientesCxC
 FROM (
     SELECT DISTINCT c.Factura, c.Validar, c.Usuario_de_recepcion
     FROM custinvoicejour c

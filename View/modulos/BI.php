@@ -375,8 +375,8 @@ include __DIR__ . '/../templates/header.php';
             <span class="label">Pendientes</span>
         </div>
         <div class="bi-kpi-box">
-            <span class="number" id="total-entregadas-cxc">--</span>
-            <span class="label">CxC</span>
+            <span class="number" id="total-pendientes-cxc">--</span>
+            <span class="label">Pendientes CxC</span>
         </div>
     </div>
 </div>
@@ -456,6 +456,15 @@ include __DIR__ . '/../templates/header.php';
                 <option value="">Todos</option>
                 <option value="NC" <?= $prefijo === 'NC' ? 'selected' : '' ?>>Solo NC</option>
                 <option value="FT" <?= $prefijo === 'FT' ? 'selected' : '' ?>>Solo FT</option>
+            </select>
+        </div>
+        
+        <div class="bi-filter-group">
+            <label>Recibido CxC</label>
+            <select name="filtroCxC" id="filtroCxC">
+                <option value="">Todos</option>
+                <option value="si">Sí recibido</option>
+                <option value="no">No recibido</option>
             </select>
         </div>
     </div>
@@ -687,7 +696,7 @@ $(document).ready(function() {
                 $('#total-facturas').text(new Intl.NumberFormat().format(response.resumen.TotalFacturas || 0));
                 $('#total-completadas').text(new Intl.NumberFormat().format(response.resumen.Completadas || 0));
                 $('#total-no-completadas').text(new Intl.NumberFormat().format(response.resumen.NoCompletadas || 0));
-                $('#total-entregadas-cxc').text(new Intl.NumberFormat().format(response.resumen.EntregadasCC || 0));
+                $('#total-pendientes-cxc').text(new Intl.NumberFormat().format(response.resumen.PendientesCxC || 0));
 
                 $('#tabla-container tbody').html(response.tablaHtml);
                 $('#paginacion-container').html(response.paginacionHtml);
