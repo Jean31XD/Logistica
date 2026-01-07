@@ -48,17 +48,22 @@ if ($prefijo === 'FT') $where .= " AND c.Factura LIKE 'FT%'";
 if (!empty($zona)) { $where .= " AND c.zona = ?"; $params[] = $zona; }
 if (!empty($almacen)) { $where .= " AND fl.inventlocationid = ?"; $params[] = $almacen; }
 
-// --- Obtener Resumen y Total (con JOIN para filtro almacén) ---
+// --- Obtener Resumen y Total (CORREGIDO) ---
+// PROBLEMA: No se puede usar COUNT(DISTINCT) con SUM(CASE)
+// SOLUCIÓN: Usar subquery con facturas únicas filtradas
 $resumen_sql = "
 SELECT
-    COUNT(DISTINCT c.Factura) as TotalFacturas,
-    SUM(CASE WHEN c.Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
-    SUM(CASE WHEN c.Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
-    SUM(CASE WHEN c.Validar IS NULL OR LTRIM(RTRIM(c.Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
-    SUM(CASE WHEN c.Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(c.Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC
-FROM custinvoicejour c
-LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
-$where";
+    COUNT(*) as TotalFacturas,
+    SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
+    SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
+    SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
+    SUM(CASE WHEN Usuario_de_recepcion IS NOT NULL AND LTRIM(RTRIM(Usuario_de_recepcion)) <> '' THEN 1 ELSE 0 END) AS EntregadasCC
+FROM (
+    SELECT DISTINCT c.Factura, c.Validar, c.Usuario_de_recepcion
+    FROM custinvoicejour c
+    LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
+    $where
+) AS FacturasUnicas";
 $resumen_stmt = sqlsrv_query($conn, $resumen_sql, $params);
 if ($resumen_stmt === false) {
     header('HTTP/1.1 500 Internal Server Error');
