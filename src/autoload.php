@@ -36,13 +36,16 @@ spl_autoload_register(function ($class) {
 
 /**
  * Obtener instancia del servicio de cache.
- * @return \MACO\Services\CacheService
+ * Solo define si no existe (cache_manager.php puede definirla primero)
+ * @return \MACO\Services\CacheService|CacheManager
  */
-function getCache(): \MACO\Services\CacheService
-{
-    static $cache = null;
-    if ($cache === null) {
-        $cache = new \MACO\Services\CacheService();
+if (!function_exists('getCache')) {
+    function getCache()
+    {
+        static $cache = null;
+        if ($cache === null) {
+            $cache = new \MACO\Services\CacheService();
+        }
+        return $cache;
     }
-    return $cache;
 }

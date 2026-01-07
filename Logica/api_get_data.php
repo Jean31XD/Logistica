@@ -35,6 +35,10 @@ if ($stmtAlmacen !== false) {
 
 $USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
 
+// Establecer timeout de bloqueo para evitar esperas indefinidas
+$timeoutQuery = "SET LOCK_TIMEOUT 10000"; // 10 segundos
+sqlsrv_query($conn, $timeoutQuery);
+
 // 3. Cargar autoloader del proyecto (habilita clases y helpers)
 require_once __DIR__ . '/../src/autoload.php';
 

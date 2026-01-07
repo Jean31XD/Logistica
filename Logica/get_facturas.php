@@ -7,6 +7,21 @@ verificarAutenticacion();
 require_once __DIR__ . '/../conexionBD/conexion.php';
 require_once __DIR__ . '/../conexionBD/cache_manager.php';
 
+// Establecer timeout de bloqueo para evitar esperas indefinidas
+$timeoutQuery = "SET LOCK_TIMEOUT 10000"; // 10 segundos
+sqlsrv_query($conn, $timeoutQuery);
+
+// ========================================================================
+// SINCRONIZACIÓN DESHABILITADA - Causa bloqueos en la base de datos
+// ========================================================================
+// La sincronización automática puede causar bloqueos de varios minutos.
+// Se recomienda ejecutar SyncCustinvoicejour mediante un job programado 
+// en SQL Server fuera de horario laboral (ejemplo: 2 AM).
+//
+// Para habilitar nuevamente, descomentar el bloque siguiente:
+// ========================================================================
+
+/*
 // Sincronizar facturas con cooldown de 5 minutos para evitar bloqueos
 $cache = getCache();
 $syncKey = 'sync_custinvoicejour_last_run';
@@ -25,6 +40,7 @@ if ($lastSync === null || (time() - $lastSync) > $cooldownSeconds) {
         $cache->set($syncKey, time(), $cooldownSeconds + 60);
     }
 }
+*/
 
 // Parámetros de búsqueda
 $transportista = $_POST['transportista'] ?? '';
@@ -40,6 +56,9 @@ $offset = ($pagina - 1) * $limite;
 
 // Filtro de búsqueda de factura
 $buscarFactura = $_POST['buscarFactura'] ?? '';
+
+// Filtro de CxC (nuevo)
+$filtroCxC = $_POST['filtroCxC'] ?? ''; // 'si', 'no', o vacío (todos)
 
 // === Total de registros ===
 $sqlCount = "SELECT COUNT(*) AS total FROM custinvoicejour WHERE 1=1";
@@ -73,6 +92,11 @@ if ($buscarFactura) {
     $sqlCount .= " AND Factura LIKE ?";
     $paramsCount[] = "%$buscarFactura%";
 }
+if ($filtroCxC === 'si') {
+    $sqlCount .= " AND recepcion IS NOT NULL";
+} elseif ($filtroCxC === 'no') {
+    $sqlCount .= " AND recepcion IS NULL";
+}
 
 $stmtCount = sqlsrv_query($conn, $sqlCount, $paramsCount);
 $totalFilas = 0;
@@ -82,19 +106,22 @@ if ($stmtCount !== false) {
 }
 $totalPaginas = ceil($totalFilas / $limite);
 
-// === KPIs por transportista ===
+// === KPIs CORREGIDOS - Ahora respetan TODOS los filtros activos ===
 $kpiTotal = 0;
 $kpiCompletadas = 0;
 $kpiPendientes = 0;
+$kpiCxC = 0; // Nuevo: facturas recibidas por CxC
 
-// Construir filtros base para KPIs (solo transportista y fechas)
+// IMPORTANTE: Usar los MISMOS filtros que la consulta principal
 $sqlKpi = "SELECT 
     COUNT(*) AS Total,
     SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
-    SUM(CASE WHEN Validar IS NULL OR Validar = '' OR Validar = 'RE' THEN 1 ELSE 0 END) AS Pendientes
+    SUM(CASE WHEN Validar IS NULL OR Validar = '' OR Validar = 'RE' THEN 1 ELSE 0 END) AS Pendientes,
+    SUM(CASE WHEN recepcion IS NOT NULL THEN 1 ELSE 0 END) AS RecibidosCxC
 FROM custinvoicejour WHERE 1=1";
 $paramsKpi = [];
 
+// Aplicar TODOS los filtros (igual que en $sqlCount)
 if ($transportista) {
     $sqlKpi .= " AND Transportista = ?";
     $paramsKpi[] = $transportista;
@@ -103,13 +130,42 @@ $sqlKpi .= " AND Fecha BETWEEN ? AND ?";
 $paramsKpi[] = $desde;
 $paramsKpi[] = $hasta;
 
+if ($fechaRecibido) {
+    $sqlKpi .= " AND CONVERT(date, Fecha_scanner) = ?";
+    $paramsKpi[] = $fechaRecibido;
+}
+if ($fechaRecepcion) {
+    $sqlKpi .= " AND CONVERT(date, recepcion) = ?";
+    $paramsKpi[] = $fechaRecepcion;
+}
+if ($estatus) {
+    $sqlKpi .= " AND Validar = ?";
+    $paramsKpi[] = $estatus;
+}
+if ($usuario) {
+    $sqlKpi .= " AND Usuario = ?";
+    $paramsKpi[] = $usuario;
+}
+if ($buscarFactura) {
+    $sqlKpi .= " AND Factura LIKE ?";
+    $paramsKpi[] = "%$buscarFactura%";
+}
+if ($filtroCxC === 'si') {
+    $sqlKpi .= " AND recepcion IS NOT NULL";
+} elseif ($filtroCxC === 'no') {
+    $sqlKpi .= " AND recepcion IS NULL";
+}
+
+
 $stmtKpi = sqlsrv_query($conn, $sqlKpi, $paramsKpi);
 if ($stmtKpi !== false) {
     $rowKpi = sqlsrv_fetch_array($stmtKpi, SQLSRV_FETCH_ASSOC);
     $kpiTotal = $rowKpi['Total'] ?? 0;
     $kpiCompletadas = $rowKpi['Completadas'] ?? 0;
     $kpiPendientes = $rowKpi['Pendientes'] ?? 0;
+    $kpiCxC = $rowKpi['RecibidosCxC'] ?? 0;
 }
+
 
 // === Consulta de datos ===
 $sql = "SELECT Factura, Fecha, Validar, Transportista, Fecha_scanner, Usuario, recepcion, Usuario_de_recepcion
@@ -143,6 +199,11 @@ if ($usuario) {
 if ($buscarFactura) {
     $sql .= " AND Factura LIKE ?";
     $params[] = "%$buscarFactura%";
+}
+if ($filtroCxC === 'si') {
+    $sql .= " AND recepcion IS NOT NULL";
+} elseif ($filtroCxC === 'no') {
+    $sql .= " AND recepcion IS NULL";
 }
 
 $sql .= " ORDER BY Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
@@ -262,7 +323,8 @@ echo json_encode([
     'paginaActual' => $pagina,
     'kpiTotal' => $kpiTotal,
     'kpiCompletadas' => $kpiCompletadas,
-    'kpiPendientes' => $kpiPendientes
+    'kpiPendientes' => $kpiPendientes,
+    'kpiCxC' => $kpiCxC
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
 sqlsrv_close($conn);

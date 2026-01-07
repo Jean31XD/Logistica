@@ -11,6 +11,10 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
+// Establecer timeout de bloqueo para evitar esperas indefinidas
+$timeoutQuery = "SET LOCK_TIMEOUT 10000"; // 10 segundos
+sqlsrv_query($conn, $timeoutQuery);
+
 if (!isset($_SESSION['usuario']) || !tieneModulo('reporte_despacho', $conn)) {
     http_response_code(403);
     die(json_encode(['success' => false, 'error' => 'Sin permisos']));

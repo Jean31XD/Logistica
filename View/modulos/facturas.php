@@ -328,6 +328,10 @@ include __DIR__ . '/../templates/header.php';
             <span class="number" id="kpi-pendientes">--</span>
             <span class="label">Pendientes</span>
         </div>
+        <div class="bi-stat-box">
+            <span class="number" id="kpi-cxc">--</span>
+            <span class="label">CxC</span>
+        </div>
     </div>
 </div>
 
@@ -396,6 +400,15 @@ include __DIR__ . '/../templates/header.php';
     <?php endif; ?>
     
     <div class="bi-filter-group">
+        <label>Recibido CxC</label>
+        <select id="filtroCxC">
+            <option value="">-- Todos --</option>
+            <option value="si">Sí recibido</option>
+            <option value="no">No recibido</option>
+        </select>
+    </div>
+    
+    <div class="bi-filter-group">
         <label>Buscar Factura</label>
         <input type="text" id="buscarFactura" placeholder="Ej: 12345678901" maxlength="11" />
     </div>
@@ -424,7 +437,7 @@ $(document).ready(function () {
         width: '100%'
     });
 
-    $('#listaTransportistas, #fechaInicio, #fechaFin, #fechaRecibido, #fechaRecepcion, #filtroEstatus, #filtroUsuario')
+    $('#listaTransportistas, #fechaInicio, #fechaFin, #fechaRecibido, #fechaRecepcion, #filtroEstatus, #filtroUsuario, #filtroCxC')
         .on('change', () => cargarFacturas(1));
     $('#buscarFactura').on('input', () => cargarFacturas(1));
 
@@ -465,6 +478,7 @@ function cargarFacturas(pagina = 1) {
     formData.append('fechaRecepcion', document.getElementById('fechaRecepcion').value);
     formData.append('estatus', document.getElementById('filtroEstatus').value);
     formData.append('usuario', document.getElementById('filtroUsuario') ? document.getElementById('filtroUsuario').value : '');
+    formData.append('filtroCxC', document.getElementById('filtroCxC').value);
     formData.append('buscarFactura', document.getElementById('buscarFactura').value.trim());
     formData.append('pagina', pagina);
 
@@ -486,6 +500,7 @@ function cargarFacturas(pagina = 1) {
         document.getElementById('kpi-total').textContent = data.kpiTotal || 0;
         document.getElementById('kpi-completadas').textContent = data.kpiCompletadas || 0;
         document.getElementById('kpi-pendientes').textContent = data.kpiPendientes || 0;
+        document.getElementById('kpi-cxc').textContent = data.kpiCxC || 0;
     })
     .catch(error => {
         console.error('Error:', error);
