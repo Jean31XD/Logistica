@@ -5,17 +5,26 @@ require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/cache_manager.php';
 
-// Sincronizar facturas
-$sqlSync = "{CALL SyncCustinvoicejour}";
-$stmtSync = sqlsrv_query($conn, $sqlSync);
-if ($stmtSync === false) {
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Error al sincronizar facturas']);
-    exit();
+// Sincronizar facturas con cooldown de 5 minutos para evitar bloqueos
+$cache = getCache();
+$syncKey = 'sync_custinvoicejour_last_run';
+$lastSync = $cache->get($syncKey);
+$cooldownSeconds = 300; // 5 minutos
+
+if ($lastSync === null || (time() - $lastSync) > $cooldownSeconds) {
+    $sqlSync = "{CALL SyncCustinvoicejour}";
+    $stmtSync = sqlsrv_query($conn, $sqlSync);
+    if ($stmtSync === false) {
+        // Log error but don't block the page - allow showing cached data
+        error_log("Error al sincronizar facturas: " . print_r(sqlsrv_errors(), true));
+    } else {
+        sqlsrv_free_stmt($stmtSync);
+        // Registrar el tiempo de la última sincronización exitosa
+        $cache->set($syncKey, time(), $cooldownSeconds + 60);
+    }
 }
-sqlsrv_free_stmt($stmtSync);
 
 // Parámetros de búsqueda
 $transportista = $_POST['transportista'] ?? '';

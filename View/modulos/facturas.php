@@ -22,22 +22,36 @@ if (!tieneModulo('validacion_facturas', $conn)) {
 // Generar token CSRF
 $csrfToken = generarTokenCSRF();
 
-// Cargar transportistas
-$query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL";
-$result = sqlsrv_query($conn, $query);
-$transportistas = [];
-while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
-    $transportistas[] = $row['Transportista'];
+// Cargar CacheManager para listas de filtros
+require_once __DIR__ . '/../../conexionBD/cache_manager.php';
+$cache = getCache();
+$cacheTTL = 600; // 10 minutos para listas de filtros
+
+// Cargar transportistas (con caché)
+$transportistas = $cache->get('facturas_transportistas_list');
+if ($transportistas === null) {
+    $transportistas = [];
+    $query = "SELECT DISTINCT Transportista FROM custinvoicejour WHERE Transportista IS NOT NULL ORDER BY Transportista";
+    $result = sqlsrv_query($conn, $query);
+    while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
+        $transportistas[] = $row['Transportista'];
+    }
+    $cache->set('facturas_transportistas_list', $transportistas, $cacheTTL);
 }
 
-// Cargar usuarios si tiene módulo de validación de facturas (puede ver todos los usuarios)
+// Cargar usuarios si tiene módulo de validación de facturas (con caché)
 $usuarios = [];
 $puedeVerUsuarios = tieneModulo('validacion_facturas', $conn) || tieneModulo('gestion_usuarios', $conn);
 if ($puedeVerUsuarios) {
-    $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL";
-    $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
-    while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
-        $usuarios[] = $row['Usuario'];
+    $usuarios = $cache->get('facturas_usuarios_list');
+    if ($usuarios === null) {
+        $usuarios = [];
+        $queryUsuarios = "SELECT DISTINCT Usuario FROM custinvoicejour WHERE Usuario IS NOT NULL ORDER BY Usuario";
+        $resultUsuarios = sqlsrv_query($conn, $queryUsuarios);
+        while ($row = sqlsrv_fetch_array($resultUsuarios, SQLSRV_FETCH_ASSOC)) {
+            $usuarios[] = $row['Usuario'];
+        }
+        $cache->set('facturas_usuarios_list', $usuarios, $cacheTTL);
     }
 }
 
