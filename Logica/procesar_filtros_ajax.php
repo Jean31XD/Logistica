@@ -1,11 +1,19 @@
 <?php
-require_once __DIR__ . '/../conexionBD/session_config.php';
-verificarAutenticacion();
+// Set JSON header FIRST to prevent HTML error pages
+header('Content-Type: application/json; charset=utf-8');
 
+require_once __DIR__ . '/../conexionBD/session_config.php';
+
+// Verificar autenticación - Enviar JSON si falla
+if (!isset($_SESSION['usuario'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'No autorizado - sesión expirada']);
+    exit();
+}
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
 if (!$conn) {
-    header('HTTP/1.1 500 Internal Server Error');
+    http_response_code(500);
     echo json_encode(['error' => 'Error de conexión a la base de datos']);
     exit();
 }
@@ -51,26 +59,46 @@ if (!empty($almacen)) { $where .= " AND fl.inventlocationid = ?"; $params[] = $a
 if ($filtroCxC === 'si') { $where .= " AND c.recepcion IS NOT NULL"; }
 elseif ($filtroCxC === 'no') { $where .= " AND c.recepcion IS NULL"; }
 
-// --- Obtener Resumen y Total (CORREGIDO) ---
-// PROBLEMA: No se puede usar COUNT(DISTINCT) con SUM(CASE)
-// SOLUCIÓN: Usar subquery con facturas únicas filtradas
-$resumen_sql = "
-SELECT
-    COUNT(*) as TotalFacturas,
-    SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
-    SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
-    SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
-    SUM(CASE WHEN Usuario_de_recepcion IS NULL OR LTRIM(RTRIM(Usuario_de_recepcion)) = '' THEN 1 ELSE 0 END) AS PendientesCxC
-FROM (
-    SELECT DISTINCT c.Factura, c.Validar, c.Usuario_de_recepcion
+// --- Obtener Resumen y Total (OPTIMIZADO) ---
+// OPTIMIZACIÓN: Solo hacer JOIN con Facturas_lineas si filtramos por almacén
+if (!empty($almacen)) {
+    // Con filtro de almacén - usar LEFT JOIN
+    $resumen_sql = "
+    SELECT
+        COUNT(*) as TotalFacturas,
+        SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
+        SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
+        SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
+        SUM(CASE WHEN Usuario_de_recepcion IS NULL OR LTRIM(RTRIM(Usuario_de_recepcion)) = '' THEN 1 ELSE 0 END) AS PendientesCxC
+    FROM (
+        SELECT DISTINCT c.Factura, c.Validar, c.Usuario_de_recepcion
+        FROM custinvoicejour c
+        LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
+        $where
+    ) AS FacturasUnicas";
+} else {
+    // Sin filtro de almacén - consulta directa (mucho más rápida)
+    $resumen_sql = "
+    SELECT
+        COUNT(*) as TotalFacturas,
+        SUM(CASE WHEN Validar = 'Completada' THEN 1 ELSE 0 END) AS Completadas,
+        SUM(CASE WHEN Validar = 'RE' THEN 1 ELSE 0 END) AS RE,
+        SUM(CASE WHEN Validar IS NULL OR LTRIM(RTRIM(Validar)) = '' THEN 1 ELSE 0 END) AS SinEstado,
+        SUM(CASE WHEN Usuario_de_recepcion IS NULL OR LTRIM(RTRIM(Usuario_de_recepcion)) = '' THEN 1 ELSE 0 END) AS PendientesCxC
     FROM custinvoicejour c
-    LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
-    $where
-) AS FacturasUnicas";
+    $where";
+}
+
+// DEBUG: Log SQL for troubleshooting
+error_log("BI.php RESUMEN SQL: " . $resumen_sql);
+error_log("BI.php PARAMS: " . print_r($params, true));
+
 $resumen_stmt = sqlsrv_query($conn, $resumen_sql, $params);
 if ($resumen_stmt === false) {
-    header('HTTP/1.1 500 Internal Server Error');
-    echo json_encode(['error' => 'Error en consulta resumen', 'sql_errors' => sqlsrv_errors()]);
+    $sqlErrors = sqlsrv_errors();
+    error_log("BI.php SQL ERROR: " . print_r($sqlErrors, true));
+    http_response_code(500);
+    echo json_encode(['error' => 'Error en consulta resumen', 'sql_errors' => $sqlErrors, 'sql' => $resumen_sql]);
     exit();
 }
 $resumen = sqlsrv_fetch_array($resumen_stmt, SQLSRV_FETCH_ASSOC);
@@ -78,21 +106,36 @@ $resumen['NoCompletadas'] = ($resumen['RE'] ?? 0) + ($resumen['SinEstado'] ?? 0)
 $total_rows = $resumen['TotalFacturas'] ?? 0;
 $total_pages = $total_rows > 0 ? ceil($total_rows / $limit) : 1;
 
-// --- Obtener datos para la tabla (con almacén) ---
-$sql = "
-SELECT c.Factura, c.Fecha, c.Validar AS Estado, c.Transportista, c.Fecha_scanner AS Recepcion_ALM,
-       c.Usuario AS Usuario_ALM, c.recepcion AS Recepcion_CC, c.Usuario_de_recepcion AS Usuario_CC, 
-       c.zona AS Localizacion, fl.inventlocationid AS Almacen
-FROM custinvoicejour c
-LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
-$where 
-ORDER BY c.Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+// --- Obtener datos para la tabla (OPTIMIZADO) ---
+if (!empty($almacen)) {
+    // Con almacén - incluir JOIN
+    $sql = "
+    SELECT c.Factura, c.Fecha, c.Validar AS Estado, c.Transportista, c.Fecha_scanner AS Recepcion_ALM,
+           c.Usuario AS Usuario_ALM, c.recepcion AS Recepcion_CC, c.Usuario_de_recepcion AS Usuario_CC, 
+           c.zona AS Localizacion, fl.inventlocationid AS Almacen
+    FROM custinvoicejour c
+    LEFT JOIN (SELECT DISTINCT invoiceid, inventlocationid FROM Facturas_lineas) fl ON c.Factura = fl.invoiceid
+    $where 
+    ORDER BY c.Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+} else {
+    // Sin almacén - consulta directa (más rápida)
+    $sql = "
+    SELECT c.Factura, c.Fecha, c.Validar AS Estado, c.Transportista, c.Fecha_scanner AS Recepcion_ALM,
+           c.Usuario AS Usuario_ALM, c.recepcion AS Recepcion_CC, c.Usuario_de_recepcion AS Usuario_CC, 
+           c.zona AS Localizacion, c.zona AS Almacen
+    FROM custinvoicejour c
+    $where 
+    ORDER BY c.Fecha DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+}
 $params[] = $offset;
 $params[] = $limit;
 $stmt = sqlsrv_query($conn, $sql, $params);
 if ($stmt === false) {
+    $sqlErrors = sqlsrv_errors();
+    error_log("BI.php TABLA SQL ERROR: " . print_r($sqlErrors, true));
     header('HTTP/1.1 500 Internal Server Error');
-    echo json_encode(['error' => 'Error en consulta tabla', 'sql_errors' => sqlsrv_errors()]);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Error en consulta tabla', 'sql_errors' => $sqlErrors, 'sql' => $sql]);
     exit();
 }
 

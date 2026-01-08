@@ -30,11 +30,11 @@ try {
         throw new Exception('Parámetros incompletos');
     }
 
-    $id = intval($_POST['id']);
+    $id = trim($_POST['id']);
     $codigo = trim($_POST['codigo']);
 
-    // Validar que el ID sea válido
-    if ($id <= 0) {
+    // Validar que el ID sea válido (ahora es VARCHAR)
+    if (empty($id)) {
         throw new Exception('ID inválido');
     }
 

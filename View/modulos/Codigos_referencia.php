@@ -599,11 +599,11 @@ function renderizarTabla(datos) {
                 <td><span class="${badgeClass}">${badgeText}</span></td>
                 <td style="text-align: center;">
                     <div class="action-buttons">
-                        <button class="btn-action btn-edit" onclick="editarCodigo(${item.id}, '${item.Nombre.replace(/'/g, "\\'")}', '${item.Codigo_barra || ''}')">
+                        <button class="btn-action btn-edit" onclick="editarCodigo('${item.id}', '${item.Nombre.replace(/'/g, "\\'")}', '${item.Codigo_barra || ''}')">
                             <i class="fas fa-edit"></i> Editar
                         </button>
                         ${tieneCodigoRow ? `
-                            <button class="btn-action btn-delete" onclick="eliminarCodigo(${item.id}, '${item.Nombre.replace(/'/g, "\\'")}', '${item.Codigo_barra}')">
+                            <button class="btn-action btn-delete" onclick="eliminarCodigo('${item.id}', '${item.Nombre.replace(/'/g, "\\'")}', '${item.Codigo_barra}')">
                                 <i class="fas fa-trash-alt"></i> Eliminar
                             </button>
                         ` : ''}

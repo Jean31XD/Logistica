@@ -534,7 +534,8 @@ include __DIR__ . '/../templates/header.php';
                     <div class="total-box" style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);"><span class="total-num" id="total-monto">$0.00</span><span class="total-label">Total</span></div>
                 </div>
                 
-                <!-- Tabla de Líneas -->
+                <!-- OPTIMIZACIÓN: Tabla de productos DESHABILITADA para mejorar performance -->
+                <!--
                 <h4 style="margin: 1rem 0;"><i class="fas fa-boxes"></i> Productos de la Factura</h4>
                 <div class="table-responsive">
                     <table class="bi-table">
@@ -551,6 +552,7 @@ include __DIR__ . '/../templates/header.php';
                         <tbody id="lineas-body"></tbody>
                     </table>
                 </div>
+                -->
             </div>
         </div>
     </div>
@@ -718,7 +720,7 @@ $(document).ready(function() {
         });
     }
 
-    // Event handlers
+    // Event handlers - incluir filtroCxC
     $('#filtroForm select, #filtroForm input[type="date"]').on('change', function() {
         aplicarFiltros(1);
     });
@@ -784,6 +786,8 @@ function abrirDetalleFactura(factura) {
             $('#total-impuesto').text('$' + response.totales.impuesto);
             $('#total-monto').text('$' + response.totales.total);
             
+            // OPTIMIZACIÓN: Procesamiento de líneas DESHABILITADO
+            /*
             // Líneas
             let lineasHtml = '';
             if (response.lineas && response.lineas.length > 0) {
@@ -801,6 +805,7 @@ function abrirDetalleFactura(factura) {
                 lineasHtml = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#64748B;">No hay productos disponibles</td></tr>';
             }
             $('#lineas-body').html(lineasHtml);
+            */
             
             $('#modal-loader').hide();
             $('#modal-content').show();

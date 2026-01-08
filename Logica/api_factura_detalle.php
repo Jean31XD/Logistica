@@ -59,6 +59,13 @@ try {
         $facturaData['recepcion'] = $facturaData['recepcion']->format('d/m/Y H:i');
     }
     
+    // ========================================================================
+    // OPTIMIZACIÓN: Líneas de productos DESHABILITADAS
+    // ========================================================================
+    // Esta consulta a Facturas_lineas es MUY PESADA y causa problemas de performance
+    // Comentada para mejorar velocidad del reporte
+    
+    /*
     // Obtener líneas de la factura desde Facturas_lineas
     // Columnas: invoiceid, invoicedate, lineamount, lineamounttax, inventlocationid, invoicingname, itemid, name
     $sqlLineas = "
@@ -100,6 +107,14 @@ try {
         echo json_encode(['error' => 'Error en Facturas_lineas: ' . json_encode($errors)]);
         exit();
     }
+    */
+    
+    // Valores por defecto sin consultar Facturas_lineas
+    $lineas = [];
+    $totalMonto = 0;
+    $totalImpuesto = 0;
+    $cliente = 'N/A';
+    $almacenFactura = $facturaData['zona'] ?? 'N/A';
     
     // Añadir cliente y almacén al facturaData
     $facturaData['Cliente'] = $cliente;
