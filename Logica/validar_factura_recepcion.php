@@ -68,6 +68,20 @@ if (!$factura) {
     exit();
 }
 
+// ==========================================
+// RESTRICCIÓN: Logística debe recibir primero
+// ==========================================
+// Verificar que la factura haya sido recibida por Logística (Validar = 'Completada')
+$validarEstatus = trim($factura['Validar'] ?? '');
+if (strtolower($validarEstatus) !== 'completada') {
+    logWithRotation("Intento de recepción CxC sin recepción de Logística: " . $numeroFactura . " - Usuario: " . $usuario, 'WARNING', 'RECEPCION');
+    echo json_encode([
+        'success' => false,
+        'message' => '⚠️ Esta factura aún NO ha sido recibida por Logística. Debe ser recibida primero en Almacén antes de poder recibirla en Créditos y Cobros.'
+    ]);
+    exit();
+}
+
 // Verificar si ya fue recibida en CxC
 if (!empty($factura['recepcion'])) {
     $usuarioRecepcion = $factura['Usuario_de_recepcion'] ?? 'usuario desconocido';
