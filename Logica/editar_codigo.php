@@ -44,7 +44,7 @@ try {
     }
 
     // Verificar que el artículo existe
-    $sqlCheck = "SELECT id, Nombre FROM [dbo].[Arti_codigos] WHERE id = ?";
+    $sqlCheck = "SELECT id, nombre FROM [dbo].[Arti_codigos] WHERE id = ?";
     $stmtCheck = sqlsrv_query($conn, $sqlCheck, array($id));
 
     if ($stmtCheck === false) {
@@ -59,7 +59,7 @@ try {
     }
 
     // Verificar que el código no esté siendo usado por otro artículo
-    $sqlDuplicate = "SELECT id, Nombre FROM [dbo].[Arti_codigos]
+    $sqlDuplicate = "SELECT id, nombre FROM [dbo].[Arti_codigos]
                      WHERE Codigo_barra = ? AND id != ?
                      AND Codigo_barra IS NOT NULL
                      AND Codigo_barra != ''
@@ -74,7 +74,7 @@ try {
     sqlsrv_free_stmt($stmtDuplicate);
 
     if ($duplicado) {
-        throw new Exception('El código de barras ya está asignado a: ' . $duplicado['Nombre']);
+        throw new Exception('El código de barras ya está asignado a: ' . $duplicado['nombre']);
     }
 
     // Actualizar el código de barras
@@ -99,7 +99,7 @@ try {
     }
 
     // Log de la acción
-    error_log("Código editado - Usuario: {$usuario}, ID: {$id}, Artículo: {$articulo['Nombre']}, Código: {$codigo}");
+    error_log("Código editado - Usuario: {$usuario}, ID: {$id}, Artículo: {$articulo['nombre']}, Código: {$codigo}");
 
     echo json_encode(array(
         'success' => true,
@@ -107,7 +107,7 @@ try {
         'data' => array(
             'id' => $id,
             'codigo' => $codigo,
-            'nombre' => $articulo['Nombre'],
+            'nombre' => $articulo['nombre'],
             'usuario' => $usuario
         )
     ));

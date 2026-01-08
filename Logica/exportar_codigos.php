@@ -41,7 +41,7 @@ try {
     $params = array();
 
     if (!empty($searchNombre)) {
-        $whereConditions .= " AND Nombre LIKE ?";
+        $whereConditions .= " AND nombre LIKE ?";
         $params[] = '%' . $searchNombre . '%';
     }
 
@@ -57,7 +57,7 @@ try {
     }
 
     // Consulta
-    $sql = "SELECT id, Nombre, Codigo_barra, Usuario
+    $sql = "SELECT id, nombre, Codigo_barra, Usuario
             FROM [dbo].[Arti_codigos]
             $whereConditions
             ORDER BY id ASC";
@@ -130,7 +130,7 @@ try {
         
         $excelContent .= '<tr>';
         $excelContent .= '<td>' . htmlspecialchars($row['id']) . '</td>';
-        $excelContent .= '<td>' . htmlspecialchars($row['Nombre']) . '</td>';
+        $excelContent .= '<td>' . htmlspecialchars($row['nombre']) . '</td>';
         $excelContent .= '<td>' . $codigoDisplay . '</td>';
         $excelContent .= '<td>' . $usuario . '</td>';
         $excelContent .= '<td class="' . $estadoClass . '">' . $estadoText . '</td>';

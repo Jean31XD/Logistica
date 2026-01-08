@@ -38,7 +38,7 @@ try {
     }
 
     // Verificar que el artículo existe y tiene código asignado
-    $sqlCheck = "SELECT id, Nombre, Codigo_barra
+    $sqlCheck = "SELECT id, nombre, Codigo_barra
                  FROM [dbo].[Arti_codigos]
                  WHERE id = ?";
     $stmtCheck = sqlsrv_query($conn, $sqlCheck, array($id));
@@ -83,14 +83,14 @@ try {
 
     // Log de la acción
     $usuario = $_SESSION['usuario'];
-    error_log("Código eliminado - Usuario: {$usuario}, ID: {$id}, Artículo: {$articulo['Nombre']}, Código anterior: {$codigoAnterior}");
+    error_log("Código eliminado - Usuario: {$usuario}, ID: {$id}, Artículo: {$articulo['nombre']}, Código anterior: {$codigoAnterior}");
 
     echo json_encode(array(
         'success' => true,
         'message' => 'Código eliminado correctamente',
         'data' => array(
             'id' => $id,
-            'nombre' => $articulo['Nombre'],
+            'nombre' => $articulo['nombre'],
             'codigo_anterior' => $codigoAnterior
         )
     ));

@@ -29,7 +29,7 @@ try {
 
     // Agregar búsqueda si existe
     if (!empty($search)) {
-        $whereConditions .= " AND (Nombre LIKE ? OR CAST(id AS VARCHAR) LIKE ?)";
+        $whereConditions .= " AND (nombre LIKE ? OR id LIKE ?)";
         $searchParam = '%' . $search . '%';
         $params[] = $searchParam;
         $params[] = $searchParam;
@@ -51,7 +51,7 @@ try {
     sqlsrv_free_stmt($stmtCount);
 
     // Consulta para obtener artículos con paginación
-    $sql = "SELECT id, Nombre, Codigo_barra, Usuario
+    $sql = "SELECT id, nombre, Codigo_barra, Usuario
             FROM [dbo].[Arti_codigos]
             $whereConditions
             ORDER BY id ASC
@@ -72,7 +72,7 @@ try {
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $articulos[] = array(
             'id' => $row['id'],
-            'Nombre' => $row['Nombre'],
+            'Nombre' => $row['nombre'],
             'Codigo_barra' => $row['Codigo_barra'],
             'Usuario' => $row['Usuario']
         );

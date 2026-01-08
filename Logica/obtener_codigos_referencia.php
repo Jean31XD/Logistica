@@ -39,7 +39,7 @@ try {
 
     // Filtro por nombre
     if (!empty($searchNombre)) {
-        $whereConditions .= " AND Nombre LIKE ?";
+        $whereConditions .= " AND nombre LIKE ?";
         $params[] = '%' . $searchNombre . '%';
     }
 
@@ -84,7 +84,7 @@ try {
     sqlsrv_free_stmt($stmtStats);
 
     // Consulta para obtener datos con paginación
-    $sql = "SELECT id, Nombre, Codigo_barra, Usuario
+    $sql = "SELECT id, nombre, Codigo_barra, Usuario
             FROM [dbo].[Arti_codigos]
             $whereConditions
             ORDER BY id ASC
@@ -105,7 +105,7 @@ try {
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $datos[] = array(
             'id' => $row['id'],
-            'Nombre' => $row['Nombre'],
+            'Nombre' => $row['nombre'],
             'Codigo_barra' => $row['Codigo_barra'],
             'Usuario' => $row['Usuario']
         );

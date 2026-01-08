@@ -72,7 +72,7 @@ if (empty($usuario)) {
 
 try {
     // Verificar que el artículo existe y no tiene código asignado
-    $sqlCheck = "SELECT id, Nombre, Codigo_barra FROM [dbo].[Arti_codigos] WHERE id = ?";
+    $sqlCheck = "SELECT id, nombre, Codigo_barra FROM [dbo].[Arti_codigos] WHERE id = ?";
     $paramsCheck = array($id);
     $stmtCheck = sqlsrv_query($conn, $sqlCheck, $paramsCheck);
 
@@ -92,7 +92,7 @@ try {
     }
 
     // Verificar si el código de barras ya está asignado a otro artículo
-    $sqlDuplicate = "SELECT id, Nombre, Codigo_barra
+    $sqlDuplicate = "SELECT id, nombre, Codigo_barra
                      FROM [dbo].[Arti_codigos]
                      WHERE Codigo_barra = ?
                      AND id != ?";
@@ -108,15 +108,15 @@ try {
 
     if ($duplicado) {
         // Log del intento de duplicado
-        error_log("INTENTO DE DUPLICADO: Código '$codigoBarra' ya asignado al artículo ID {$duplicado['id']} ({$duplicado['Nombre']}). Usuario: $usuario");
+        error_log("INTENTO DE DUPLICADO: Código '$codigoBarra' ya asignado al artículo ID {$duplicado['id']} ({$duplicado['nombre']}). Usuario: $usuario");
 
         $response = array(
             'success' => false,
             'isDuplicate' => true,
-            'message' => '⚠️ CÓDIGO DUPLICADO: Este código ya está asignado al artículo "' . $duplicado['Nombre'] . '" (ID: ' . $duplicado['id'] . ')',
+            'message' => '⚠️ CÓDIGO DUPLICADO: Este código ya está asignado al artículo "' . $duplicado['nombre'] . '" (ID: ' . $duplicado['id'] . ')',
             'duplicateInfo' => array(
                 'id' => $duplicado['id'],
-                'nombre' => $duplicado['Nombre'],
+                'nombre' => $duplicado['nombre'],
                 'codigo' => $codigoBarra
             )
         );
@@ -149,7 +149,7 @@ try {
             'message' => 'Código de barras asignado correctamente',
             'articulo' => array(
                 'id' => $id,
-                'nombre' => $articulo['Nombre'],
+                'nombre' => $articulo['nombre'],
                 'codigo_barra' => $codigoBarra,
                 'usuario' => $usuario
             )

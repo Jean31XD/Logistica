@@ -20,7 +20,7 @@ try {
     $sql = "SELECT
                 COUNT(*) as total,
                 CHECKSUM_AGG(CHECKSUM(*)) as checksum_tabla,
-                MAX(CAST(id AS VARCHAR(50)) + ISNULL(Codigo_barra, '') + ISNULL(Usuario, '')) as ultimo_cambio
+                MAX(id + ISNULL(Codigo_barra, '') + ISNULL(Usuario, '')) as ultimo_cambio
             FROM [dbo].[Arti_codigos]";
 
     $stmt = sqlsrv_query($conn, $sql);
