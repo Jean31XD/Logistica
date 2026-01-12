@@ -2,14 +2,30 @@
 /**
  * Sistema de Caché Simple - MACO Logística
  * Caché basado en archivos para consultas pesadas
+ * Compatible con Azure App Service
  */
 
 class CacheManager {
     private $cacheDir;
     private $defaultTTL = 180; // 3 minutos por defecto
+    private $isAzure = false;
     
     public function __construct() {
-        $this->cacheDir = __DIR__ . '/../cache/';
+        // Detectar si estamos en Azure App Service
+        $this->isAzure = !empty(getenv('WEBSITE_SITE_NAME')) || 
+                         !empty($_SERVER['WEBSITE_SITE_NAME']) ||
+                         is_dir('D:\\local\\Temp');
+        
+        if ($this->isAzure) {
+            // Azure App Service: usar directorio temporal local
+            // D:\local\Temp es persistente durante la vida de la instancia
+            $this->cacheDir = 'D:\\local\\Temp\\maco_cache\\';
+            $this->defaultTTL = 60; // Reducir TTL en Azure (múltiples instancias)
+        } else {
+            // Local/XAMPP: usar directorio dentro del proyecto
+            $this->cacheDir = __DIR__ . '/../cache/';
+        }
+        
         if (!is_dir($this->cacheDir)) {
             @mkdir($this->cacheDir, 0755, true);
         }

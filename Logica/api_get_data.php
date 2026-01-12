@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 verificarAutenticacion();
 
+// === PROTECCIÓN ANTI-SOBRECARGA ===
+// Limitar peticiones globales al dashboard (max 40 req en 10 segundos para TODOS los usuarios)
+require_once __DIR__ . '/../conexionBD/global_rate_limiter.php';
+if (!checkGlobalRateLimit('api_get_data', 40, 10)) {
+    GlobalRateLimiter::tooManyRequests('Dashboard sobrecargado. Reintentar en 5 segundos.');
+}
+
 // Conexión a BD para verificar permisos
 require_once __DIR__ . '/../conexionBD/conexion.php';
 
@@ -36,8 +43,15 @@ if ($stmtAlmacen !== false) {
 $USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
 
 // Establecer timeout de bloqueo para evitar esperas indefinidas
-$timeoutQuery = "SET LOCK_TIMEOUT 10000"; // 10 segundos
+$timeoutQuery = "SET LOCK_TIMEOUT 15000"; // 15 segundos
 sqlsrv_query($conn, $timeoutQuery);
+
+// Cargar wrapper de queries con protección de timeout
+require_once __DIR__ . '/../conexionBD/query_wrapper.php';
+
+// Cargar sistema de caché para consultas repetitivas
+require_once __DIR__ . '/../conexionBD/cache_manager.php';
+$cache = getCache();
 
 // 3. Cargar autoloader del proyecto (habilita clases y helpers)
 require_once __DIR__ . '/../src/autoload.php';
@@ -47,7 +61,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 // --- Inicialización de variables ---
 $response = []; 
-$http_code = 200; 
+$http_code = 200;
+$useCache = true; // Habilitar caché para este endpoint
+$cacheTTL = 120;  // 2 minutos de caché 
 
 
 try {
@@ -609,41 +625,59 @@ try {
                 throw new Exception('Faltan parámetros de fecha para consultar el resumen.', 400);
             }
 
-            $sqlOverview = $cte_facturas . "
-                SELECT 
-                    ISNULL(m.Estado, 'Sin estado') AS Estado,
-                    COUNT(f.invoiceid) AS Total
-                FROM Facturas_CTE f
-                LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
-                WHERE f.invoicedate BETWEEN ? AND ?
-                $almacenSqlAnd
-                GROUP BY ISNULL(m.Estado, 'Sin estado')
-            ";
+            // --- CACHÉ: Intentar obtener del caché primero ---
+            $cacheKey = $cache->generateKey('overview', [
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin,
+                'almacen' => $almacen,
+                'user_type' => $USER_TYPE
+            ]);
             
-            $overviewParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
-            error_log("DEBUG: SQL Query for overview: " . $sqlOverview);
-            error_log("DEBUG: SQL Params for overview: " . print_r($overviewParams, true));
-            $stmtOverview = sqlsrv_query($conn, $sqlOverview, $overviewParams);
-
-            if ($stmtOverview === false) {
-                error_log("DEBUG: SQL Error in overview: " . print_r(sqlsrv_errors(), true));
-                throw new Exception('Error al consultar el resumen de estados.');
-            }
-
-            $response['totalEmitidas'] = 0;
-            $response['sinEstado'] = 0;
-            $response['estadosData'] = [];
+            $cachedResponse = $useCache ? $cache->get($cacheKey) : null;
             
-            while ($row = sqlsrv_fetch_array($stmtOverview, SQLSRV_FETCH_ASSOC)) {
-                $total = (int)$row['Total'];
-                $response['totalEmitidas'] += $total;
-                if ($row['Estado'] === 'Sin estado') {
-                    $response['sinEstado'] = $total;
-                } else {
-                    $response['estadosData'][] = ['Estado' => $row['Estado'], 'Total' => $total];
+            if ($cachedResponse !== null) {
+                // Cache hit - retornar datos cacheados
+                $response = $cachedResponse;
+                $response['_cached'] = true; // Indicador para debugging
+            } else {
+                // Cache miss - consultar BD
+                $sqlOverview = $cte_facturas . "
+                    SELECT 
+                        ISNULL(m.Estado, 'Sin estado') AS Estado,
+                        COUNT(f.invoiceid) AS Total
+                    FROM Facturas_CTE f
+                    LEFT JOIN Factura_Programa_Despacho_MACOR m ON f.invoiceid = m.No_Factura
+                    WHERE f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+                    GROUP BY ISNULL(m.Estado, 'Sin estado')
+                ";
+                
+                $overviewParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+                $stmtOverview = sqlsrv_query($conn, $sqlOverview, $overviewParams);
+
+                if ($stmtOverview === false) {
+                    error_log("SQL Error in overview: " . print_r(sqlsrv_errors(), true));
+                    throw new Exception('Error al consultar el resumen de estados.');
                 }
+
+                $response['totalEmitidas'] = 0;
+                $response['sinEstado'] = 0;
+                $response['estadosData'] = [];
+                
+                while ($row = sqlsrv_fetch_array($stmtOverview, SQLSRV_FETCH_ASSOC)) {
+                    $total = (int)$row['Total'];
+                    $response['totalEmitidas'] += $total;
+                    if ($row['Estado'] === 'Sin estado') {
+                        $response['sinEstado'] = $total;
+                    } else {
+                        $response['estadosData'][] = ['Estado' => $row['Estado'], 'Total' => $total];
+                    }
+                }
+                
+                // Guardar en caché para próximas solicitudes
+                $cache->set($cacheKey, $response, $cacheTTL);
+                $response['_cached'] = false;
             }
-            error_log("DEBUG: Final response for overview: " . print_r($response, true));
             break;
     }
 } catch (Exception $e) {

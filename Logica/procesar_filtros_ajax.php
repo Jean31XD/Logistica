@@ -11,12 +11,30 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
+// === PROTECCIÓN ANTI-SOBRECARGA ===
+// Limitar peticiones globales al BI (max 50 req en 10 segundos para TODOS los usuarios)
+require_once __DIR__ . '/../conexionBD/global_rate_limiter.php';
+if (!checkGlobalRateLimit('procesar_filtros', 50, 10)) {
+    GlobalRateLimiter::tooManyRequests('Módulo BI sobrecargado. Reintentar en 5 segundos.');
+}
+
 require_once __DIR__ . '/../conexionBD/conexion.php';
 if (!$conn) {
     http_response_code(500);
     echo json_encode(['error' => 'Error de conexión a la base de datos']);
     exit();
 }
+
+// Cargar wrapper de queries con protección de timeout
+require_once __DIR__ . '/../conexionBD/query_wrapper.php';
+
+// Cargar sistema de caché para consultas repetitivas (solo para resumen)
+require_once __DIR__ . '/../conexionBD/cache_manager.php';
+$cache = getCache();
+$cacheTTL = 60; // 1 minuto de caché para el resumen de BI
+
+// Establecer timeout de bloqueo para evitar queries colgadas (15 segundos)
+sqlsrv_query($conn, "SET LOCK_TIMEOUT 15000");
 
 // --- Lógica de Filtros ---
 $filtroTransportista = $_GET['transportista'] ?? '';

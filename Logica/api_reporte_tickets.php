@@ -10,9 +10,10 @@ require_once __DIR__ . '/../conexionBD/session_config.php';
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../conexionBD/conexion.php';
+require_once __DIR__ . '/../conexionBD/query_wrapper.php';
 
 // Establecer timeout de bloqueo para evitar esperas indefinidas
-$timeoutQuery = "SET LOCK_TIMEOUT 10000"; // 10 segundos
+$timeoutQuery = "SET LOCK_TIMEOUT 15000"; // 15 segundos
 sqlsrv_query($conn, $timeoutQuery);
 
 if (!isset($_SESSION['usuario']) || !tieneModulo('reporte_despacho', $conn)) {
