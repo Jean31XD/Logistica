@@ -237,6 +237,14 @@ return [
             'tag' => 'REPORTES',
             'color' => '#E63946'
         ],
+        'reporte_facturas' => [
+            'name' => 'Reporte de Facturas',
+            'description' => 'Análisis completo de facturas registradas en el sistema. Dashboard interactivo con filtros avanzados.',
+            'page' => 'ReporteFacturas.php',
+            'icon' => 'fa-file-invoice-dollar',
+            'tag' => 'REPORTES',
+            'color' => '#E63946'
+        ],
     ],
 
     /*

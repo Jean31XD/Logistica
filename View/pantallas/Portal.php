@@ -45,6 +45,7 @@ $modulosData = [
     'gestion_imagenes' => ['link' => '../modulos/Gestion_imagenes.php', 'icon' => 'fa-images'],
     'gestion_transportistas' => ['link' => '../modulos/Gestion_transportistas.php', 'icon' => 'fa-truck'],
     'reporte_despacho' => ['link' => '../modulos/Reporte_despacho.php', 'icon' => 'fa-chart-line'],
+    'reporte_facturas' => ['link' => '../modulos/ReporteFacturas.php', 'icon' => 'fa-file-invoice-dollar'],
 ];
 
 // Filtrar solo los módulos asignados
