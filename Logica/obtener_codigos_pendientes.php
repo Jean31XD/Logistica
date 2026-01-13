@@ -32,19 +32,23 @@ $codigosPendientes = [];
 
 if ($stmt !== false) {
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        // Calcular tiempo restante
+        // Calcular tiempo restante correctamente
         $expira = $row['expira'];
         $ahora = new DateTime();
-        $diff = $expira->diff($ahora);
-        $segundosRestantes = ($diff->i * 60) + $diff->s;
         
-        $codigosPendientes[] = [
-            'codigo' => $row['codigo'],
-            'ticket' => $row['ticket'],
-            'expira' => $expira->format('H:i:s'),
-            'segundos_restantes' => max(0, $segundosRestantes),
-            'creado' => $row['creado']->format('H:i:s')
-        ];
+        // Calcular diferencia en segundos
+        $segundosRestantes = $expira->getTimestamp() - $ahora->getTimestamp();
+        
+        // Solo incluir códigos que aún no han expirado
+        if ($segundosRestantes > 0) {
+            $codigosPendientes[] = [
+                'codigo' => $row['codigo'],
+                'ticket' => $row['ticket'],
+                'expira' => $expira->format('H:i:s'),
+                'segundos_restantes' => $segundosRestantes,
+                'creado' => $row['creado']->format('H:i:s')
+            ];
+        }
     }
 }
 
