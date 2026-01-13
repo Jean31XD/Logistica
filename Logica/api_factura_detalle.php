@@ -48,15 +48,21 @@ try {
         exit();
     }
     
-    // Formatear fechas
-    if (isset($facturaData['Fecha']) && $facturaData['Fecha'] && is_object($facturaData['Fecha'])) {
-        $facturaData['Fecha'] = $facturaData['Fecha']->format('d/m/Y');
+    // Formatear fechas (maneja objetos DateTime y strings)
+    if (isset($facturaData['Fecha']) && $facturaData['Fecha']) {
+        $facturaData['Fecha'] = is_object($facturaData['Fecha'])
+            ? $facturaData['Fecha']->format('d/m/Y')
+            : date('d/m/Y', strtotime($facturaData['Fecha']));
     }
-    if (isset($facturaData['Fecha_scanner']) && $facturaData['Fecha_scanner'] && is_object($facturaData['Fecha_scanner'])) {
-        $facturaData['Fecha_scanner'] = $facturaData['Fecha_scanner']->format('d/m/Y H:i');
+    if (isset($facturaData['Fecha_scanner']) && $facturaData['Fecha_scanner']) {
+        $facturaData['Fecha_scanner'] = is_object($facturaData['Fecha_scanner'])
+            ? $facturaData['Fecha_scanner']->format('d/m/Y H:i')
+            : date('d/m/Y H:i', strtotime($facturaData['Fecha_scanner']));
     }
-    if (isset($facturaData['recepcion']) && $facturaData['recepcion'] && is_object($facturaData['recepcion'])) {
-        $facturaData['recepcion'] = $facturaData['recepcion']->format('d/m/Y H:i');
+    if (isset($facturaData['recepcion']) && $facturaData['recepcion']) {
+        $facturaData['recepcion'] = is_object($facturaData['recepcion'])
+            ? $facturaData['recepcion']->format('d/m/Y H:i')
+            : date('d/m/Y H:i', strtotime($facturaData['recepcion']));
     }
     
     // ========================================================================
