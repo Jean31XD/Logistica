@@ -64,18 +64,12 @@ try {
             ? $facturaData['recepcion']->format('d/m/Y H:i')
             : date('d/m/Y H:i', strtotime($facturaData['recepcion']));
     }
-    
-    // ========================================================================
-    // OPTIMIZACIÓN: Líneas de productos DESHABILITADAS
-    // ========================================================================
-    // Esta consulta a Facturas_lineas es MUY PESADA y causa problemas de performance
-    // Comentada para mejorar velocidad del reporte
-    
-    /*
+
     // Obtener líneas de la factura desde Facturas_lineas
+    // Esta consulta se ejecuta SOLO cuando se abre el modal de una factura específica
     // Columnas: invoiceid, invoicedate, lineamount, lineamounttax, inventlocationid, invoicingname, itemid, name
     $sqlLineas = "
-        SELECT 
+        SELECT
             invoiceid,
             invoicedate,
             itemid AS Codigo,
@@ -85,17 +79,17 @@ try {
             (lineamount + lineamounttax) AS LineTotal,
             inventlocationid AS Almacen,
             invoicingname AS Cliente
-        FROM Facturas_lineas 
+        FROM Facturas_lineas
         WHERE invoiceid = ?";
-    
+
     $stmtLineas = sqlsrv_query($conn, $sqlLineas, [$factura]);
-    
+
     $lineas = [];
     $totalMonto = 0;
     $totalImpuesto = 0;
     $cliente = '';
     $almacenFactura = '';
-    
+
     if ($stmtLineas !== false) {
         while ($row = sqlsrv_fetch_array($stmtLineas, SQLSRV_FETCH_ASSOC)) {
             $lineas[] = $row;
@@ -113,14 +107,15 @@ try {
         echo json_encode(['error' => 'Error en Facturas_lineas: ' . json_encode($errors)]);
         exit();
     }
-    */
-    
-    // Valores por defecto sin consultar Facturas_lineas
-    $lineas = [];
-    $totalMonto = 0;
-    $totalImpuesto = 0;
-    $cliente = 'N/A';
-    $almacenFactura = $facturaData['zona'] ?? 'N/A';
+
+    // Si no hay cliente desde las líneas, usar N/A
+    if (empty($cliente)) {
+        $cliente = 'N/A';
+    }
+    // Si no hay almacén desde las líneas, usar la zona de custinvoicejour
+    if (empty($almacenFactura)) {
+        $almacenFactura = $facturaData['zona'] ?? 'N/A';
+    }
     
     // Añadir cliente y almacén al facturaData
     $facturaData['Cliente'] = $cliente;

@@ -533,9 +533,8 @@ include __DIR__ . '/../templates/header.php';
                     <div class="total-box"><span class="total-num" id="total-impuesto">$0.00</span><span class="total-label">Impuesto</span></div>
                     <div class="total-box" style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);"><span class="total-num" id="total-monto">$0.00</span><span class="total-label">Total</span></div>
                 </div>
-                
-                <!-- OPTIMIZACIÓN: Tabla de productos DESHABILITADA para mejorar performance -->
-                <!--
+
+                <!-- Tabla de productos (carga bajo demanda por factura) -->
                 <h4 style="margin: 1rem 0;"><i class="fas fa-boxes"></i> Productos de la Factura</h4>
                 <div class="table-responsive">
                     <table class="bi-table">
@@ -552,7 +551,6 @@ include __DIR__ . '/../templates/header.php';
                         <tbody id="lineas-body"></tbody>
                     </table>
                 </div>
-                -->
             </div>
         </div>
     </div>
@@ -785,10 +783,8 @@ function abrirDetalleFactura(factura) {
             $('#total-subtotal').text('$' + response.totales.subtotal);
             $('#total-impuesto').text('$' + response.totales.impuesto);
             $('#total-monto').text('$' + response.totales.total);
-            
-            // OPTIMIZACIÓN: Procesamiento de líneas DESHABILITADO
-            /*
-            // Líneas
+
+            // Procesar líneas de productos (cargadas bajo demanda)
             let lineasHtml = '';
             if (response.lineas && response.lineas.length > 0) {
                 response.lineas.forEach(function(linea) {
@@ -805,8 +801,7 @@ function abrirDetalleFactura(factura) {
                 lineasHtml = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#64748B;">No hay productos disponibles</td></tr>';
             }
             $('#lineas-body').html(lineasHtml);
-            */
-            
+
             $('#modal-loader').hide();
             $('#modal-content').show();
         },
