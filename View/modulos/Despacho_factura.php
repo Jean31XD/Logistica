@@ -123,7 +123,112 @@ include __DIR__ . '/../templates/header.php';
         background-color: var(--primary);
         border-color: var(--primary);
     }
+
+    /* Toast de código de verificación */
+    .codigo-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 350px;
+        max-width: 450px;
+        background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%);
+        color: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        animation: slideInRight 0.5s ease-out;
+        display: none;
+    }
+    
+    .codigo-toast.show {
+        display: block;
+    }
+    
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .codigo-toast-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .codigo-toast-header i {
+        font-size: 1.5rem;
+        color: #ffc107;
+    }
+    
+    .codigo-toast-header h5 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    
+    .codigo-display {
+        background: rgba(255,255,255,0.15);
+        border: 2px dashed rgba(255,255,255,0.4);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin: 15px 0;
+    }
+    
+    .codigo-numero {
+        font-size: 2.5rem;
+        font-weight: bold;
+        letter-spacing: 10px;
+        font-family: 'Courier New', monospace;
+        color: #ffc107;
+    }
+    
+    .codigo-ticket {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-top: 10px;
+    }
+    
+    .codigo-timer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #ffc107;
+    }
+    
+    .codigo-toast-footer {
+        margin-top: 15px;
+        font-size: 0.85rem;
+        opacity: 0.8;
+        text-align: center;
+    }
 </style>
+
+<!-- Toast de Código de Verificación -->
+<div id="codigoToast" class="codigo-toast">
+    <div class="codigo-toast-header">
+        <i class="fa-solid fa-key"></i>
+        <h5>Código de Verificación Solicitado</h5>
+    </div>
+    <p style="margin: 0; opacity: 0.9;">Alguien quiere reasignar tu ticket. Comparte este código:</p>
+    <div class="codigo-display">
+        <div class="codigo-numero" id="codigoNumero">------</div>
+        <div class="codigo-ticket" id="codigoTicket">Ticket: ---</div>
+    </div>
+    <div class="codigo-timer">
+        <i class="fa-solid fa-clock"></i>
+        <span>Expira en: <strong id="codigoTiempo">5:00</strong></span>
+    </div>
+    <div class="codigo-toast-footer">
+        <i class="fa-solid fa-info-circle me-1"></i>
+        Proporciona este código verbalmente a quien lo solicite
+    </div>
+</div>
 
 <h1 class="maco-title maco-title-gradient">
     <i class="fas fa-ticket-alt"></i>
@@ -176,10 +281,19 @@ include __DIR__ . '/../templates/header.php';
                     <input type="hidden" id="currentAssigneeInput">
                     <input type="hidden" id="isReassignment" value="false">
 
-                    <!-- Campo de contraseña (solo visible en reasignación) -->
-                    <div class="mb-3" id="passwordContainer" style="display: none;">
-                        <label for="usuarioPassword" id="passwordLabel" class="form-label">Contraseña del usuario actual:</label>
-                        <input type="password" id="usuarioPassword" class="form-control" autocomplete="current-password">
+                    <!-- Campo de código de verificación (solo visible en reasignación) -->
+                    <div class="mb-3" id="codigoContainer" style="display: none;">
+                        <div class="alert alert-info" id="codigoInfo">
+                            <i class="fa-solid fa-desktop me-2"></i>
+                            <small>Se está generando un código que aparecerá en la pantalla de <strong id="usuarioActualNombre"></strong>...</small>
+                        </div>
+                        <label for="codigoVerificacion" class="form-label">Código de verificación (6 dígitos):</label>
+                        <input type="text" id="codigoVerificacion" class="form-control" placeholder="000000"
+                               maxlength="6" pattern="[0-9]{6}" autocomplete="off"
+                               style="font-size: 1.5rem; letter-spacing: 0.5rem; text-align: center; font-family: monospace;">
+                        <small class="text-muted">
+                            <i class="fa-solid fa-clock me-1"></i>El código expira en 5 minutos
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -293,6 +407,90 @@ $(document).ready(function () {
     actualizarTablaInteligentemente();
     setInterval(actualizarTablaInteligentemente, 5000);
 
+    // === SISTEMA DE CÓDIGOS DE VERIFICACIÓN EN PANTALLA ===
+    let codigoActual = null;
+    let timerIntervalo = null;
+    
+    function verificarCodigosPendientes() {
+        $.ajax({
+            url: '../../Logica/obtener_codigos_pendientes.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.tiene_pendientes) {
+                    const codigo = response.codigos[0]; // Mostrar el más reciente
+                    
+                    // Solo actualizar si es un código nuevo
+                    if (!codigoActual || codigoActual.codigo !== codigo.codigo) {
+                        codigoActual = codigo;
+                        mostrarCodigoToast(codigo);
+                    }
+                } else {
+                    // No hay códigos pendientes, ocultar toast
+                    ocultarCodigoToast();
+                }
+            },
+            error: function() {
+                console.log('Error al verificar códigos pendientes');
+            }
+        });
+    }
+    
+    function mostrarCodigoToast(codigo) {
+        $('#codigoNumero').text(codigo.codigo);
+        $('#codigoTicket').text('Ticket: #' + codigo.ticket);
+        $('#codigoToast').addClass('show');
+        
+        // Iniciar timer de cuenta regresiva
+        if (timerIntervalo) clearInterval(timerIntervalo);
+        
+        let segundos = codigo.segundos_restantes;
+        actualizarTimerDisplay(segundos);
+        
+        timerIntervalo = setInterval(function() {
+            segundos--;
+            if (segundos <= 0) {
+                clearInterval(timerIntervalo);
+                ocultarCodigoToast();
+                codigoActual = null;
+            } else {
+                actualizarTimerDisplay(segundos);
+            }
+        }, 1000);
+        
+        // Reproducir sonido de notificación (opcional)
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1JQ0NBQEVNWGNteIGLjYmCe3VxcXN4f4aMj5KRjomCe3RtZmBeWlpbXmNqcnt/AIE=');
+            audio.volume = 0.3;
+            audio.play().catch(() => {}); // Ignorar errores si el navegador bloquea
+        } catch(e) {}
+    }
+    
+    function actualizarTimerDisplay(segundos) {
+        const mins = Math.floor(segundos / 60);
+        const secs = segundos % 60;
+        $('#codigoTiempo').text(mins + ':' + String(secs).padStart(2, '0'));
+        
+        // Cambiar color cuando quede poco tiempo
+        if (segundos < 60) {
+            $('#codigoTiempo').css('color', '#ff6b6b');
+        } else {
+            $('#codigoTiempo').css('color', '#ffc107');
+        }
+    }
+    
+    function ocultarCodigoToast() {
+        $('#codigoToast').removeClass('show');
+        if (timerIntervalo) {
+            clearInterval(timerIntervalo);
+            timerIntervalo = null;
+        }
+    }
+    
+    // Iniciar polling de códigos pendientes cada 3 segundos
+    verificarCodigosPendientes();
+    setInterval(verificarCodigosPendientes, 3000);
+
     function despacharTicket(tiket, factura, codigo = '') {
         let tiempo = timers[tiket] || 0;
         let data = { tiket, tiempo, factura, csrf_token: csrfToken };
@@ -355,41 +553,74 @@ $(document).ready(function () {
         $('#asignarTicketId').text(tiket);
         $('#asignarTiketInput').val(tiket);
         $('#currentAssigneeInput').val(asignadoA);
-        $('#usuarioPassword').val('');
+        $('#codigoVerificacion').val('');
 
         if (asignadoA) {
-            // Reasignación - mostrar campo contraseña
+            // Reasignación - mostrar campo código y solicitar automáticamente
             $('#isReassignment').val('true');
-            $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, ingresa la contraseña de <strong>${asignadoA}</strong>.`);
-            $('#passwordLabel').text(`Contraseña de ${asignadoA}:`);
-            $('#passwordContainer').show();
-            $('#usuarioPassword').prop('required', true);
+            $('#modalAsignarTexto').html(`Para re-asignar el ticket de <strong>${asignadoA}</strong>, pídele el código que aparecerá en su pantalla.`);
+            $('#usuarioActualNombre').text(asignadoA);
+            $('#codigoInfo').html('<i class="fa-solid fa-spinner fa-spin me-2"></i><small>Generando código para <strong>' + asignadoA + '</strong>...</small>');
+            $('#codigoContainer').show();
+            $('#codigoVerificacion').prop('required', true);
+
+            // Generar código automáticamente
+            $.ajax({
+                url: '../../Logica/solicitar_codigo_verificacion.php',
+                method: 'POST',
+                data: {
+                    usuario: asignadoA,
+                    ticket: tiket,
+                    csrf_token: csrfToken
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#codigoInfo').html('<i class="fa-solid fa-check-circle me-2" style="color:green;"></i><small>Código generado. <strong>' + asignadoA + '</strong> lo verá en su pantalla. Pídele el código.</small>');
+                    } else {
+                        $('#codigoInfo').html('<i class="fa-solid fa-exclamation-triangle me-2" style="color:orange;"></i><small>Error: ' + response.message + '</small>');
+                    }
+                },
+                error: function() {
+                    $('#codigoInfo').html('<i class="fa-solid fa-times-circle me-2" style="color:red;"></i><small>Error al generar el código. Intenta cerrar y abrir el modal nuevamente.</small>');
+                }
+            });
         } else {
-            // Asignación nueva - no requiere contraseña
+            // Asignación nueva - no requiere código
             $('#isReassignment').val('false');
             $('#modalAsignarTexto').html(`¿Deseas asignarte el ticket <strong>${tiket}</strong>?`);
-            $('#passwordContainer').hide();
-            $('#usuarioPassword').prop('required', false);
+            $('#codigoContainer').hide();
+            $('#codigoVerificacion').prop('required', false);
         }
 
         const asignarModal = new bootstrap.Modal(document.getElementById('asignarModal'));
         asignarModal.show();
-        
+
         if (asignadoA) {
-            $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => $('#usuarioPassword').focus());
+            $('#asignarModal').off('shown.bs.modal').on('shown.bs.modal', () => {
+                setTimeout(() => $('#codigoVerificacion').focus(), 500);
+            });
         }
     });
 
     $('#formAsignar').on('submit', function(e) {
         e.preventDefault();
         const tiket = $('#asignarTiketInput').val();
-        const password = $('#usuarioPassword').val();
+        const codigoVerificacion = $('#codigoVerificacion').val();
         const currentAssignee = $('#currentAssigneeInput').val();
         const isReassignment = $('#isReassignment').val() === 'true';
 
-        // Solo validar contraseña si es reasignación
-        if (isReassignment && !password) {
-            alert('Por favor, ingresa la contraseña del usuario actual.');
+        // Solo validar código si es reasignación
+        if (isReassignment && !codigoVerificacion) {
+            alert('Por favor, ingresa el código de verificación.');
+            $('#codigoVerificacion').focus();
+            return;
+        }
+
+        // Validar formato del código (6 dígitos)
+        if (isReassignment && !/^\d{6}$/.test(codigoVerificacion)) {
+            alert('El código debe tener 6 dígitos numéricos.');
+            $('#codigoVerificacion').focus();
             return;
         }
 
@@ -398,7 +629,7 @@ $(document).ready(function () {
             method: 'POST',
             data: {
                 tiket: tiket,
-                password: password,
+                codigo_verificacion: codigoVerificacion,
                 current_assignee: currentAssignee,
                 csrf_token: csrfToken
             },
@@ -410,7 +641,7 @@ $(document).ready(function () {
                 } else {
                     alert('Error: ' + response.message);
                     if (isReassignment) {
-                        $('#usuarioPassword').val('').focus();
+                        $('#codigoVerificacion').val('').focus();
                     }
                 }
             },

@@ -33,7 +33,7 @@ if (!$conn) {
 
 // 2. Obtener datos de la petición AJAX
 $tiket = $_POST['tiket'] ?? null;
-$password = $_POST['password'] ?? '';
+$codigoVerificacion = $_POST['codigo_verificacion'] ?? ''; // Código de 6 dígitos enviado por correo
 $currentAssignee = $_POST['current_assignee'] ?? ''; // El usuario que tiene el ticket ahora
 $sessionUser = $_SESSION['usuario']; // El usuario que quiere tomar el ticket
 
@@ -46,48 +46,68 @@ if (!$tiket) {
 $isReassignment = !empty($currentAssignee);
 
 if ($isReassignment) {
-    // --- CASO 1: RE-ASIGNACIÓN (se requiere contraseña) ---
+    // --- CASO 1: RE-ASIGNACIÓN (se requiere código de verificación) ---
     if ($currentAssignee === $sessionUser) {
         echo json_encode(['success' => false, 'message' => 'No puedes reasignarte un ticket que ya es tuyo.']);
         sqlsrv_close($conn);
         exit();
     }
-    
-    // Verificar contraseña del usuario que tiene el ticket
-    if (empty($password)) {
-        echo json_encode(['success' => false, 'message' => 'Para reasignar, ingrese la contraseña del usuario actual.']);
+
+    // Verificar código de verificación
+    if (empty($codigoVerificacion)) {
+        echo json_encode(['success' => false, 'message' => 'Para reasignar, ingrese el código de verificación enviado por correo.']);
         sqlsrv_close($conn);
         exit();
     }
-    
-    $sql_get_hash = "SELECT password FROM usuarios WHERE usuario = ?";
-    $stmt_get_hash = sqlsrv_query($conn, $sql_get_hash, [$currentAssignee]);
-    
-    if ($stmt_get_hash === false) {
-        echo json_encode(['success' => false, 'message' => 'Error al consultar el usuario.']);
-        sqlsrv_close($conn);
-        exit();
-    }
-    
-    $row = sqlsrv_fetch_array($stmt_get_hash, SQLSRV_FETCH_ASSOC);
-    
-    if (!$row || !isset($row['password'])) {
+
+    // Buscar el código en la base de datos
+    $sqlCodigo = "
+        SELECT id, usado, expira
+        FROM codigos_verificacion
+        WHERE codigo = ?
+        AND usuario = ?
+        AND usado = 0";
+
+    $stmtCodigo = sqlsrv_query($conn, $sqlCodigo, [$codigoVerificacion, $currentAssignee]);
+
+    if ($stmtCodigo === false) {
         require_once __DIR__ . '/../conexionBD/log_manager.php';
-        logWithRotation("Intento de reasignación - usuario no encontrado: $currentAssignee", 'WARNING', 'AUTH');
-        echo json_encode(['success' => false, 'message' => 'Error de autenticación. Verifique la contraseña.']);
+        logWithRotation("Error al verificar código para: $currentAssignee", 'ERROR', 'AUTH');
+        echo json_encode(['success' => false, 'message' => 'Error al verificar el código.']);
         sqlsrv_close($conn);
         exit();
     }
-    
-    if (!password_verify($password, $row['password'])) {
+
+    $rowCodigo = sqlsrv_fetch_array($stmtCodigo, SQLSRV_FETCH_ASSOC);
+
+    if (!$rowCodigo) {
         require_once __DIR__ . '/../conexionBD/log_manager.php';
-        logWithRotation("Intento fallido de reasignación - contraseña incorrecta para: $currentAssignee", 'WARNING', 'AUTH');
-        echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta.']);
+        logWithRotation("Código inválido o ya usado para: $currentAssignee - Código: $codigoVerificacion", 'WARNING', 'AUTH');
+        echo json_encode(['success' => false, 'message' => 'Código inválido o ya fue utilizado.']);
         sqlsrv_close($conn);
         exit();
     }
-    
-    // Contraseña correcta, proceder con reasignación
+
+    // Verificar si el código ha expirado
+    $expira = $rowCodigo['expira'];
+    $ahora = new DateTime();
+
+    if ($expira < $ahora) {
+        require_once __DIR__ . '/../conexionBD/log_manager.php';
+        logWithRotation("Código expirado para: $currentAssignee - Código: $codigoVerificacion", 'WARNING', 'AUTH');
+        echo json_encode(['success' => false, 'message' => 'El código ha expirado. Solicite uno nuevo.']);
+        sqlsrv_close($conn);
+        exit();
+    }
+
+    // Marcar el código como usado
+    $codigoId = $rowCodigo['id'];
+    $sqlMarcarUsado = "UPDATE codigos_verificacion SET usado = 1 WHERE id = ?";
+    sqlsrv_query($conn, $sqlMarcarUsado, [$codigoId]);
+
+    // Código válido, proceder con reasignación
+    require_once __DIR__ . '/../conexionBD/log_manager.php';
+    logWithRotation("Reasignación autorizada con código para: $currentAssignee → $sessionUser (Ticket: $tiket)", 'INFO', 'AUTH');
 } else {
     // --- CASO 2: ASIGNACIÓN NUEVA (usuario ya autenticado en sesión) ---
     // No se requiere contraseña adicional, el usuario ya inició sesión
