@@ -168,7 +168,13 @@ if ($stmt && $total_rows > 0) {
         ?>
         <tr>
             <td><a href="#" class="factura-link"><?= htmlspecialchars($row['Factura'] ?? '') ?></a></td>
-            <td><?= $row['Fecha'] ? $row['Fecha']->format('d/m/Y') : '—' ?></td>
+            <td><?php
+                if ($row['Fecha']) {
+                    echo is_object($row['Fecha']) ? $row['Fecha']->format('d/m/Y') : date('d/m/Y', strtotime($row['Fecha']));
+                } else {
+                    echo '—';
+                }
+            ?></td>
             <td><span class="badge-status <?= $estadoClase ?>"><?= htmlspecialchars($row['Estado'] ?: 'Sin Estado') ?></span></td>
             <td><?= htmlspecialchars($row['Transportista'] ?? '—') ?></td>
             <td><?= htmlspecialchars($row['Usuario_ALM'] ?? '—') ?></td>

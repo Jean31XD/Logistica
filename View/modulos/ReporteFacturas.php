@@ -42,7 +42,8 @@ if ($astmt) {
 
 // Valores iniciales
 $filtroTransportista = $_GET['transportista'] ?? '';
-$desde = $_GET['desde'] ?? date('Y-m-d');
+// Usar el primer día del mes actual como fecha por defecto
+$desde = $_GET['desde'] ?? date('Y-m-01');
 $hasta = $_GET['hasta'] ?? date('Y-m-d');
 $estado = $_GET['estado'] ?? '';
 $usuario = $_GET['usuario'] ?? '';
