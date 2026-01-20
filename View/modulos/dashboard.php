@@ -1917,6 +1917,27 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString('es-DO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
             } catch (e) { return 'N/A'; }
         };
+
+        // Función para formatear solo la fecha sin hora (evita problemas de zona horaria)
+        const formatDateOnly = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            try {
+                // Extraer solo la parte de la fecha (YYYY-MM-DD) del string
+                const dateOnly = dateStr.toString().split('T')[0].split(' ')[0];
+                if (!dateOnly || dateOnly.length < 10) return 'N/A';
+                
+                // Parsear manualmente para evitar problemas de zona horaria
+                const parts = dateOnly.split('-');
+                if (parts.length === 3) {
+                    const day = parts[2];
+                    const month = parts[1];
+                    const year = parts[0];
+                    return `${day}/${month}/${year}`;
+                }
+                return dateOnly;
+            } catch (e) { return 'N/A'; }
+        };
+
         
         const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
@@ -1928,7 +1949,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             facturas.forEach(f => {
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = f.No_Factura || 'N/A';
-                row.insertCell().textContent = formatDate(f.Fecha_Factura);
+                row.insertCell().textContent = formatDateOnly(f.Fecha_Factura);
                 row.insertCell().textContent = formatDate(f.Fecha_de_Registro);
                 row.insertCell().textContent = f.invoicingname || 'N/A';
                 
