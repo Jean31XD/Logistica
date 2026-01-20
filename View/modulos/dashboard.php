@@ -810,7 +810,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <table class="status-table">
                             <thead>
                                 <tr>
-                                    <th>No. Factura</th><th>Fecha Registro</th><th>Cliente</th><th>Monto</th><th>Registrado Por</th><th>Camión</th>
+                                    <th>No. Factura</th><th>Fecha Factura</th><th>Fecha Registro</th><th>Cliente</th><th>Monto</th><th>Registrado Por</th><th>Camión</th>
                                     <th>Fecha Despacho</th><th>Despachado Por</th><th>Fecha Entregado</th><th>Entregado Por</th>
                                     <th>Estado</th><th>Fecha Reversada</th><th>Reversado Por</th><th>Fecha NC</th>
                                     <th>NC Realizado Por</th><th>Motivo NC</th><th>Camión 2</th>
@@ -1920,7 +1920,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         
         const populateDetailsTable = (facturas) => {
             const tableBody = document.getElementById('detailsTableBody');
-            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="17" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
+            tableBody.innerHTML = !facturas || facturas.length === 0 ? '<tr><td colspan="18" style="text-align:center;">No se encontraron facturas.</td></tr>' : '';
             if(!facturas || facturas.length === 0) return;
             
             const currencyFormatter = new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' });
@@ -1928,6 +1928,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             facturas.forEach(f => {
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = f.No_Factura || 'N/A';
+                row.insertCell().textContent = formatDate(f.Fecha_Factura);
                 row.insertCell().textContent = formatDate(f.Fecha_de_Registro);
                 row.insertCell().textContent = f.invoicingname || 'N/A';
                 
@@ -1951,6 +1952,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             });
         };
     
+
         const updatePaginationControls = ({ currentPage, totalPages, totalRecords }) => {
             document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (Total: ${totalRecords})`;
             document.getElementById('prev-page').disabled = currentPage <= 1;
@@ -1961,7 +1963,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             detailsCurrentState = estado;
             loaderEl.classList.add('loading');
             const detailsTableBody = document.getElementById('detailsTableBody');
-            detailsTableBody.innerHTML = '<tr><td colspan="17" style="text-align:center;">Cargando...</td></tr>';
+            detailsTableBody.innerHTML = '<tr><td colspan="18" style="text-align:center;">Cargando...</td></tr>';
             try {
                 // El 'almacen' que se pasa aquí ya está decidido (o del admin o del usuario)
                 const url = `../../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;

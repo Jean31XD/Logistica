@@ -238,7 +238,7 @@ try {
             ";
             $sqlDetails = $cte_facturas . "
                 SELECT 
-                    f.invoiceid AS No_Factura, f.invoicedate AS Fecha_de_Registro, f.invoicingname, f.invoiceamountmst,
+                    f.invoiceid AS No_Factura, f.invoicedate AS Fecha_Factura, m.Fecha_de_Registro, f.invoicingname, f.invoiceamountmst,
                     m.Registrado_por, m.Camion, m.Fecha_de_Despacho, m.Despachado_por, m.Fecha_de_Entregado, 
                     m.Entregado_por, ISNULL(m.Estado, 'Sin estado') AS Estado, m.Fecha_Reversada, 
                     m.Reversado_Por, m.Fecha_de_NC, m.NC_Realizado_Por, m.Motivo_NC, m.Camion2
