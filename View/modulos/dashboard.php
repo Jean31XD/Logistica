@@ -901,7 +901,62 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         </div>
                     </div>
                 </div>
+
+                <!-- Sección: Entregas sin QR -->
+                <div class="card" style="margin-top: 2rem; border-left: 4px solid #ED8936;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h2 style="margin: 0; color: #ED8936;">
+                                <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                                Entregas sin Escaneo QR
+                            </h2>
+                            <p style="color: var(--text-secondary); margin: 0.5rem 0 0;">
+                                Facturas entregadas sin confirmación de código QR
+                            </p>
+                        </div>
+                        <div class="kpi-card" style="border-left-color: #ED8936; cursor: default; padding: 1rem 1.5rem; margin: 0;">
+                            <h2 style="margin: 0; font-size: 0.7rem;">Total sin QR</h2>
+                            <p id="sinqr-total" style="font-size: 2rem; margin: 0.25rem 0 0; color: #ED8936;">--</p>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de entregas sin QR -->
+                    <div class="facturas-table-wrapper" style="margin-top: 1rem;">
+                        <div class="table-header" style="background: linear-gradient(135deg, #ED8936 0%, #DD6B20 100%);">
+                            <h3><i class="fas fa-list"></i> Detalle de Entregas sin QR</h3>
+                        </div>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table class="delivery-details-table" id="sinqr-table">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-hashtag"></i> Factura</th>
+                                        <th><i class="fas fa-user"></i> Cliente</th>
+                                        <th><i class="fas fa-truck"></i> Transportista</th>
+                                        <th><i class="fas fa-id-card"></i> Placa</th>
+                                        <th><i class="fas fa-info-circle"></i> Estado</th>
+                                        <th><i class="fas fa-calendar-alt"></i> F. Despacho</th>
+                                        <th><i class="fas fa-calendar-check"></i> F. Entrega</th>
+                                        <th><i class="fas fa-user-check"></i> Entregado Por</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sinqr-table-body">
+                                    <tr>
+                                        <td colspan="8" style="text-align: center; padding: 2rem; color: #999;">
+                                            <i class="fas fa-spinner fa-spin"></i> Cargando datos...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="sinqr-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #FEF3C7; border-top: 1px solid #F59E0B;">
+                            <div style="color: #92400E; font-size: 0.85rem; font-weight: 500;">
+                                <i class="fas fa-info-circle"></i> Mostrando <span id="sinqr-showing">0</span> registros
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             
             <div id="view-financial" class="view-container">
                 <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
@@ -1314,6 +1369,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
             // Renderizar tabla detallada de entregas
             renderDeliveryDetails(data.truckPerformance || []);
+            
+            // Cargar entregas sin QR
+            fetchSinQRData();
         };
 
         const renderDeliveryDetails = async (truckData) => {
@@ -1973,6 +2031,75 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             });
         };
     
+        // Función para cargar y mostrar entregas sin QR
+        const fetchSinQRData = async () => {
+            const inicio = fechaInicioInput.value;
+            const fin = fechaFinInput.value;
+            const almacen = almacenFilterInput ? almacenFilterInput.value : '';
+            
+            const sinQRTableBody = document.getElementById('sinqr-table-body');
+            const sinQRTotal = document.getElementById('sinqr-total');
+            const sinQRShowing = document.getElementById('sinqr-showing');
+            
+            try {
+                const url = `../../Logica/api_get_data.php?view=entregas_sin_qr&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Actualizar KPI
+                sinQRTotal.textContent = data.total || 0;
+                sinQRShowing.textContent = data.entregas ? data.entregas.length : 0;
+                
+                // Renderizar tabla
+                if (!data.entregas || data.entregas.length === 0) {
+                    sinQRTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2rem; color: #38A169;">
+                                <i class="fas fa-check-circle" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                                <br>No hay entregas sin QR en este período. ¡Excelente!
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let tableHTML = '';
+                data.entregas.forEach(entrega => {
+                    const fechaDespacho = entrega.FechaDespacho ? new Date(entrega.FechaDespacho).toLocaleDateString('es-DO') : '--';
+                    const fechaEntrega = entrega.FechaEntregado ? new Date(entrega.FechaEntregado).toLocaleDateString('es-DO') : '--';
+                    
+                    tableHTML += `
+                        <tr>
+                            <td><strong>${entrega.Factura || 'N/A'}</strong></td>
+                            <td>${entrega.Cliente || 'N/A'}</td>
+                            <td>${entrega.Transportista || 'Sin asignar'}</td>
+                            <td>${entrega.Placa || 'N/A'}</td>
+                            <td><span class="status-badge status-${(entrega.Estado || '').toLowerCase()}">${entrega.Estado || 'N/A'}</span></td>
+                            <td>${fechaDespacho}</td>
+                            <td>${fechaEntrega}</td>
+                            <td>${entrega.EntregadoPor || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                sinQRTableBody.innerHTML = tableHTML;
+                
+            } catch (error) {
+                console.error('Error al cargar entregas sin QR:', error);
+                sinQRTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 2rem; color: #E53E3E;">
+                            <i class="fas fa-exclamation-circle"></i> Error al cargar datos: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        };
+
 
         const updatePaginationControls = ({ currentPage, totalPages, totalRecords }) => {
             document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (Total: ${totalRecords})`;

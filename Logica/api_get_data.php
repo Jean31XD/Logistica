@@ -619,7 +619,75 @@ try {
             }
             break;
 
+        case 'entregas_sin_qr':
+            // Obtener facturas donde Entrega_sin_QR = TRUE (valor 1)
+            if (empty($fecha_inicio) || empty($fecha_fin)) {
+                throw new Exception('Faltan parámetros de fecha para consultar entregas sin QR.', 400);
+            }
+
+            $baseParams = array_merge([$fecha_inicio, $fecha_fin], $almacenParams);
+
+            // Contar total de registros sin QR
+            $sqlCount = $cte_facturas . "
+                SELECT COUNT(DISTINCT m.No_Factura) AS Total
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                WHERE m.Entrega_sin_QR = 1
+                    AND f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+            ";
+            $stmtCount = sqlsrv_query($conn, $sqlCount, $baseParams);
+            if ($stmtCount === false) throw new Exception('Error al contar entregas sin QR.');
+            $totalSinQR = sqlsrv_fetch_array($stmtCount, SQLSRV_FETCH_ASSOC)['Total'] ?? 0;
+
+            // Obtener detalle de entregas sin QR
+            $sqlSinQR = $cte_facturas . "
+                SELECT
+                    m.No_Factura AS Factura,
+                    f.invoicingname AS Cliente,
+                    m.Estado,
+                    m.Camion,
+                    ISNULL(c.nombre, 'Sin asignar') AS Transportista,
+                    ISNULL(c.placa, m.Camion) AS Placa,
+                    m.Fecha_de_Despacho AS FechaDespacho,
+                    m.Despachado_por AS DespachadoPor,
+                    m.Fecha_de_Entregado AS FechaEntregado,
+                    m.Entregado_por AS EntregadoPor
+                FROM Factura_Programa_Despacho_MACOR m
+                JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
+                LEFT JOIN Camiones_PW c ON m.Camion = c.chasis
+                WHERE m.Entrega_sin_QR = 1
+                    AND f.invoicedate BETWEEN ? AND ?
+                    $almacenSqlAnd
+                ORDER BY m.Fecha_de_Entregado DESC, m.Fecha_de_Despacho DESC
+            ";
+
+            $stmtSinQR = sqlsrv_query($conn, $sqlSinQR, $baseParams);
+            if ($stmtSinQR === false) {
+                $errors = sqlsrv_errors();
+                error_log("Error SQL entregas_sin_qr: " . print_r($errors, true));
+                throw new Exception('Error al consultar entregas sin QR.');
+            }
+
+            $entregas = [];
+            while ($row = sqlsrv_fetch_array($stmtSinQR, SQLSRV_FETCH_ASSOC)) {
+                if (isset($row['FechaDespacho']) && $row['FechaDespacho'] instanceof DateTime) {
+                    $row['FechaDespacho'] = $row['FechaDespacho']->format('Y-m-d H:i:s');
+                }
+                if (isset($row['FechaEntregado']) && $row['FechaEntregado'] instanceof DateTime) {
+                    $row['FechaEntregado'] = $row['FechaEntregado']->format('Y-m-d H:i:s');
+                }
+                $entregas[] = $row;
+            }
+
+            $response = [
+                'total' => (int)$totalSinQR,
+                'entregas' => $entregas
+            ];
+            break;
+
         case 'overview':
+
         default:
             if (empty($fecha_inicio) || empty($fecha_fin)) {
                 throw new Exception('Faltan parámetros de fecha para consultar el resumen.', 400);
