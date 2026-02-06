@@ -768,8 +768,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             <div class="content-area">
 
             <div id="view-overview" class="view-container active">
-                <!-- Alerta de Entregas sin QR - Acceso Rápido -->
-                <div id="sinqr-alert" class="sinqr-alert" style="display: none; margin-bottom: 1.5rem; background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 1rem 1.5rem; border-left: 4px solid #F59E0B; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); cursor: pointer;" onclick="document.querySelector('[data-view=performance]').click();">
+                <!-- Alerta de Entregas sin QR -->
+                <div id="sinqr-alert" class="sinqr-alert" style="display: none; margin-bottom: 1.5rem; background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 1rem 1.5rem; border-left: 4px solid #F59E0B; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <div style="background: #F59E0B; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -781,18 +781,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                     Entregas sin Escaneo QR
                                 </h3>
                                 <p style="margin: 0.25rem 0 0; color: #B45309; font-size: 0.9rem;">
-                                    Hay facturas entregadas sin confirmación de código QR
+                                    Ver tabla de detalles más abajo
                                 </p>
                             </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="text-align: center;">
-                                <div id="sinqr-overview-count" style="font-size: 2.5rem; font-weight: 800; color: #D97706;">--</div>
-                                <div style="font-size: 0.75rem; color: #92400E; font-weight: 600;">PENDIENTES</div>
-                            </div>
-                            <div style="color: #92400E; font-size: 1.5rem;">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
+                        <div style="text-align: center;">
+                            <div id="sinqr-overview-count" style="font-size: 2.5rem; font-weight: 800; color: #D97706;">--</div>
+                            <div style="font-size: 0.75rem; color: #92400E; font-weight: 600;">PENDIENTES</div>
                         </div>
                     </div>
                 </div>
@@ -806,7 +801,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <h2>Sin Estado Asignado</h2>
                         <p id="sin-estado">--</p>
                     </div>
-                    <div class="kpi-card" id="kpi-sin-qr" style="border-left-color: #F59E0B; cursor: pointer;" onclick="document.querySelector('[data-view=performance]').click();">
+                    <div class="kpi-card" id="kpi-sin-qr" style="border-left-color: #F59E0B; cursor: default;">
                         <h2 style="color: #D97706;"><i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i>Sin QR</h2>
                         <p id="overview-sinqr-total" style="color: #F59E0B;">--</p>
                     </div>
