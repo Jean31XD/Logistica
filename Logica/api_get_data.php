@@ -59,41 +59,12 @@ require_once __DIR__ . '/../src/autoload.php';
 // Establecer el encabezado de respuesta como JSON
 header('Content-Type: application/json; charset=utf-8');
 
-// --- Inicialización de variables ---
-$response = []; 
-$http_code = 200;
-$useCache = true; // Habilitar caché para este endpoint
-$cacheTTL = 120;  // 2 minutos de caché 
-
-
-try {
-    // --- 1. VERIFICACIÓN DE CONEXIÓN ---
-    if (!isset($conn) || $conn === false) {
-        throw new Exception('No se pudo establecer la conexión a la base de datos.', 503);
-    }
-
-    // --- Obtención y normalización de parámetros ---
-    $fecha_inicio = $_GET['fecha_inicio'] ?? '';
-    $fecha_fin = $_GET['fecha_fin'] ?? '';
-    $view = $_GET['view'] ?? 'overview';
-    $almacen_param = $_GET['almacen'] ?? ''; // Parámetro del GET
-
-    // --- MODIFICACIÓN: Forzar almacén según sesión ---
-    $almacen = '';
-    if ($USER_TYPE === 'admin') {
-        $almacen = $almacen_param; // Admin puede usar el filtro que quiera
-    } else {
-        // Usuario no-admin USA SU PROPIO ALMACÉN, ignorando el parámetro del GET
-        $almacen = $USER_WAREHOUSE; 
-    }
-    // ----------------------------------------------
-
-    if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
-    if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
-
-    // --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS (OPTIMIZADA) ---
-    // La función buildFacturasCTE genera la CTE con filtros aplicados DENTRO de la sub-consulta
-    // para evitar escanear toda la tabla Facturas_lineas innecesariamente.
+// --- 2. CONSTRUCCIÓN DE LA CTE DE FACTURAS (OPTIMIZADA) ---
+/**
+ * Genera la CTE con filtros aplicados DENTRO de la sub-consulta
+ * para evitar escanear toda la tabla Facturas_lineas innecesariamente.
+ */
+if (!function_exists('buildFacturasCTE')) {
     function buildFacturasCTE($fecha_inicio, $fecha_fin, $almacen) {
         $whereClause = "";
         $conditions = [];
@@ -124,7 +95,41 @@ try {
         )
         ";
     }
-    
+}
+
+try {
+    // --- 1. VERIFICACIÓN DE CONEXIÓN ---
+    if (!isset($conn) || $conn === false) {
+        throw new Exception('No se pudo establecer la conexión a la base de datos.', 503);
+    }
+
+    // --- Inicialización de variables de respuesta ---
+    $response = []; 
+    $http_code = 200;
+    $useCache = true;
+    $cacheTTL = 120;
+
+    // --- Obtención y normalización de parámetros ---
+    $fecha_inicio = $_GET['fecha_inicio'] ?? '';
+    $fecha_fin = $_GET['fecha_fin'] ?? '';
+    $view = $_GET['view'] ?? 'overview';
+    $almacen_param = $_GET['almacen'] ?? '';
+
+    if (!empty($fecha_inicio)) $fecha_inicio = date('Y-m-d', strtotime($fecha_inicio));
+    if (!empty($fecha_fin)) $fecha_fin = date('Y-m-d', strtotime($fecha_fin));
+
+    // --- MODIFICACIÓN: Forzar almacén según sesión ---
+    $almacen = '';
+    if ($USER_TYPE === 'admin') {
+        $almacen = $almacen_param; // Admin puede usar el filtro que quiera
+    } else {
+        // Usuario no-admin USA SU PROPIO ALMACÉN, ignorando el parámetro del GET
+        $almacen = $USER_WAREHOUSE; 
+    }
+    // ----------------------------------------------
+
+    // ----------------------------------------------
+
     // Generar la CTE con los filtros aplicados
     $cte_facturas = buildFacturasCTE($fecha_inicio, $fecha_fin, $almacen);
 

@@ -1030,8 +1030,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         const USER_TYPE = <?php echo json_encode($USER_TYPE); ?>;
         const USER_WAREHOUSE = <?php echo json_encode($USER_WAREHOUSE); ?>;
         
-        // Ruta base para APIs (usa helper centralizado)
-        const API_BASE = <?php echo json_encode(getBasePath()); ?> + '/Logica/api_get_data.php';
+        // Ruta base para APIs (Ruta relativa más robusta)
+        const API_BASE = '../../Logica/api_get_data.php';
 
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart, deliveryComparisonChart;
         let currentView = 'overview';
