@@ -632,7 +632,7 @@ try {
                 SELECT COUNT(DISTINCT m.No_Factura) AS Total
                 FROM Factura_Programa_Despacho_MACOR m
                 JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
-                WHERE ISNULL(m.Entrega_sin_QR, 0) = 1
+                WHERE UPPER(LTRIM(RTRIM(m.Entrega_Sin_QR))) IN ('S', 'SI', 'TRUE', '1', 'YES')
                     AND f.invoicedate BETWEEN ? AND ?
                     $almacenSqlAnd
             ";
@@ -656,7 +656,7 @@ try {
                 FROM Factura_Programa_Despacho_MACOR m
                 JOIN Facturas_CTE f ON m.No_Factura = f.invoiceid
                 LEFT JOIN Camiones_PW c ON m.Camion = c.chasis
-                WHERE ISNULL(m.Entrega_sin_QR, 0) = 1
+                WHERE UPPER(LTRIM(RTRIM(m.Entrega_Sin_QR))) IN ('S', 'SI', 'TRUE', '1', 'YES')
                     AND f.invoicedate BETWEEN ? AND ?
                     $almacenSqlAnd
                 ORDER BY m.Fecha_de_Entregado DESC, m.Fecha_de_Despacho DESC
