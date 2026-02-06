@@ -114,6 +114,7 @@ try {
             SELECT
                 fl.invoiceid,
                 fl.inventlocationid,
+                MAX(fl.invoiceaccount) AS invoiceaccount,
                 MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
                 SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
                 MAX(fl.invoicingname) AS invoicingname
