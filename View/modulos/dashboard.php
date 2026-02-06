@@ -792,7 +792,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     </div>
                 </div>
 
-                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <div class="grid-layout" style="grid-template-columns: repeat(2, 1fr); gap: 1rem;">
                     <div class="kpi-card" id="kpi-total-emitidas">
                         <h2>Total Emitidas</h2>
                         <p id="total-emitidas">--</p>
@@ -800,10 +800,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     <div class="kpi-card" id="kpi-sin-estado">
                         <h2>Sin Estado Asignado</h2>
                         <p id="sin-estado">--</p>
-                    </div>
-                    <div class="kpi-card" id="kpi-sin-qr" style="border-left-color: #F59E0B; cursor: default;">
-                        <h2 style="color: #D97706;"><i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i>Sin QR</h2>
-                        <p id="overview-sinqr-total" style="color: #F59E0B;">--</p>
                     </div>
                 </div>
                 <div class="card" style="margin-top: 1rem;">
