@@ -840,6 +840,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                 <thead>
                                     <tr>
                                         <th><i class="fas fa-hashtag"></i> Factura</th>
+                                        <th><i class="fas fa-barcode"></i> CL</th>
                                         <th><i class="fas fa-user"></i> Cliente</th>
                                         <th><i class="fas fa-truck"></i> Transportista</th>
                                         <th><i class="fas fa-id-card"></i> Placa</th>
@@ -851,7 +852,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                 </thead>
                                 <tbody id="sinqr-table-body">
                                     <tr>
-                                        <td colspan="8" style="text-align: center; padding: 2rem; color: #999;">
+                                        <td colspan="9" style="text-align: center; padding: 2rem; color: #999;">
                                             <i class="fas fa-spinner fa-spin"></i> Cargando datos...
                                         </td>
                                     </tr>
@@ -2100,7 +2101,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 if (!data.entregas || data.entregas.length === 0) {
                     sinQRTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem; color: #38A169;">
+                            <td colspan="9" style="text-align: center; padding: 2rem; color: #38A169;">
                                 <i class="fas fa-check-circle" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
                                 <br>No hay entregas sin QR en este período. ¡Excelente!
                             </td>
@@ -2117,6 +2118,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     tableHTML += `
                         <tr>
                             <td><strong>${entrega.Factura || 'N/A'}</strong></td>
+                            <td>${entrega.CodigoCliente || 'N/A'}</td>
                             <td>${entrega.Cliente || 'N/A'}</td>
                             <td>${entrega.Transportista || 'Sin asignar'}</td>
                             <td>${entrega.Placa || 'N/A'}</td>
@@ -2135,7 +2137,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 if (sinQRTableBody) {
                     sinQRTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem; color: #E53E3E;">
+                            <td colspan="9" style="text-align: center; padding: 2rem; color: #E53E3E;">
                                 <i class="fas fa-exclamation-circle"></i> Error al cargar datos: ${error.message}
                             </td>
                         </tr>

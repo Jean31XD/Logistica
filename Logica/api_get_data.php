@@ -644,6 +644,7 @@ try {
             $sqlSinQR = $cte_facturas . "
                 SELECT
                     m.No_Factura AS Factura,
+                    f.invoiceaccount AS CodigoCliente,
                     f.invoicingname AS Cliente,
                     m.Estado,
                     m.Camion,
