@@ -1030,8 +1030,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         const USER_TYPE = <?php echo json_encode($USER_TYPE); ?>;
         const USER_WAREHOUSE = <?php echo json_encode($USER_WAREHOUSE); ?>;
         
-        // Ruta base para APIs (Ruta relativa más robusta)
-        const API_BASE = '../../Logica/api_get_data.php';
+        // Ruta base para APIs (usando helper PHP para consistencia)
+        const API_BASE = '<?php echo getApiPath(); ?>/api_get_data.php';
 
         let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart, deliveryComparisonChart;
         let currentView = 'overview';
@@ -1421,8 +1421,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
                 // Obtener entregas y despachadas
                 const [deliveriesResponse, dispatchedResponse] = await Promise.all([
-                    fetch(`../../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=delivery_details`),
-                    fetch(`../../Logica/api_get_data.php?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=dispatched_by_truck`)
+                    fetch(`${API_BASE}?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=delivery_details`),
+                    fetch(`${API_BASE}?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=dispatched_by_truck`)
                 ]);
 
                 const deliveries = await deliveriesResponse.json();
@@ -1765,7 +1765,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     console.log('Cargando facturas para camion (chasis):', camion);
 
                     try {
-                        const response = await fetch(`../../Logica/api_get_data.php?view=facturas_by_truck&camion=${encodeURIComponent(camion)}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&almacen=${almacen}`);
+                        const response = await fetch(`${API_BASE}?view=facturas_by_truck&camion=${encodeURIComponent(camion)}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&almacen=${almacen}`);
 
                         if (!response.ok) {
                             const errorText = await response.text();
@@ -2072,7 +2072,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             const overviewSinQRTotal = document.getElementById('overview-sinqr-total');
             
             try {
-                const url = `../../Logica/api_get_data.php?view=entregas_sin_qr&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}`;
+                const url = `${API_BASE}?view=entregas_sin_qr&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}`;
                 const response = await fetch(url);
                 const data = await response.json();
                 
@@ -2164,7 +2164,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             detailsTableBody.innerHTML = '<tr><td colspan="18" style="text-align:center;">Cargando...</td></tr>';
             try {
                 // El 'almacen' que se pasa aquí ya está decidido (o del admin o del usuario)
-                const url = `../../Logica/api_get_data.php?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
+                const url = `${API_BASE}?view=details&estado=${encodeURIComponent(estado)}&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&page=${page}&limit=${limit}`;
                 const response = await fetch(url);
 
                 if (response.status === 401) {

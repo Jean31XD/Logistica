@@ -35,7 +35,8 @@
       "Bash(del \"C:\\xampp\\htdocs\\MACO.AppLogistica.Web-1\\verificar_factura.php\")",
       "Bash(del \"C:\\xampp\\htdocs\\MACO.AppLogistica.Web-1\\test_custinvoicejour.php\")",
       "Bash(del \"C:\\xampp\\htdocs\\MACO.AppLogistica.Web-1\\test_facturas_by_truck.php\")",
-      "Bash(del \"C:\\xampp\\htdocs\\MACO.AppLogistica.Web-1\\test_camiones_pw.php\")"
+      "Bash(del \"C:\\xampp\\htdocs\\MACO.AppLogistica.Web-1\\test_camiones_pw.php\")",
+      "Bash(dir /b \"C:\\\\xampp\\\\htdocs\\\\MACO.AppLogistica.Web-1\")"
     ],
     "deny": [],
     "ask": []
