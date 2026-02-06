@@ -88,8 +88,9 @@ if (!function_exists('buildFacturasCTE')) {
                 MAX(fl.invoiceaccount) AS invoiceaccount,
                 MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
                 SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
-                MAX(fl.invoicingname) AS invoicingname
+                MAX(c.name) AS invoicingname
             FROM Facturas_lineas fl
+            LEFT JOIN CustTable c ON fl.invoiceaccount = c.accountnum
             $whereClause
             GROUP BY fl.invoiceid, fl.inventlocationid 
         )
