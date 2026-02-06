@@ -768,7 +768,36 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             <div class="content-area">
 
             <div id="view-overview" class="view-container active">
-                <div class="grid-layout">
+                <!-- Alerta de Entregas sin QR - Acceso Rápido -->
+                <div id="sinqr-alert" class="sinqr-alert" style="display: none; margin-bottom: 1.5rem; background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 1rem 1.5rem; border-left: 4px solid #F59E0B; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); cursor: pointer;" onclick="document.querySelector('[data-view=performance]').click();">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="background: #F59E0B; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; color: #92400E; font-size: 1.1rem; font-weight: 700;">
+                                    <i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i>
+                                    Entregas sin Escaneo QR
+                                </h3>
+                                <p style="margin: 0.25rem 0 0; color: #B45309; font-size: 0.9rem;">
+                                    Hay facturas entregadas sin confirmación de código QR
+                                </p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="text-align: center;">
+                                <div id="sinqr-overview-count" style="font-size: 2.5rem; font-weight: 800; color: #D97706;">--</div>
+                                <div style="font-size: 0.75rem; color: #92400E; font-weight: 600;">PENDIENTES</div>
+                            </div>
+                            <div style="color: #92400E; font-size: 1.5rem;">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                     <div class="kpi-card" id="kpi-total-emitidas">
                         <h2>Total Emitidas</h2>
                         <p id="total-emitidas">--</p>
@@ -777,10 +806,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <h2>Sin Estado Asignado</h2>
                         <p id="sin-estado">--</p>
                     </div>
+                    <div class="kpi-card" id="kpi-sin-qr" style="border-left-color: #F59E0B; cursor: pointer;" onclick="document.querySelector('[data-view=performance]').click();">
+                        <h2 style="color: #D97706;"><i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i>Sin QR</h2>
+                        <p id="overview-sinqr-total" style="color: #F59E0B;">--</p>
+                    </div>
                 </div>
-                <div class="card" style="margin-top: 1.5rem;">
+                <div class="card" style="margin-top: 1rem;">
                     <h2>Distribución por Estado</h2>
-                    <div class="chart-container"><canvas id="statusChart"></canvas></div>
+                    <div class="chart-container" style="max-height: 300px;"><canvas id="statusChart"></canvas></div>
                     <table class="status-table">
                         <thead><tr><th>Estado</th><th>Total de Facturas</th></tr></thead>
                         <tbody id="statusTableBody"></tbody>
@@ -2041,6 +2074,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             const sinQRTotal = document.getElementById('sinqr-total');
             const sinQRShowing = document.getElementById('sinqr-showing');
             
+            // Elementos del Overview
+            const sinQRAlert = document.getElementById('sinqr-alert');
+            const sinQROverviewCount = document.getElementById('sinqr-overview-count');
+            const overviewSinQRTotal = document.getElementById('overview-sinqr-total');
+            
             try {
                 const url = `../../Logica/api_get_data.php?view=entregas_sin_qr&fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}`;
                 const response = await fetch(url);
@@ -2050,11 +2088,24 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     throw new Error(data.error);
                 }
                 
-                // Actualizar KPI
-                sinQRTotal.textContent = data.total || 0;
-                sinQRShowing.textContent = data.entregas ? data.entregas.length : 0;
+                const totalCount = data.total || 0;
                 
-                // Renderizar tabla
+                // Actualizar KPI en Performance
+                if (sinQRTotal) sinQRTotal.textContent = totalCount;
+                if (sinQRShowing) sinQRShowing.textContent = data.entregas ? data.entregas.length : 0;
+                
+                // Actualizar contadores en Overview
+                if (sinQROverviewCount) sinQROverviewCount.textContent = totalCount;
+                if (overviewSinQRTotal) overviewSinQRTotal.textContent = totalCount;
+                
+                // Mostrar/ocultar alerta en Overview
+                if (sinQRAlert) {
+                    sinQRAlert.style.display = totalCount > 0 ? 'block' : 'none';
+                }
+                
+                // Renderizar tabla si existe
+                if (!sinQRTableBody) return;
+                
                 if (!data.entregas || data.entregas.length === 0) {
                     sinQRTableBody.innerHTML = `
                         <tr>
@@ -2090,13 +2141,19 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 
             } catch (error) {
                 console.error('Error al cargar entregas sin QR:', error);
-                sinQRTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 2rem; color: #E53E3E;">
-                            <i class="fas fa-exclamation-circle"></i> Error al cargar datos: ${error.message}
-                        </td>
-                    </tr>
-                `;
+                if (sinQRTableBody) {
+                    sinQRTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2rem; color: #E53E3E;">
+                                <i class="fas fa-exclamation-circle"></i> Error al cargar datos: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
+                // Mostrar 0 en Overview si hay error
+                if (sinQROverviewCount) sinQROverviewCount.textContent = '0';
+                if (overviewSinQRTotal) overviewSinQRTotal.textContent = '0';
+                if (sinQRAlert) sinQRAlert.style.display = 'none';
             }
         };
 
@@ -2184,6 +2241,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 } else if (currentView !== 'details') {
                     fetchData(inicio, fin, almacen, currentView);
                 }
+                // Actualizar conteo de entregas sin QR
+                fetchSinQRData();
             }
         };
 
@@ -2210,6 +2269,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         }
         
         applyFiltersAndFetchData();
+        fetchSinQRData(); // Cargar conteo de entregas sin QR para Overview
         setupKpiClickEvents();
 
         // --- Eventos ---
