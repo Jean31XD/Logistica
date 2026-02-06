@@ -57,7 +57,7 @@ $homePage = [
     9 => '../pantallas/Portal.php'
 ];
 
-$homeUrl = $homePage[$pantalla] ?? '../pantallas/Portal.php';
+$homeUrl = '../pantallas/Portal.php';
 
 // =========================================================================
 // LOGOUT HANDLER

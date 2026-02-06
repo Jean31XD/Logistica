@@ -85,14 +85,12 @@ if (!function_exists('buildFacturasCTE')) {
             SELECT
                 fl.invoiceid,
                 fl.inventlocationid,
-                MAX(fl.invoiceaccount) AS invoiceaccount,
                 MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
                 SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
-                MAX(c.name) AS invoicingname
+                MAX(fl.invoicingname) AS invoicingname
             FROM Facturas_lineas fl
-            LEFT JOIN CustTable c ON fl.invoiceaccount = c.accountnum
             $whereClause
-            GROUP BY fl.invoiceid, fl.inventlocationid 
+            GROUP BY fl.invoiceid, fl.inventlocationid
         )
         ";
     }
@@ -651,7 +649,6 @@ try {
             $sqlSinQR = $cte_facturas . "
                 SELECT
                     m.No_Factura AS Factura,
-                    f.invoiceaccount AS CodigoCliente,
                     f.invoicingname AS Cliente,
                     m.Estado,
                     m.Camion,
