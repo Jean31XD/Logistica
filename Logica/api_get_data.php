@@ -88,7 +88,7 @@ if (!function_exists('buildFacturasCTE')) {
                 MAX(CAST(fl.invoicedate AS DATE)) AS invoicedate,
                 SUM(fl.lineamount + fl.lineamounttax) AS invoiceamountmst,
                 MAX(fl.invoicingname) AS invoicingname
-            FROM Facturas_lineas fl
+            FROM Facturas_lineas fl WITH (NOLOCK)
             $whereClause
             GROUP BY fl.invoiceid, fl.inventlocationid
         )
@@ -151,8 +151,8 @@ try {
             }
             
             $sqlAlmacenes = "
-                SELECT DISTINCT inventlocationid 
-                FROM Facturas_lineas 
+                SELECT DISTINCT inventlocationid
+                FROM Facturas_lineas WITH (NOLOCK)
                 WHERE inventlocationid IS NOT NULL AND inventlocationid <> ''
                 ORDER BY inventlocationid ASC
             ";

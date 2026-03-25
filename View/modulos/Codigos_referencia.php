@@ -590,27 +590,40 @@ function renderizarTabla(datos) {
             '<span style="color: #999;">-</span>';
         const usuario = item.Usuario || '-';
 
-        const row = $(`
-            <tr class="animate__animated animate__fadeIn" style="animation-delay: ${index * 0.02}s;">
-                <td>${item.id}</td>
-                <td><strong>${item.Nombre}</strong></td>
-                <td>${codigoDisplay}</td>
-                <td>${usuario}</td>
-                <td><span class="${badgeClass}">${badgeText}</span></td>
-                <td style="text-align: center;">
-                    <div class="action-buttons">
-                        <button class="btn-action btn-edit" onclick="editarCodigo('${item.id}', '${item.Nombre.replace(/'/g, "\\'")}', '${item.Codigo_barra || ''}')">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        ${tieneCodigoRow ? `
-                            <button class="btn-action btn-delete" onclick="eliminarCodigo('${item.id}', '${item.Nombre.replace(/'/g, "\\'")}', '${item.Codigo_barra}')">
-                                <i class="fas fa-trash-alt"></i> Eliminar
-                            </button>
-                        ` : ''}
-                    </div>
-                </td>
-            </tr>
-        `);
+        const row = $('<tr>', {
+            class: 'animate__animated animate__fadeIn',
+            style: 'animation-delay: ' + (index * 0.02) + 's;'
+        });
+
+        // Construir celdas usando DOM seguro (evita problemas con caracteres especiales)
+        row.append($('<td>').text(item.id));
+        row.append($('<td>').html($('<strong>').text(item.Nombre)));
+        row.append($('<td>').html(codigoDisplay));
+        row.append($('<td>').text(usuario));
+        row.append($('<td>').html('<span class="' + badgeClass + '">' + badgeText + '</span>'));
+
+        // Botones de acción con data-attributes (seguro para cualquier carácter)
+        const actionDiv = $('<div>', { class: 'action-buttons' });
+
+        const btnEdit = $('<button>', {
+            class: 'btn-action btn-edit',
+            'data-id': item.id,
+            'data-nombre': item.Nombre,
+            'data-codigo': item.Codigo_barra || ''
+        }).html('<i class="fas fa-edit"></i> Editar');
+        actionDiv.append(btnEdit);
+
+        if (tieneCodigoRow) {
+            const btnDelete = $('<button>', {
+                class: 'btn-action btn-delete',
+                'data-id': item.id,
+                'data-nombre': item.Nombre,
+                'data-codigo': item.Codigo_barra
+            }).html('<i class="fas fa-trash-alt"></i> Eliminar');
+            actionDiv.append(btnDelete);
+        }
+
+        row.append($('<td>', { style: 'text-align: center;' }).append(actionDiv));
         tbody.append(row);
     });
 }
@@ -861,6 +874,17 @@ $(document).ready(function () {
         });
 
         window.location.href = '../../Logica/exportar_codigos.php?' + params.toString();
+    });
+
+    // Event delegation para botones Edit/Delete (seguro con caracteres especiales)
+    $(document).on('click', '.btn-edit', function() {
+        const btn = $(this);
+        editarCodigo(btn.data('id'), btn.data('nombre'), btn.data('codigo'));
+    });
+
+    $(document).on('click', '.btn-delete', function() {
+        const btn = $(this);
+        eliminarCodigo(btn.data('id'), btn.data('nombre'), btn.data('codigo'));
     });
 
 });
