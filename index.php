@@ -31,7 +31,7 @@ if (isset($_GET['error']) && $_GET['error'] === 'auth') {
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión | MACO Logística</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -88,6 +88,13 @@ if (isset($_GET['error']) && $_GET['error'] === 'auth') {
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
         }
 
         /* Panel izquierdo - Branding */
@@ -223,13 +230,18 @@ if (isset($_GET['error']) && $_GET['error'] === 'auth') {
 
         .btn-microsoft:hover {
             border-color: #0078d4;
-            background-color: #f8fafc;
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px -5px rgba(0, 120, 212, 0.2);
+            background-color: #f0f7ff;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -5px rgba(0, 120, 212, 0.18);
         }
 
         .btn-microsoft:active {
-            transform: translateY(-1px);
+            transform: translateY(0);
+        }
+
+        .btn-microsoft:focus-visible {
+            outline: 3px solid #0078d4;
+            outline-offset: 2px;
         }
 
         .btn-microsoft svg {
@@ -362,13 +374,16 @@ if (isset($_GET['error']) && $_GET['error'] === 'auth') {
         </div>
 
         <?php if (!empty($errorLogin)): ?>
-        <div class="error-alert">
-            <i class="fas fa-exclamation-circle" style="font-size: 1.4rem;"></i>
+        <div class="error-alert" role="alert" aria-live="assertive">
+            <i class="fas fa-exclamation-circle" aria-hidden="true" style="font-size: 1.4rem; flex-shrink:0;"></i>
             <span><?= htmlspecialchars($errorLogin) ?></span>
         </div>
         <?php endif; ?>
 
-        <a href="Logica/auth_microsoft.php" class="btn-microsoft">
+        <a href="Logica/auth_microsoft.php"
+           class="btn-microsoft"
+           aria-label="Iniciar sesión con tu cuenta Microsoft corporativa"
+           id="btn-login">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21">
                 <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
                 <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
@@ -394,12 +409,16 @@ if (isset($_GET['error']) && $_GET['error'] === 'auth') {
     });
 
     // Feedback visual al hacer click en el botón (prevención de múltiples clicks)
-    const loginBtn = document.querySelector('.btn-microsoft');
-    loginBtn.addEventListener('click', function() {
-        this.style.opacity = '0.7';
-        this.style.pointerEvents = 'none';
-        this.querySelector('span').textContent = 'Conectando...';
-    });
+    const loginBtn = document.getElementById('btn-login');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function () {
+            this.style.opacity = '0.65';
+            this.style.pointerEvents = 'none';
+            this.setAttribute('aria-busy', 'true');
+            const span = this.querySelector('span');
+            if (span) span.textContent = 'Conectando…';
+        });
+    }
 </script>
 
 </body>
