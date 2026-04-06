@@ -39,7 +39,8 @@
       "Bash(dir /b \"C:\\\\xampp\\\\htdocs\\\\MACO.AppLogistica.Web-1\")",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: Corregir CTE del dashboard para usar columnas existentes\n\n- Usar invoicingname directamente de Facturas_lineas sin JOIN a CustTable\n- Quitar referencia a invoiceaccount \\(columna inexistente\\)\n- Usar API_BASE con getApiPath\\(\\) para rutas consistentes\n- Corregir variable $pantalla no definida\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
