@@ -1050,139 +1050,100 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     // Calcular porcentaje de entrega (entregadas vs total asignadas)
                     const porcentajeEntrega = totalAsignadas > 0 ? ((totalEntregadas / totalAsignadas) * 100).toFixed(1) : 0;
 
-                    transportistasHTML += `
-                        <div class="transportista-card" id="truck-${index}" data-camion="${truck}">
-                            <div class="transportista-header" onclick="toggleTransportista('truck-${index}')">
-                                <div class="transportista-nombre">
-                                    <i class="fas fa-truck"></i>
-                                    <div>
-                                        <div style="font-size: 1.1rem; font-weight: 700;">${placa}</div>
-                                        <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 0.25rem;">
-                                            <i class="fas fa-user" style="margin-right: 0.25rem;"></i>${transportista}
-                                        </div>
-                                        <div style="font-size: 0.7rem; opacity: 0.75; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
-                                            <div><i class="fas fa-barcode" style="margin-right: 0.25rem;"></i> Chasis: ${chasis}</div>
-                                            <div><i class="fas fa-cog" style="margin-right: 0.25rem;"></i> Modelo: ${modelo}</div>
-                                            <div><i class="fas fa-hashtag" style="margin-right: 0.25rem;"></i> Ficha: ${ficha}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="transportista-stats">
-                                    <div class="stat-item">
-                                        <div class="stat-label">Total</div>
-                                        <div class="stat-value" style="color: rgba(255,255,255,0.9);">${totalAsignadas}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Entregadas</div>
-                                        <div class="stat-value" style="color: #48BB78;">${totalEntregadas}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">Despachadas</div>
-                                        <div class="stat-value" style="color: #ED8936;">${totalDespachadas}</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-label">% Entrega</div>
-                                        <div class="stat-value" style="color: ${porcentajeEntrega >= 90 ? '#48BB78' : porcentajeEntrega >= 70 ? '#ECC94B' : '#FC8181'};">${porcentajeEntrega}%</div>
-                                    </div>
-                                    <i class="fas fa-chevron-down expand-icon"></i>
-                                </div>
-                            </div>
-                            <div class="transportista-details">
-                                <div class="transportista-details-content">
-                                    <!-- Resumen de Métricas -->
-                                    <div class="metricas-resumen">
-                                        <div class="metrica-card">
-                                            <div class="metrica-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                                <i class="fas fa-clock"></i>
-                                            </div>
-                                            <div class="metrica-info">
-                                                <div class="metrica-label">Tiempo Promedio</div>
-                                                <div class="metrica-value"><span class="avg-time">--</span> hrs</div>
-                                            </div>
-                                        </div>
-                                        <div class="metrica-card">
-                                            <div class="metrica-icon" style="background: linear-gradient(135deg, #48BB78 0%, #38A169 100%);">
-                                                <i class="fas fa-check-circle"></i>
-                                            </div>
-                                            <div class="metrica-info">
-                                                <div class="metrica-label">Entregadas</div>
-                                                <div class="metrica-value"><span class="entregadas-count">--</span></div>
-                                            </div>
-                                        </div>
-                                        <div class="metrica-card">
-                                            <div class="metrica-icon" style="background: linear-gradient(135deg, #ED8936 0%, #DD6B20 100%);">
-                                                <i class="fas fa-hourglass-half"></i>
-                                            </div>
-                                            <div class="metrica-info">
-                                                <div class="metrica-label">Pendientes</div>
-                                                <div class="metrica-value"><span class="pending-count">--</span></div>
-                                            </div>
-                                        </div>
-                                        <div class="metrica-card">
-                                            <div class="metrica-icon" style="background: linear-gradient(135deg, #4299E1 0%, #3182CE 100%);">
-                                                <i class="fas fa-box"></i>
-                                            </div>
-                                            <div class="metrica-info">
-                                                <div class="metrica-label">Total Facturas</div>
-                                                <div class="metrica-value"><span class="total-facturas">--</span></div>
-                                            </div>
-                                        </div>
-                                    </div>
+                    const accentColor = porcentajeEntrega >= 90 ? '#059669' : porcentajeEntrega >= 70 ? '#D97706' : '#E63946';
+                    const pctClass   = porcentajeEntrega >= 90 ? 'pct-high' : porcentajeEntrega >= 70 ? 'pct-mid' : 'pct-low';
 
-                                    <!-- Tabla de Facturas -->
-                                    <div class="facturas-table-wrapper">
-                                        <div class="table-header">
-                                            <h3><i class="fas fa-list"></i> Detalle de Facturas</h3>
-                                            <div class="table-actions">
-                                                <button class="filter-btn" data-filter="all">
-                                                    <i class="fas fa-th"></i> Todas
-                                                </button>
-                                                <button class="filter-btn" data-filter="entregado">
-                                                    <i class="fas fa-check"></i> Entregadas
-                                                </button>
-                                                <button class="filter-btn active" data-filter="despachado">
-                                                    <i class="fas fa-shipping-fast"></i> Pendientes
-                                                </button>
-                                            </div>
+                    transportistasHTML += `
+                        <div class="tc" id="truck-${index}" data-camion="${truck}" style="--tc-accent:${accentColor};">
+                            <button class="tc-header" onclick="toggleTransportista('truck-${index}')" aria-expanded="false" aria-controls="tc-body-${index}">
+                                <div class="tc-left">
+                                    <div class="tc-icon" aria-hidden="true"><i class="fas fa-truck"></i></div>
+                                    <div class="tc-identity">
+                                        <div class="tc-placa">${placa}</div>
+                                        <div class="tc-driver"><i class="fas fa-user" aria-hidden="true"></i> ${transportista}</div>
+                                        <div class="tc-chips">
+                                            <span class="tc-chip"><i class="fas fa-barcode" aria-hidden="true"></i>${chasis}</span>
+                                            <span class="tc-chip"><i class="fas fa-cog" aria-hidden="true"></i>${modelo}</span>
+                                            <span class="tc-chip"><i class="fas fa-hashtag" aria-hidden="true"></i>${ficha}</span>
                                         </div>
-                                        <table class="delivery-details-table">
+                                    </div>
+                                </div>
+                                <div class="tc-right">
+                                    <span class="tc-stat tc-stat--blue" aria-label="${totalAsignadas} total"><i class="fas fa-box" aria-hidden="true"></i>${totalAsignadas}</span>
+                                    <span class="tc-stat tc-stat--green" aria-label="${totalEntregadas} entregadas"><i class="fas fa-check-circle" aria-hidden="true"></i>${totalEntregadas}</span>
+                                    <span class="tc-stat tc-stat--orange" aria-label="${totalDespachadas} despachadas"><i class="fas fa-shipping-fast" aria-hidden="true"></i>${totalDespachadas}</span>
+                                    <span class="tc-pct ${pctClass}" aria-label="${porcentajeEntrega}% entregado">${porcentajeEntrega}%</span>
+                                    <i class="fas fa-chevron-down tc-chevron" aria-hidden="true"></i>
+                                </div>
+                            </button>
+                            <div class="tc-progress" role="progressbar" aria-valuenow="${porcentajeEntrega}" aria-valuemin="0" aria-valuemax="100">
+                                <div class="tc-progress-fill" style="width:${porcentajeEntrega}%"></div>
+                            </div>
+                            <div class="tc-body" id="tc-body-${index}">
+                                <div class="tc-metrics-bar">
+                                    <div class="tc-metric">
+                                        <i class="fas fa-clock" aria-hidden="true"></i>
+                                        <div>
+                                            <div class="tc-metric-val"><span class="avg-time">--</span> hrs</div>
+                                            <div class="tc-metric-lbl">Tiempo Prom.</div>
+                                        </div>
+                                    </div>
+                                    <div class="tc-metric tc-metric--green">
+                                        <i class="fas fa-check-circle" aria-hidden="true"></i>
+                                        <div>
+                                            <div class="tc-metric-val"><span class="entregadas-count">--</span></div>
+                                            <div class="tc-metric-lbl">Entregadas</div>
+                                        </div>
+                                    </div>
+                                    <div class="tc-metric tc-metric--orange">
+                                        <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+                                        <div>
+                                            <div class="tc-metric-val"><span class="pending-count">--</span></div>
+                                            <div class="tc-metric-lbl">Pendientes</div>
+                                        </div>
+                                    </div>
+                                    <div class="tc-metric tc-metric--blue">
+                                        <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                        <div>
+                                            <div class="tc-metric-val"><span class="total-facturas">--</span></div>
+                                            <div class="tc-metric-lbl">Total</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tc-table-wrap">
+                                    <div class="tc-table-toolbar">
+                                        <span class="tc-toolbar-title"><i class="fas fa-file-invoice" aria-hidden="true"></i> Facturas asignadas</span>
+                                        <div class="tc-filters" role="group" aria-label="Filtrar facturas">
+                                            <button class="tc-filter-btn" data-filter="all"><i class="fas fa-th" aria-hidden="true"></i> Todas</button>
+                                            <button class="tc-filter-btn" data-filter="entregado"><i class="fas fa-check" aria-hidden="true"></i> Entregadas</button>
+                                            <button class="tc-filter-btn tc-filter-active" data-filter="despachado"><i class="fas fa-shipping-fast" aria-hidden="true"></i> Pendientes</button>
+                                        </div>
+                                    </div>
+                                    <div class="tc-table-scroll">
+                                        <table class="tc-table">
                                             <thead>
                                                 <tr>
-                                                    <th><i class="fas fa-hashtag"></i> Factura</th>
-                                                    <th><i class="fas fa-user"></i> Cliente</th>
-                                                    <th><i class="fas fa-truck"></i> Transportista</th>
-                                                    <th><i class="fas fa-info-circle"></i> Estado</th>
-                                                    <th><i class="fas fa-calendar-alt"></i> F. Despacho</th>
-                                                    <th><i class="fas fa-user-tie"></i> Despachado Por</th>
-                                                    <th><i class="fas fa-calendar-check"></i> F. Entrega</th>
-                                                    <th><i class="fas fa-stopwatch"></i> Tiempo</th>
+                                                    <th>Factura</th>
+                                                    <th>Cliente</th>
+                                                    <th>Transportista</th>
+                                                    <th>Estado</th>
+                                                    <th>F. Despacho</th>
+                                                    <th>Despachado Por</th>
+                                                    <th>F. Entrega</th>
+                                                    <th>Tiempo</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="facturas-tbody">
-                                                <tr>
-                                                    <td colspan="8" style="text-align: center; padding: 2rem;">
-                                                        <div class="loading-spinner">
-                                                            <i class="fas fa-spinner fa-spin fa-2x"></i>
-                                                            <p>Cargando facturas...</p>
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                                                <tr><td colspan="8" class="tc-loading"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Cargando facturas...</td></tr>
                                             </tbody>
                                         </table>
-                                        <!-- Controles de Paginación -->
-                                        <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #F7FAFC; border-top: 1px solid #E2E8F0;">
-                                            <div class="pagination-info" style="color: #718096; font-size: 0.875rem;">
-                                                Mostrando <span class="showing-start">0</span>-<span class="showing-end">0</span> de <span class="total-items">0</span> facturas
-                                            </div>
-                                            <div class="pagination-buttons" style="display: flex; gap: 0.5rem;">
-                                                <button class="pagination-btn prev-page" disabled style="padding: 0.5rem 1rem; border: 1px solid #E2E8F0; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
-                                                    <i class="fas fa-chevron-left"></i> Anterior
-                                                </button>
-                                                <span class="page-indicator" style="padding: 0.5rem 1rem; background: #E63946; color: white; border-radius: 6px; font-weight: 600;">1</span>
-                                                <button class="pagination-btn next-page" style="padding: 0.5rem 1rem; border: 1px solid #E2E8F0; background: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
-                                                    Siguiente <i class="fas fa-chevron-right"></i>
-                                                </button>
-                                            </div>
+                                    </div>
+                                    <div class="tc-pagination pagination-controls">
+                                        <span class="pagination-info">Mostrando <span class="showing-start">0</span>-<span class="showing-end">0</span> de <span class="total-items">0</span></span>
+                                        <div class="pagination-buttons">
+                                            <button class="pagination-btn prev-page" disabled><i class="fas fa-chevron-left" aria-hidden="true"></i> Ant.</button>
+                                            <span class="page-indicator">1</span>
+                                            <button class="pagination-btn next-page">Sig. <i class="fas fa-chevron-right" aria-hidden="true"></i></button>
                                         </div>
                                     </div>
                                 </div>
@@ -1211,7 +1172,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     const totalPages = Math.ceil(window.totalTrucks / window.trucksPerPageValue);
                     
                     // Mostrar/ocultar cards según página
-                    const allCards = transportistasContainer.querySelectorAll('.transportista-card');
+                    const allCards = transportistasContainer.querySelectorAll('.tc');
                     allCards.forEach((card, idx) => {
                         if (idx >= start && idx < end) {
                             card.style.display = 'block';
@@ -1256,15 +1217,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             const card = document.getElementById(truckId);
             if (!card) return;
 
-            const details = card.querySelector('.transportista-details');
-            const icon = card.querySelector('.expand-icon');
+            const details = card.querySelector('.tc-body');
+            const icon = card.querySelector('.tc-chevron');
+            const headerBtn = card.querySelector('.tc-header');
 
-            if (details.classList.contains('expanded')) {
-                details.classList.remove('expanded');
-                icon.classList.remove('expanded');
+            if (details.classList.contains('tc-body--open')) {
+                details.classList.remove('tc-body--open');
+                icon.classList.remove('tc-chevron--open');
+                if (headerBtn) headerBtn.setAttribute('aria-expanded', 'false');
             } else {
-                details.classList.add('expanded');
-                icon.classList.add('expanded');
+                details.classList.add('tc-body--open');
+                icon.classList.add('tc-chevron--open');
+                if (headerBtn) headerBtn.setAttribute('aria-expanded', 'true');
 
                 const tbody = card.querySelector('.facturas-tbody');
                 const avgTimeSpan = card.querySelector('.avg-time');
@@ -1437,13 +1401,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                             renderPage(1);
 
                             // Agregar funcionalidad de filtrado
-                            const filterBtns = card.querySelectorAll('.filter-btn');
+                            const filterBtns = card.querySelectorAll('.tc-filter-btn');
                             filterBtns.forEach(btn => {
                                 btn.addEventListener('click', function() {
                                     // Remover active de todos
-                                    filterBtns.forEach(b => b.classList.remove('active'));
+                                    filterBtns.forEach(b => b.classList.remove('tc-filter-active'));
                                     // Agregar active al clickeado
-                                    this.classList.add('active');
+                                    this.classList.add('tc-filter-active');
 
                                     // Actualizar filtro y re-renderizar desde página 1
                                     currentFilter = this.dataset.filter;

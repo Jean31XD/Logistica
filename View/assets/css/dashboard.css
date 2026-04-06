@@ -641,122 +641,321 @@ body {
 .sinqr-count-label  { font-size: 0.65rem; color: #92400E; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
 
 /* ==========================================================================
-   Transportistas
+   Truck Cards (tc-*)
    ========================================================================== */
-.transportistas-container { display: flex; flex-direction: column; gap: 8px; }
-
-.transportista-card {
+.tc {
     background: var(--bg-card);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    border-left: 4px solid var(--tc-accent, var(--primary));
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    margin-bottom: 0.5rem;
 }
-.transportista-card:hover { box-shadow: var(--shadow-md); border-color: rgba(230,57,70,0.15); }
+.tc:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
 
-.transportista-header {
+/* ── Header (button for accessibility) ── */
+.tc-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
-    background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
-    color: #fff;
+    width: 100%;
+    padding: 0.875rem 1.125rem;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    transition: background-color 0.2s ease, filter 0.2s ease;
-    gap: 0.5rem;
-}
-.transportista-header:hover { filter: brightness(1.1); }
-
-.transportista-nombre {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    font-size: 0.875rem;
-    min-width: 0;
-}
-.transportista-nombre > div { min-width: 0; }
-.transportista-nombre i { font-size: 1.1rem; flex-shrink: 0; }
-
-.transportista-stats {
-    display: flex;
     gap: 1rem;
+    font-family: inherit;
+    text-align: left;
+    color: var(--text-dark);
+    transition: background-color 0.15s ease;
+}
+.tc-header:hover { background: rgba(0,0,0,0.015); }
+
+.tc-left {
+    display: flex;
     align-items: center;
+    gap: 0.875rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.tc-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: var(--radius-md);
+    background: var(--tc-accent, var(--primary));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
     flex-shrink: 0;
 }
 
-.stat-item   { text-align: center; min-width: 48px; }
-.stat-label  { font-size: 0.55rem; text-transform: uppercase; opacity: 0.8; letter-spacing: 0.4px; font-weight: 600; }
-.stat-value  { font-size: 1.125rem; font-weight: 800; margin-top: 2px; }
+.tc-identity { min-width: 0; }
+.tc-placa {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+.tc-driver {
+    font-size: 0.78rem;
+    color: var(--text-body);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.15rem;
+}
+.tc-driver i { color: var(--text-muted); font-size: 0.7rem; }
 
-.expand-icon { transition: transform 0.25s ease; flex-shrink: 0; }
-.expand-icon.expanded { transform: rotate(180deg); }
+.tc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+}
+.tc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--bg-body);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+.tc-chip i { font-size: 0.6rem; }
 
-.transportista-details {
+/* ── Right stats ── */
+.tc-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.tc-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.tc-stat i { font-size: 0.7rem; }
+.tc-stat--blue   { background: rgba(49,130,206,0.08); color: #2B6CB0; }
+.tc-stat--green  { background: rgba(5,150,105,0.08);  color: #059669; }
+.tc-stat--orange { background: rgba(217,119,6,0.08);  color: #B45309; }
+
+.tc-pct {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    padding: 0.3rem 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+}
+.pct-high { background: rgba(5,150,105,0.1);  color: #059669; }
+.pct-mid  { background: rgba(217,119,6,0.1);  color: #B45309; }
+.pct-low  { background: rgba(230,57,70,0.1);  color: #E63946; }
+
+.tc-chevron {
+    transition: transform 0.25s ease;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    flex-shrink: 0;
+}
+.tc-chevron--open { transform: rotate(180deg); color: var(--tc-accent, var(--primary)); }
+
+/* ── Progress bar ── */
+.tc-progress {
+    height: 3px;
+    background: var(--bg-body);
+    overflow: hidden;
+}
+.tc-progress-fill {
+    height: 100%;
+    background: var(--tc-accent, var(--primary));
+    border-radius: 0 3px 3px 0;
+    transition: width 0.4s ease;
+}
+
+/* ── Expandable body ── */
+.tc-body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.35s ease;
 }
-.transportista-details.expanded { max-height: 2000px; }
+.tc-body--open { max-height: 2000px; }
 
-.transportista-details-content {
-    padding: 1rem;
-    background: #FAFBFC;
-}
-
-/* ==========================================================================
-   Métricas
-   ========================================================================== */
-.metricas-resumen {
+/* ── Metrics bar ── */
+.tc-metrics-bar {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.625rem;
+    padding: 1rem 1.125rem;
+    background: #FAFBFC;
+    border-bottom: 1px solid var(--border);
 }
 
-.metrica-card {
+.tc-metric {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
     background: var(--bg-card);
     border-radius: var(--radius-md);
-    padding: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-.metrica-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-
-.metrica-icon {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 0.875rem;
-}
-
-.metrica-label {
-    font-size: 0.6rem;
+.tc-metric i {
+    font-size: 1rem;
     color: var(--text-muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    flex-shrink: 0;
 }
-.metrica-value {
-    font-size: 1.125rem;
+.tc-metric--green i { color: #059669; }
+.tc-metric--orange i { color: #D97706; }
+.tc-metric--blue i   { color: #2B6CB0; }
+
+.tc-metric-val {
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-dark);
-    margin-top: 2px;
-    line-height: 1;
+    line-height: 1.2;
+}
+.tc-metric-lbl {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* ── Table wrapper ── */
+.tc-table-wrap {
+    padding: 0 1.125rem 1rem;
+}
+
+.tc-table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tc-toolbar-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+.tc-toolbar-title i { color: var(--primary); font-size: 0.78rem; }
+
+.tc-filters {
+    display: flex;
+    gap: 4px;
+}
+
+.tc-filter-btn {
+    padding: 0.3rem 0.625rem;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-muted);
+    transition: var(--t-colors);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.tc-filter-btn:hover { color: var(--primary); border-color: var(--primary); background: rgba(230,57,70,0.03); }
+.tc-filter-btn.tc-filter-active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.tc-table-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.tc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+.tc-table thead { background: #F8FAFC; }
+.tc-table th {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+.tc-table td { padding: 0.5rem 0.75rem; color: var(--text-dark); border-bottom: 1px solid var(--border); }
+.tc-table tbody tr:last-child td { border-bottom: none; }
+.tc-table tbody tr:hover { background: rgba(0,0,0,0.015); }
+.tc-table tbody tr[data-estado="ENTREGADO"] { background: rgba(5,150,105,0.03); }
+
+.tc-loading {
+    text-align: center;
+    padding: 2rem !important;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+.tc-loading i { margin-right: 0.5rem; }
+
+.tc-pagination {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+    .tc-metrics-bar { grid-template-columns: repeat(2, 1fr); }
+    .tc-right { flex-wrap: wrap; justify-content: flex-end; }
+}
+@media (max-width: 768px) {
+    .tc-header { flex-direction: column; align-items: flex-start; }
+    .tc-right { width: 100%; justify-content: flex-start; }
+    .tc-metrics-bar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+    .tc-metrics-bar { grid-template-columns: 1fr; }
 }
 
 /* ==========================================================================
-   Facturas Table Wrapper
+   Facturas Table Wrapper (used in sinQR section)
    ========================================================================== */
 .facturas-table-wrapper {
     background: white;
