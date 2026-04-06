@@ -175,12 +175,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     <span>Tendencias</span>
                 </a>
                 <a href="#" class="tab-item" data-view="performance">
-                    <i class="fas fa-truck"></i>
+                    <i class="fas fa-tachometer-alt"></i>
                     <span>Rendimiento</span>
                 </a>
                 <a href="#" class="tab-item" data-view="financial">
                     <i class="fas fa-dollar-sign"></i>
                     <span>Financiero</span>
+                </a>
+                <a href="#" class="tab-item" data-view="trucks">
+                    <i class="fas fa-truck"></i>
+                    <span>Camiones</span>
                 </a>
             </nav>
             
@@ -340,7 +344,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <p id="perf-kpi-total-cycle">-- horas</p>
                     </div>
                 </div>
-                <div class="grid-layout" style="grid-template-columns: repeat(3,1fr);">
+                <div class="grid-layout">
                     <div class="card">
                         <h2><i class="fas fa-undo-alt" aria-hidden="true"></i> Motivos de NC</h2>
                         <div class="chart-container"><canvas id="ncReasonsChart"></canvas></div>
@@ -348,44 +352,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     <div class="card">
                         <h2><i class="fas fa-truck" aria-hidden="true"></i> Top 5 Camiones</h2>
                         <div class="chart-container"><canvas id="truckPerformanceChart"></canvas></div>
-                    </div>
-                    <div class="card">
-                        <h2><i class="fas fa-balance-scale" aria-hidden="true"></i> Pendientes VS Entregadas</h2>
-                        <div class="chart-container"><canvas id="deliveryComparisonChart"></canvas></div>
-                    </div>
-                </div>
-
-                <!-- Vista mejorada de transportistas -->
-                <div class="card" style="margin-top:0.75rem;">
-                    <div class="sinqr-alert-inner" style="margin-bottom:0.75rem;">
-                        <div>
-                            <h2 style="border:none; padding:0; margin:0;"><i class="fas fa-truck" aria-hidden="true"></i> Detalle de Entregas por Camión</h2>
-                            <p class="maco-text-muted" style="font-size:0.8rem; margin:0.25rem 0 0;">Haz clic en cualquier camión para ver sus entregas detalladas.</p>
-                        </div>
-                        <span id="trucksInfo" style="color:var(--text-muted); font-size:0.8rem; background:var(--bg-body); padding:0.3rem 0.75rem; border-radius:50px;">0 camiones</span>
-                    </div>
-
-                    <!-- Cards expandibles de cada transportista -->
-                    <div id="transportistasContainer">
-                        <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Cargando detalles de transportistas...</p>
-                    </div>
-                    
-                    <!-- Controles de Paginación Camiones -->
-                    <div id="trucksPagination">
-                        <div style="display:flex; align-items:center; gap:0.5rem;">
-                            <label style="font-size:0.75rem; color:var(--text-muted);">Mostrar:</label>
-                            <select id="trucksPerPage">
-                                <option value="5">5</option>
-                                <option value="10" selected>10</option>
-                                <option value="20">20</option>
-                                <option value="50">50</option>
-                            </select>
-                        </div>
-                        <div id="trucksPageInfo">Página 1 de 1</div>
-                        <div style="display:flex; gap:0.5rem;">
-                            <button id="trucksPrevPage" disabled>← Anterior</button>
-                            <button id="trucksNextPage">Siguiente →</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -418,6 +384,85 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 </div>
             </div>
             
+            <!-- ===== VISTA: CAMIONES ===== -->
+            <div id="view-trucks" class="view-container" role="region" aria-label="Detalle de entregas por camión">
+
+                <!-- KPIs Camiones -->
+                <div class="trucks-kpi-row" role="list">
+                    <div class="kpi-card trucks-kpi" style="border-left-color:#1D3557;" role="listitem">
+                        <h2>Total Camiones</h2>
+                        <p id="trucks-kpi-total">--</p>
+                    </div>
+                    <div class="kpi-card trucks-kpi" style="border-left-color:#3182ce;" role="listitem">
+                        <h2>Total Asignadas</h2>
+                        <p id="trucks-kpi-asignadas">--</p>
+                    </div>
+                    <div class="kpi-card trucks-kpi" style="border-left-color:#38a169;" role="listitem">
+                        <h2>Total Entregadas</h2>
+                        <p id="trucks-kpi-entregadas">--</p>
+                    </div>
+                    <div class="kpi-card trucks-kpi" style="border-left-color:#dd6b20;" role="listitem">
+                        <h2>Efectividad</h2>
+                        <p id="trucks-kpi-efectividad">--</p>
+                    </div>
+                </div>
+
+                <!-- Gráficas propias de la vista Camiones -->
+                <div class="trucks-charts-grid">
+                    <div class="card">
+                        <h2><i class="fas fa-chart-bar" aria-hidden="true"></i> Despachadas vs Entregadas por Camión</h2>
+                        <p class="trucks-chart-subtitle">Comparativo de facturas despachadas (pendientes) y entregadas por unidad</p>
+                        <div class="chart-container trucks-bar-chart"><canvas id="deliveryComparisonChart" aria-label="Gráfico comparativo despachadas vs entregadas por camión" role="img"></canvas></div>
+                    </div>
+                    <div class="card trucks-donut-card">
+                        <h2><i class="fas fa-chart-pie" aria-hidden="true"></i> Efectividad Global</h2>
+                        <p class="trucks-chart-subtitle">Proporción de facturas entregadas vs pendientes</p>
+                        <div class="chart-container trucks-donut-container"><canvas id="trucksDonutChart" aria-label="Gráfico de efectividad global de entregas" role="img"></canvas></div>
+                        <div id="trucks-donut-legend" class="trucks-donut-legend" aria-live="polite"></div>
+                    </div>
+                </div>
+
+                <!-- Acordeón de transportistas -->
+                <div class="card">
+                    <div class="trucks-section-header">
+                        <div>
+                            <h2 class="trucks-section-title">
+                                <i class="fas fa-truck" aria-hidden="true"></i>
+                                Detalle de Entregas por Camión
+                            </h2>
+                            <p class="trucks-section-desc">Haz clic en cualquier camión para ver sus facturas detalladas.</p>
+                        </div>
+                        <span id="trucksInfo" class="trucks-count-badge" aria-live="polite">0 camiones</span>
+                    </div>
+
+                    <div id="transportistasContainer" role="list" aria-label="Lista de camiones">
+                        <p class="trucks-loading-msg"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Cargando datos de camiones...</p>
+                    </div>
+
+                    <!-- Paginación de camiones -->
+                    <div id="trucksPagination" class="trucks-pagination" role="navigation" aria-label="Paginación de camiones">
+                        <div class="trucks-pag-left">
+                            <label for="trucksPerPage" class="trucks-pag-label">Mostrar:</label>
+                            <select id="trucksPerPage" aria-label="Camiones por página">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <div id="trucksPageInfo" class="trucks-page-info" aria-live="polite">Página 1 de 1</div>
+                        <div class="trucks-pag-btns">
+                            <button id="trucksPrevPage" disabled class="trucks-pag-btn" aria-label="Página anterior">
+                                <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
+                            </button>
+                            <button id="trucksNextPage" class="trucks-pag-btn" aria-label="Página siguiente">
+                                Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Footer Profesional -->
             <footer class="dashboard-footer">
                 <div class="footer-left">
@@ -440,7 +485,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         // Ruta base para APIs (usando helper PHP para consistencia)
         const API_BASE = '<?php echo getApiPath(); ?>/api_get_data.php';
 
-        let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart, deliveryComparisonChart;
+        let statusChart, trendsChart, ncReasonsChart, truckPerformanceChart, topClientsChart, topWarehousesChart, deliveryComparisonChart, trucksDonutChart;
         let currentView = 'overview';
         const fechaInicioInput = document.getElementById('fecha_inicio');
         const fechaFinInput = document.getElementById('fecha_fin');
@@ -675,6 +720,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 },
                 options: comparisonOptions
             });
+
+            // Donut — Efectividad Global (vista Camiones)
+            trucksDonutChart = new Chart(document.getElementById('trucksDonutChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Entregadas', 'Pendientes'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['rgba(56,161,105,0.85)', 'rgba(230,57,70,0.75)'],
+                        borderColor:     ['rgba(56,161,105,1)',    'rgba(230,57,70,1)'],
+                        borderWidth: 2,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                    return ` ${context.label}: ${context.parsed} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         };
         
         const populateAlmacenFilter = async () => {
@@ -700,8 +777,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         const fetchData = async (inicio, fin, almacen, view) => {
             loaderEl.classList.add('loading');
             try {
-                // El 'almacen' que se pasa aquí ya está decidido (o del admin o del usuario)
-                const url = `${API_BASE}?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${view}`;
+                // La vista 'trucks' usa el endpoint de performance
+                const apiView = view === 'trucks' ? 'performance' : view;
+                const url = `${API_BASE}?fecha_inicio=${inicio}&fecha_fin=${fin}&almacen=${almacen}&view=${apiView}`;
                 const response = await fetch(url);
 
                 if (response.status === 401) { // 401 Unauthorized (sesión de dashboard expirada)
@@ -725,7 +803,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
                 if (data.error) throw new Error(data.error);
 
-                if (view === 'performance') {
+                if (view === 'trucks') {
+                    await updateTrucksView(data);
+                } else if (view === 'performance') {
                     updatePerformanceView(data);
                 } else if (view === 'financial') {
                     updateFinancialView(data);
@@ -799,11 +879,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 truckPerformanceChart.update();
             }
 
-            // Renderizar tabla detallada de entregas
-            renderDeliveryDetails(data.truckPerformance || []);
-            
-            // Cargar entregas sin QR
-            fetchSinQRData();
+        };
+
+        // Vista de Camiones — usa datos del endpoint performance
+        const updateTrucksView = async (data) => {
+            await renderDeliveryDetails(data.truckPerformance || []);
         };
 
         const renderDeliveryDetails = async (truckData) => {
@@ -901,13 +981,44 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     deliveryComparisonChart.update();
                 }
 
-                // Construir cards expandibles para cada camión
-                let transportistasHTML = '';
+                // ── KPIs de la vista Camiones ──
+                const _totalAsig = Object.values(asignadasByTruck).reduce((a, b) => a + b, 0);
+                const _totalEntr = Object.values(entregadasByTruck).reduce((a, b) => a + b, 0);
+                const _pendientes = Math.max(0, _totalAsig - _totalEntr);
+                const _efectividad = _totalAsig > 0 ? ((_totalEntr / _totalAsig) * 100).toFixed(1) : 0;
+
+                const _elTotal  = document.getElementById('trucks-kpi-total');
+                const _elAsig   = document.getElementById('trucks-kpi-asignadas');
+                const _elEntr   = document.getElementById('trucks-kpi-entregadas');
+                const _elEfec   = document.getElementById('trucks-kpi-efectividad');
 
                 // Solo mostrar camiones que tengan facturas asignadas
-                const trucksWithInvoices = Object.keys(asignadasByTruck).filter(truck => {
-                    return asignadasByTruck[truck] > 0;
-                });
+                const trucksWithInvoices = Object.keys(asignadasByTruck).filter(truck => asignadasByTruck[truck] > 0);
+
+                if (_elTotal)  _elTotal.textContent  = trucksWithInvoices.length;
+                if (_elAsig)   _elAsig.textContent   = _totalAsig.toLocaleString('es-DO');
+                if (_elEntr)   _elEntr.textContent   = _totalEntr.toLocaleString('es-DO');
+                if (_elEfec)   _elEfec.textContent   = `${_efectividad}%`;
+
+                // ── Donut chart ──
+                if (trucksDonutChart) {
+                    trucksDonutChart.data.datasets[0].data = [_totalEntr, _pendientes];
+                    trucksDonutChart.update();
+                }
+                const _legend = document.getElementById('trucks-donut-legend');
+                if (_legend) {
+                    _legend.innerHTML = `
+                        <span class="donut-leg-item donut-leg-green">
+                            <span class="donut-leg-dot"></span>Entregadas: <strong>${_totalEntr.toLocaleString('es-DO')}</strong>
+                        </span>
+                        <span class="donut-leg-item donut-leg-red">
+                            <span class="donut-leg-dot"></span>Pendientes: <strong>${_pendientes.toLocaleString('es-DO')}</strong>
+                        </span>
+                        <span class="donut-leg-pct">${_efectividad}% efectividad</span>`;
+                }
+
+                // Construir cards expandibles para cada camión
+                let transportistasHTML = '';
 
                 console.log('Camiones con facturas:', trucksWithInvoices);
 
