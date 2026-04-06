@@ -43,20 +43,6 @@ if ($stmtAlmacen !== false) {
 // Determinar tipo de usuario (admin = ve todos, warehouse = ve solo su almacén)
 $USER_TYPE = empty($USER_WAREHOUSE) ? 'admin' : 'warehouse';
 
-// Mapeo de pantallas a su página principal/inicio
-// Todas van a Portal.php donde se muestran los módulos asignados
-$homePage = [
-    0 => '../pantallas/Portal.php',
-    1 => '../pantallas/Portal.php',
-    2 => '../pantallas/Portal.php',
-    3 => '../pantallas/Portal.php',
-    4 => '../pantallas/Portal.php',
-    5 => '../pantallas/Portal.php',
-    6 => '../pantallas/Portal.php',
-    8 => '../pantallas/Portal.php',
-    9 => '../pantallas/Portal.php'
-];
-
 $homeUrl = '../pantallas/Portal.php';
 
 // =========================================================================
@@ -86,589 +72,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Facturación Avanzado</title>
+    <title>Dashboard de Facturación | MACO</title>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS Externo del Dashboard -->
+
+    <!-- Dashboard CSS -->
     <link rel="stylesheet" href="<?php echo getBasePath(); ?>/View/assets/css/dashboard.css">
-    <style>
-        :root {
-            --sidebar-bg: #1D3557; --main-bg: #F7FAFC; --card-bg: #ffffff;
-            --text-primary: #2D3748; --text-secondary: #718096; --accent-color: #E63946;
-            --accent-dark: #D62839; --accent-blue: #457B9D;
-            --border-color: #E2E8F0; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-        }
-        * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--main-bg); color: var(--text-primary); }
-        .dashboard-layout { display: flex; height: 100%; }
-        .sidebar {
-            width: 300px;
-            background: linear-gradient(180deg, #1D3557 0%, #0F1F30 100%);
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            color: #fff;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
-        }
-        .logo { margin-bottom: 2rem; text-align: center; padding-bottom: 1.5rem; border-bottom: 2px solid rgba(255, 255, 255, 0.1); }
-        .logo img { max-width: 100%; height: auto; max-height: 80px; }
-        .sidebar-section { margin-bottom: 2rem; }
-        .sidebar-section h3 {
-            font-size: 0.75rem;
-            margin-bottom: 1rem;
-            color: #A0AEC0;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid rgba(230, 57, 70, 0.2);
-        }
-        .sidebar-nav { list-style: none; padding: 0; margin: 0; }
-        .nav-item { margin-bottom: 0.5rem; }
-        .nav-item a {
-            display: flex;
-            align-items: center;
-            padding: 0.875rem 1rem;
-            color: #CBD5E0;
-            text-decoration: none;
-            border-radius: 10px;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .nav-item a:hover {
-            background: rgba(230, 57, 70, 0.1);
-            color: #fff;
-            transform: translateX(5px);
-        }
-        .nav-item a.active {
-            background: var(--accent-color);
-            color: #fff;
-            font-weight: 700;
-            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.4);
-        }
 
-        /* Estilo para el enlace de cerrar sesión del dashboard */
-        .nav-item a.logout-link { color: #F56565; border: 1px solid rgba(245, 101, 101, 0.3); }
-        .nav-item a.logout-link:hover {
-            background: rgba(230, 57, 70, 0.15);
-            color: #fff;
-            border-color: var(--accent-color);
-        }
-
-        .filter-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-        .filter-group {
-            position: relative;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .filter-group:hover {
-            border-color: rgba(230, 57, 70, 0.3);
-            background: rgba(255, 255, 255, 0.98);
-        }
-        .filter-group:focus-within {
-            border-color: var(--accent-color);
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.2);
-            transform: translateY(-2px);
-        }
-        .filter-group label {
-            position: absolute;
-            top: 10px;
-            left: 14px;
-            font-size: 0.7rem;
-            color: #718096;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            pointer-events: none;
-        }
-        .filter-group input,
-        .filter-group select {
-            width: 100%;
-            padding: 2rem 1rem 0.75rem 1rem;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #2D3748;
-            font-family: inherit;
-            font-size: 1rem;
-            appearance: none;
-            font-weight: 600;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-            opacity: 0.6;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator:hover {
-            opacity: 1;
-        }
-        .filter-group select {
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23E63946%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
-            background-repeat: no-repeat;
-            background-position: right 1rem top 50%;
-            background-size: 0.7em auto;
-            cursor: pointer;
-            padding-right: 2.5rem;
-        }
-        .main-content {
-            flex-grow: 1;
-            padding: 2.5rem;
-            overflow-y: auto;
-            overflow-x: hidden;
-            background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
-            max-width: 100%;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 3px solid rgba(230, 57, 70, 0.1);
-        }
-        header h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #E63946 0%, #457B9D 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .loader {
-            font-size: 0.9rem;
-            color: var(--accent-color);
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-weight: 600;
-        }
-        .loader.loading { opacity: 1; }
-        .view-container { display: none; }
-        .view-container.active { display: block; }
-        .grid-layout {
-            display: grid;
-            gap: 2rem;
-            grid-template-columns: repeat(2, 1fr);
-            max-width: 100%;
-            width: 100%;
-        }
-        .card {
-            background-color: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(230, 57, 70, 0.1);
-            transition: all 0.3s ease;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-        }
-        .card h2 { margin-top: 0; font-weight: 700; color: var(--text-primary); }
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        .kpi-card {
-            background: linear-gradient(135deg, #fff 0%, #F7FAFC 100%);
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            border-left: 6px solid var(--accent-color);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .kpi-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px -10px rgba(230, 57, 70, 0.3);
-            border-left-width: 8px;
-        }
-        .kpi-card h2 {
-            margin: 0 0 0.75rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .kpi-card p {
-            margin: 0;
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--accent-color);
-        }
-        .status-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .status-table th, .status-table td { padding: 1rem; text-align: left; }
-        .status-table th {
-            background: #1D3557;
-            font-weight: 700;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 3px solid var(--accent-color);
-        }
-        .status-table tbody tr {
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
-        }
-        .status-table tbody tr:hover { background-color: rgba(69, 123, 157, 0.05); }
-        .status-table tbody tr:nth-child(even) { background-color: #F7FAFC; }
-        .status-table tfoot td {
-            font-weight: 800;
-            background: #EDF2F7;
-            border-top: 3px solid var(--accent-color);
-            padding: 1.25rem 1rem;
-            font-size: 1.1rem;
-        }
-        .status-table tfoot td:last-child {
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            font-weight: 800;
-        }
-
-        /* Tabla de detalles de entregas */
-        .delivery-details-table {
-            width: 100%;
-            margin-top: 2rem;
-            border-collapse: separate;
-            border-spacing: 0;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-            font-size: 0.85rem;
-        }
-        .delivery-details-table th {
-            background: #457B9D;
-            color: white;
-            padding: 0.75rem;
-            font-weight: 600;
-            text-align: left;
-            border-bottom: 2px solid var(--accent-color);
-        }
-        .delivery-details-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .delivery-details-table tbody tr:hover {
-            background-color: rgba(69, 123, 157, 0.08);
-        }
-        .delivery-details-table tbody tr:nth-child(even) {
-            background-color: #F9FAFB;
-        }
-        .truck-header {
-            background: #E63946;
-            color: white;
-            padding: 1rem;
-            font-weight: 700;
-            font-size: 1rem;
-            text-align: left;
-        }
-        .truck-summary {
-            background: #FEF3C7;
-            font-weight: 700;
-            border-top: 2px solid #F59E0B;
-            text-transform: uppercase;
-        }
-
-        /* Estilos para la vista mejorada de transportistas */
-        .transportistas-container {
-            width: 100%;
-        }
-        .transportista-card {
-            background: white;
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .transportista-card:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.15);
-        }
-        .transportista-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 2rem;
-            background: linear-gradient(135deg, #1D3557 0%, #457B9D 100%);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .transportista-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #E63946 0%, #D62839 100%);
-            transition: left 0.4s ease;
-            z-index: 0;
-        }
-        .transportista-header:hover::before {
-            left: 0;
-        }
-        .transportista-header > * {
-            position: relative;
-            z-index: 1;
-        }
-        .transportista-nombre {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            color: white;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        .transportista-nombre i {
-            font-size: 1.5rem;
-        }
-        .transportista-stats {
-            display: flex;
-            gap: 1.5rem;
-            color: white;
-            align-items: center;
-        }
-        .stat-item {
-            text-align: center;
-            min-width: 60px;
-        }
-        .stat-label {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            opacity: 0.85;
-            letter-spacing: 0.8px;
-            font-weight: 600;
-            margin-bottom: 0.35rem;
-        }
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 800;
-            margin-top: 0.25rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .expand-icon {
-            color: white;
-            font-size: 1.2rem;
-            transition: transform 0.3s ease;
-        }
-        .expand-icon.expanded {
-            transform: rotate(180deg);
-        }
-        .transportista-details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease;
-        }
-        .transportista-details.expanded {
-            max-height: 2000px;
-        }
-        .transportista-details-content {
-            padding: 1.5rem;
-            background: #F7FAFC;
-        }
-        .no-data-message {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 3rem;
-            background: white;
-            border-radius: 8px;
-            border: 2px dashed var(--border-color);
-        }
-        .estado-badge {
-            display: inline-block;
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-        }
-        .badge-entregado {
-            background-color: rgba(72, 187, 120, 0.15);
-            color: #2F855A;
-            border: 1px solid rgba(72, 187, 120, 0.3);
-        }
-        .badge-despachado {
-            background-color: rgba(237, 137, 54, 0.15);
-            color: #C05621;
-            border: 1px solid rgba(237, 137, 54, 0.3);
-        }
-
-        /* Métricas Resumen */
-        .metricas-resumen {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metrica-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .metrica-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
-        .metrica-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-        }
-        .metrica-info {
-            flex: 1;
-        }
-        .metrica-label {
-            font-size: 0.75rem;
-            color: #718096;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .metrica-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #2D3748;
-            margin-top: 0.25rem;
-        }
-
-        /* Tabla de Facturas Wrapper */
-        .facturas-table-wrapper {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .table-header h3 {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        .table-header h3 i {
-            margin-right: 0.5rem;
-        }
-        .table-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .filter-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .filter-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-        .filter-btn.active {
-            background: white;
-            color: #667eea;
-            border-color: white;
-        }
-        .filter-btn i {
-            margin-right: 0.35rem;
-        }
-
-        /* Loading Spinner */
-        .loading-spinner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-            color: #667eea;
-        }
-        .loading-spinner p {
-            margin: 0;
-            font-weight: 500;
-        }
-
-        /* Tabla mejorada */
-        .delivery-details-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .delivery-details-table thead {
-            background: #F7FAFC;
-        }
-        .delivery-details-table thead th {
-            padding: 1rem;
-            text-align: left;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #4A5568;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 2px solid #E2E8F0;
-        }
-        .delivery-details-table tbody tr {
-            border-bottom: 1px solid #E2E8F0;
-            transition: background-color 0.2s;
-        }
-        .delivery-details-table tbody tr:hover {
-            background-color: #F7FAFC;
-        }
-        .delivery-details-table tbody td {
-            padding: 1rem;
-            font-size: 0.9rem;
-            color: #2D3748;
-        }
-        .delivery-details-table tbody tr[data-estado="ENTREGADO"] {
-            background-color: rgba(72, 187, 120, 0.05);
-        }
-    </style>
 </head>
 <body>
     <div class="dashboard-layout no-sidebar">
@@ -769,30 +188,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
             <div id="view-overview" class="view-container active">
                 <!-- Alerta de Entregas sin QR -->
-                <div id="sinqr-alert" class="sinqr-alert" style="display: none; margin-bottom: 1.5rem; background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 1rem 1.5rem; border-left: 4px solid #F59E0B; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="background: #F59E0B; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                <div id="sinqr-alert" class="sinqr-alert" role="alert">
+                    <div class="sinqr-alert-inner">
+                        <div class="sinqr-alert-left">
+                            <div class="sinqr-icon" aria-hidden="true">
                                 <i class="fas fa-exclamation-triangle"></i>
                             </div>
                             <div>
-                                <h3 style="margin: 0; color: #92400E; font-size: 1.1rem; font-weight: 700;">
-                                    <i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i>
-                                    Entregas sin Escaneo QR
-                                </h3>
-                                <p style="margin: 0.25rem 0 0; color: #B45309; font-size: 0.9rem;">
-                                    Ver tabla de detalles más abajo
-                                </p>
+                                <h3><i class="fas fa-qrcode me-1" aria-hidden="true"></i> Entregas sin Escaneo QR</h3>
+                                <p>Ver tabla de detalles más abajo</p>
                             </div>
                         </div>
-                        <div style="text-align: center;">
-                            <div id="sinqr-overview-count" style="font-size: 2.5rem; font-weight: 800; color: #D97706;">--</div>
-                            <div style="font-size: 0.75rem; color: #92400E; font-weight: 600;">PENDIENTES</div>
+                        <div class="sinqr-count">
+                            <div id="sinqr-overview-count" class="sinqr-count-number">--</div>
+                            <div class="sinqr-count-label">Pendientes</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid-layout" style="grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <div class="grid-layout">
                     <div class="kpi-card" id="kpi-total-emitidas">
                         <h2>Total Emitidas</h2>
                         <p id="total-emitidas">--</p>
@@ -802,9 +216,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <p id="sin-estado">--</p>
                     </div>
                 </div>
-                <div class="card" style="margin-top: 1rem;">
+                <div class="card" style="margin-top:0.75rem;">
                     <h2>Distribución por Estado</h2>
-                    <div class="chart-container" style="max-height: 300px;"><canvas id="statusChart"></canvas></div>
+                    <div class="chart-container"><canvas id="statusChart"></canvas></div>
                     <table class="status-table">
                         <thead><tr><th>Estado</th><th>Total de Facturas</th></tr></thead>
                         <tbody id="statusTableBody"></tbody>
@@ -813,29 +227,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                 </div>
 
                 <!-- Sección: Entregas sin QR -->
-                <div class="card" style="margin-top: 1.5rem; border-left: 4px solid #F59E0B;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div class="card" style="margin-top:0.75rem; border-left: 4px solid #F59E0B;">
+                    <div class="sinqr-alert-inner" style="margin-bottom:0.75rem;">
                         <div>
-                            <h2 style="margin: 0; color: #D97706;">
-                                <i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i>
-                                Entregas sin Escaneo QR
+                            <h2 style="color:#D97706; border:none; padding:0; margin:0;">
+                                <i class="fas fa-qrcode" aria-hidden="true"></i> Entregas sin Escaneo QR
                             </h2>
-                            <p style="color: var(--text-secondary); margin: 0.5rem 0 0;">
-                                Facturas entregadas sin confirmación de código QR
-                            </p>
+                            <p class="maco-text-muted" style="font-size:0.8rem; margin:0.25rem 0 0;">Facturas entregadas sin confirmación de código QR</p>
                         </div>
-                        <div class="kpi-card" style="border-left-color: #F59E0B; cursor: default; padding: 1rem 1.5rem; margin: 0;">
-                            <h2 style="margin: 0; font-size: 0.7rem;">Total sin QR</h2>
-                            <p id="sinqr-total" style="font-size: 2rem; margin: 0.25rem 0 0; color: #F59E0B;">--</p>
+                        <div class="kpi-card" style="border-left-color:#F59E0B; cursor:default; padding:0.75rem 1rem; margin:0; min-width:100px; text-align:center;">
+                            <h2 style="font-size:0.62rem; margin:0;">Total sin QR</h2>
+                            <p id="sinqr-total" style="font-size:1.75rem; color:#F59E0B;">--</p>
                         </div>
                     </div>
 
                     <!-- Tabla de entregas sin QR -->
-                    <div class="facturas-table-wrapper" style="margin-top: 1rem;">
+                    <div class="facturas-table-wrapper">
                         <div class="table-header" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
-                            <h3><i class="fas fa-list"></i> Detalle de Entregas sin QR</h3>
+                            <h3><i class="fas fa-list" aria-hidden="true"></i> Detalle de Entregas sin QR</h3>
                         </div>
-                        <div style="max-height: 350px; overflow-y: auto;">
+                        <div style="max-height:300px; overflow-y:auto;">
                             <table class="delivery-details-table" id="sinqr-table">
                                 <thead>
                                     <tr>
@@ -859,10 +270,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                                 </tbody>
                             </table>
                         </div>
-                        <div id="sinqr-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #FEF3C7; border-top: 1px solid #F59E0B;">
-                            <div style="color: #92400E; font-size: 0.85rem; font-weight: 500;">
-                                <i class="fas fa-info-circle"></i> Mostrando <span id="sinqr-showing">0</span> registros
-                            </div>
+                        <div class="pagination-controls" style="background:#FEF3C7; border-top: 1px solid #F59E0B;">
+                            <span style="color:#92400E; font-size:0.75rem; font-weight:500;">
+                                <i class="fas fa-info-circle" aria-hidden="true"></i> Mostrando <span id="sinqr-showing">0</span> registros
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -880,81 +291,78 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
             <div id="view-details" class="view-container">
                 <div class="card">
-                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
-                        <h2 id="details-title" style="margin: 0;">Detalles</h2>
-                        <button id="back-to-overview" style="background-color: #2d3748; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: 700;">&larr; Volver al Resumen</button>
-                    </header>
-                    <p id="details-period" style="margin-top:0; color: var(--text-secondary);">Mostrando resultados para el período seleccionado.</p>
-                    <div style="overflow-x: auto;">
+                    <div class="sinqr-alert-inner" style="margin-bottom:0.75rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
+                        <h2 id="details-title" style="border:none; padding:0; margin:0; font-size:1rem;">Detalles</h2>
+                        <button id="back-to-overview">&larr; Volver al Resumen</button>
+                    </div>
+                    <p id="details-period" style="color:var(--text-muted); font-size:0.8rem; margin-bottom:0.75rem;">Mostrando resultados para el período seleccionado.</p>
+                    <div style="overflow-x:auto;">
                         <table class="status-table">
                             <thead>
                                 <tr>
-                                    <th>No. Factura</th><th>Fecha Factura</th><th>Fecha Registro</th><th>Cliente</th><th>Monto</th><th>Registrado Por</th><th>Camión</th>
-                                    <th>Fecha Despacho</th><th>Despachado Por</th><th>Fecha Entregado</th><th>Entregado Por</th>
-                                    <th>Estado</th><th>Fecha Reversada</th><th>Reversado Por</th><th>Fecha NC</th>
-                                    <th>NC Realizado Por</th><th>Motivo NC</th><th>Camión 2</th>
+                                    <th>No. Factura</th><th>F. Factura</th><th>F. Registro</th><th>Cliente</th><th>Monto</th><th>Registrado Por</th><th>Camión</th>
+                                    <th>F. Despacho</th><th>Despachado Por</th><th>F. Entregado</th><th>Entregado Por</th>
+                                    <th>Estado</th><th>F. Reversada</th><th>Reversado Por</th><th>F. NC</th>
+                                    <th>NC Por</th><th>Motivo NC</th><th>Camión 2</th>
                                 </tr>
                             </thead>
                             <tbody id="detailsTableBody"></tbody>
                         </table>
                     </div>
-                    <div id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
-                        <select id="details-limit" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <option value="10">10 por página</option><option value="25">25 por página</option>
-                            <option value="50" selected>50 por página</option><option value="100">100 por página</option>
+                    <div id="pagination-controls" class="pagination-controls" style="margin-top:0.75rem;">
+                        <select id="details-limit">
+                            <option value="10">10 / pág.</option>
+                            <option value="25">25 / pág.</option>
+                            <option value="50" selected>50 / pág.</option>
+                            <option value="100">100 / pág.</option>
                         </select>
-                        <div>
-                            <span id="page-info" style="margin-right: 1rem; color: var(--text-secondary);">Página 1 de 1 (Total: 0)</span>
-                            <button id="prev-page" disabled style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: #fff; margin-right: 5px;">&larr; Anterior</button>
-                            <button id="next-page" disabled style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; background: #fff;">Siguiente &rarr;</button>
+                        <div class="pagination-buttons">
+                            <span id="page-info" style="color:var(--text-muted); font-size:0.75rem; margin-right:0.5rem;">Página 1 de 1 (Total: 0)</span>
+                            <button id="prev-page" disabled class="pagination-btn">&larr; Anterior</button>
+                            <button id="next-page" disabled class="pagination-btn">Siguiente &rarr;</button>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div id="view-performance" class="view-container">
-                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
-                    <div class="kpi-card" style="border-left-color: #3182ce; cursor: default;">
-                        <h2>Registro &rarr; Despacho</h2>
+                <div class="grid-layout" style="grid-template-columns: repeat(3,1fr); margin-bottom:0.75rem;">
+                    <div class="kpi-card" style="border-left-color:#3182ce; cursor:default;">
+                        <h2>Registro → Despacho</h2>
                         <p id="perf-kpi-time-to-dispatch">-- horas</p>
                     </div>
-                    <div class="kpi-card" style="border-left-color: #38a169; cursor: default;">
-                        <h2>Despacho &rarr; Entrega</h2>
+                    <div class="kpi-card" style="border-left-color:#38a169; cursor:default;">
+                        <h2>Despacho → Entrega</h2>
                         <p id="perf-kpi-dispatch-to-deliver">-- horas</p>
                     </div>
-                    <div class="kpi-card" style="border-left-color: #dd6b20; cursor: default;">
-                        <h2>Ciclo Total (Registro &rarr; Entrega)</h2>
+                    <div class="kpi-card" style="border-left-color:#dd6b20; cursor:default;">
+                        <h2>Ciclo Total (Registro → Entrega)</h2>
                         <p id="perf-kpi-total-cycle">-- horas</p>
                     </div>
                 </div>
-                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="grid-layout" style="grid-template-columns: repeat(3,1fr);">
                     <div class="card">
-                        <h2>Motivos de Notas de Crédito</h2>
-                        <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">¿Por qué se anulan las facturas?</p>
-                        <div class="chart-container" style="height: 350px;"><canvas id="ncReasonsChart"></canvas></div>
+                        <h2><i class="fas fa-undo-alt" aria-hidden="true"></i> Motivos de NC</h2>
+                        <div class="chart-container"><canvas id="ncReasonsChart"></canvas></div>
                     </div>
                     <div class="card">
-                        <h2>Top 5 Camiones por Entregas</h2>
-                        <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Rendimiento de la flota en el período.</p>
-                        <div class="chart-container" style="height: 350px;"><canvas id="truckPerformanceChart"></canvas></div>
+                        <h2><i class="fas fa-truck" aria-hidden="true"></i> Top 5 Camiones</h2>
+                        <div class="chart-container"><canvas id="truckPerformanceChart"></canvas></div>
                     </div>
                     <div class="card">
-                        <h2>Pendientes VS Entregadas</h2>
-                        <p style="color: var(--text-secondary); margin-top: -1rem; margin-bottom: 2rem;">Estado de facturas por camión</p>
-                        <div class="chart-container" style="height: 350px;"><canvas id="deliveryComparisonChart"></canvas></div>
+                        <h2><i class="fas fa-balance-scale" aria-hidden="true"></i> Pendientes VS Entregadas</h2>
+                        <div class="chart-container"><canvas id="deliveryComparisonChart"></canvas></div>
                     </div>
                 </div>
 
                 <!-- Vista mejorada de transportistas -->
-                <div class="card" style="margin-top: 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div class="card" style="margin-top:0.75rem;">
+                    <div class="sinqr-alert-inner" style="margin-bottom:0.75rem;">
                         <div>
-                            <h2 style="margin: 0;">Detalle de Entregas por Camión</h2>
-                            <p style="color: var(--text-secondary); margin: 0.5rem 0 0;">Haz clic en cualquier camión para ver sus entregas detalladas.</p>
+                            <h2 style="border:none; padding:0; margin:0;"><i class="fas fa-truck" aria-hidden="true"></i> Detalle de Entregas por Camión</h2>
+                            <p class="maco-text-muted" style="font-size:0.8rem; margin:0.25rem 0 0;">Haz clic en cualquier camión para ver sus entregas detalladas.</p>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span id="trucksInfo" style="color: var(--text-secondary); font-size: 0.85rem;">0 camiones</span>
-                        </div>
+                        <span id="trucksInfo" style="color:var(--text-muted); font-size:0.8rem; background:var(--bg-body); padding:0.3rem 0.75rem; border-radius:50px;">0 camiones</span>
                     </div>
 
                     <!-- Cards expandibles de cada transportista -->
@@ -962,21 +370,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                         <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Cargando detalles de transportistas...</p>
                     </div>
                     
-                    <!-- Controles de Paginación -->
-                    <div id="trucksPagination" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #F8FAFC; border-top: 1px solid var(--border); margin-top: 1rem; border-radius: 0 0 var(--radius-md) var(--radius-md);">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <label style="font-size: 0.85rem; color: var(--text-secondary);">Mostrar:</label>
-                            <select id="trucksPerPage" style="padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;">
+                    <!-- Controles de Paginación Camiones -->
+                    <div id="trucksPagination">
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <label style="font-size:0.75rem; color:var(--text-muted);">Mostrar:</label>
+                            <select id="trucksPerPage">
                                 <option value="5">5</option>
                                 <option value="10" selected>10</option>
                                 <option value="20">20</option>
                                 <option value="50">50</option>
                             </select>
                         </div>
-                        <div id="trucksPageInfo" style="color: var(--text-secondary); font-size: 0.85rem;">Página 1 de 1</div>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button id="trucksPrevPage" disabled style="padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem;">← Anterior</button>
-                            <button id="trucksNextPage" style="padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem;">Siguiente →</button>
+                        <div id="trucksPageInfo">Página 1 de 1</div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button id="trucksPrevPage" disabled>← Anterior</button>
+                            <button id="trucksNextPage">Siguiente →</button>
                         </div>
                     </div>
                 </div>
@@ -984,30 +392,29 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
             
             <div id="view-financial" class="view-container">
-                <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.5rem;">
-                    <div class="kpi-card" style="border-left-color: #3182ce; cursor:default;">
+                <div class="grid-layout" style="grid-template-columns: repeat(3,1fr); margin-bottom:0.75rem;">
+                    <div class="kpi-card" style="border-left-color:#3182ce; cursor:default;">
                         <h2>Monto Total Emitido</h2>
                         <p id="financial-kpi-total-amount">--</p>
                     </div>
-                    <div class="kpi-card" style="border-left-color: #d69e2e; cursor:default;">
+                    <div class="kpi-card" style="border-left-color:#d69e2e; cursor:default;">
                         <h2>Monto Sin Estado</h2>
                         <p id="financial-kpi-sin-estado-amount">--</p>
                     </div>
-                    <div class="kpi-card" style="border-left-color: #e53e3e; cursor:default;">
+                    <div class="kpi-card" style="border-left-color:#e53e3e; cursor:default;">
                         <h2>Monto Total NC</h2>
                         <p id="financial-kpi-nc-amount">--</p>
                     </div>
                 </div>
                 <div class="grid-layout">
                     <div class="card">
-                        <h2>Top 10 Clientes por Monto</h2>
-                        <div class="chart-container" style="height: 450px;"><canvas id="topClientsChart"></canvas></div>
+                        <h2><i class="fas fa-user" aria-hidden="true"></i> Top 10 Clientes por Monto</h2>
+                        <div class="chart-container" style="height:320px;"><canvas id="topClientsChart"></canvas></div>
                     </div>
                     <div class="card">
-                        <h2>Top 10 Almacenes por Monto</h2>
-                        <div class="chart-container" style="height: 450px;"><canvas id="topWarehousesChart"></canvas></div>
+                        <h2><i class="fas fa-warehouse" aria-hidden="true"></i> Top 10 Almacenes por Monto</h2>
+                        <div class="chart-container" style="height:320px;"><canvas id="topWarehousesChart"></canvas></div>
                     </div>
-                </div>
                 </div>
             </div>
             
