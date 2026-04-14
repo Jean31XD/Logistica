@@ -94,9 +94,15 @@
         sendBtn.disabled = true;
         showTyping();
 
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')
+            ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            : (window.CSRF_TOKEN || '');
         fetch(PROXY_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
             body: JSON.stringify({ message: text })
         })
         .then(function (res) {

@@ -11,9 +11,26 @@ require_once __DIR__ . '/../src/autoload.php';
 
 verificarAutenticacion();
 
-// conexion.php llama cargarEnv() automáticamente al incluirse,
-// lo que hace getenv() disponible para las variables del .env
-require_once __DIR__ . '/../conexionBD/conexion.php';
+// Rate limiting: usa rate_limiter.php si existe
+require_once __DIR__ . '/../conexionBD/rate_limiter.php';
+if (!checkRateLimit('chat_proxy', 10, 60)) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Demasiadas solicitudes. Espere un momento.']);
+    exit;
+}
+
+// Cargar variables de entorno sin abrir la BD
+if (empty(getenv('AZURE_TENANT_ID'))) {
+    $envFile = __DIR__ . '/../.env';
+    if (file_exists($envFile)) {
+        foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            if (strpos(trim($line), '#') === 0 || strpos($line, '=') === false) continue;
+            [$key, $val] = explode('=', $line, 2);
+            putenv(trim($key) . '=' . trim($val));
+            $_ENV[trim($key)] = trim($val);
+        }
+    }
+}
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -21,6 +38,14 @@ header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Método no permitido']);
+    exit;
+}
+
+// Validar CSRF token
+$csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (!validarTokenCSRF($csrf)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Token CSRF inválido']);
     exit;
 }
 
@@ -75,8 +100,7 @@ function getAzureToken($tenantId, $clientId, $clientSecret) {
     $context = stream_context_create([
         'http' => [
             'method'  => 'POST',
-            'header'  => "Content-Type: application/x-www-form-urlencoded\r\n" .
-                         "Content-Length: " . strlen($postData) . "\r\n",
+            'header'  => "Content-Type: application/x-www-form-urlencoded\r\n",
             'content' => $postData,
             'timeout' => 15,
             'ignore_errors' => true,
@@ -109,9 +133,16 @@ if (!$token) {
 }
 
 // --- Llamar al agente Fabric MCP ---
+$workspaceId = getenv('FABRIC_WORKSPACE_ID');
+$agentId     = getenv('FABRIC_AGENT_ID');
+if (!$workspaceId || !$agentId) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Configuración del agente Fabric no encontrada']);
+    exit;
+}
 $agentUrl = 'https://api.fabric.microsoft.com/v1/mcp/workspaces/'
-          . '5da098b2-8be7-4497-b125-ae170c045a07/dataagents/'
-          . '04401395-9b65-4c1c-9a1a-337ef470f41a/agent';
+          . urlencode($workspaceId) . '/dataagents/'
+          . urlencode($agentId) . '/agent';
 
 $mcpPayload = json_encode([
     'jsonrpc' => '2.0',
@@ -129,8 +160,7 @@ $context = stream_context_create([
     'http' => [
         'method'  => 'POST',
         'header'  => "Authorization: Bearer $token\r\n" .
-                     "Content-Type: application/json\r\n" .
-                     "Content-Length: " . strlen($mcpPayload) . "\r\n",
+                     "Content-Type: application/json\r\n",
         'content' => $mcpPayload,
         'timeout' => 30,
         'ignore_errors' => true,
@@ -157,10 +187,10 @@ if (isset($data['result']['content'][0]['text'])) {
     $reply = $data['result']['text'];
 } elseif (isset($data['result'])) {
     $reply = is_string($data['result']) ? $data['result'] : json_encode($data['result']);
-} elseif (isset($data['error']['message'])) {
+} elseif (isset($data['error'])) {
     error_log('[ChatProxy] MCP error: ' . json_encode($data['error']));
     http_response_code(502);
-    echo json_encode(['error' => 'El agente devolvió un error: ' . $data['error']['message']]);
+    echo json_encode(['error' => 'El agente no pudo procesar la solicitud.']);
     exit;
 } else {
     error_log('[ChatProxy] Respuesta inesperada: ' . $response);
