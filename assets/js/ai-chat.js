@@ -13,11 +13,14 @@
     const sendBtn  = document.getElementById('ai-chat-send');
     const badge    = document.getElementById('ai-chat-badge');
 
+    if (!toggle) return;
+
     // Inyectado por footer.php
     const PROXY_URL = window.AI_CHAT_PROXY_URL || '/Logica/chat_proxy.php';
 
     let isOpen    = false;
     let unreadCount = 0;
+    let welcomed = false;
 
     // --- Abrir / cerrar ---
     function openPanel() {
@@ -26,6 +29,10 @@
         toggle.setAttribute('aria-expanded', 'true');
         input.focus();
         clearBadge();
+        if (!welcomed) {
+            welcomed = true;
+            addBubble('Hola, soy el Asistente Técnico MACOR. ¿En qué te puedo ayudar?', 'bot');
+        }
     }
 
     function closePanel() {
@@ -77,6 +84,7 @@
 
     // --- Enviar mensaje ---
     function sendMessage() {
+        if (sendBtn.disabled) return;
         var text = input.value.trim();
         if (!text) return;
 
@@ -101,7 +109,7 @@
             addBubble(reply, 'bot');
             if (!isOpen) {
                 unreadCount++;
-                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
                 badge.classList.add('visible');
             }
         })
@@ -112,7 +120,7 @@
         })
         .finally(function () {
             sendBtn.disabled = false;
-            input.focus();
+            if (isOpen) input.focus();
         });
     }
 
@@ -130,15 +138,6 @@
     input.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 80) + 'px';
-    });
-
-    // Mensaje de bienvenida al abrir por primera vez
-    var welcomed = false;
-    toggle.addEventListener('click', function () {
-        if (!welcomed && isOpen) {
-            welcomed = true;
-            addBubble('Hola, soy el Asistente Técnico MACOR. ¿En qué te puedo ayudar?', 'bot');
-        }
     });
 
 }());
