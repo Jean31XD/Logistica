@@ -9,6 +9,12 @@ require_once __DIR__ . '/../../src/autoload.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Ensure generarTokenCSRF is available (defined in session_config.php)
+if (!function_exists('generarTokenCSRF')) {
+    require_once __DIR__ . '/../../conexionBD/session_config.php';
+}
+
 generarTokenCSRF();
 
 if (!isset($_SESSION['usuario'])) {
