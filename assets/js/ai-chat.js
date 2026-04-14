@@ -60,6 +60,27 @@
         if (e.key === 'Escape' && isOpen) closePanel();
     });
 
+    // Focus trap dentro del panel cuando está abierto
+    panel.addEventListener('keydown', function (e) {
+        if (!isOpen || e.key !== 'Tab') return;
+        var focusable = panel.querySelectorAll(
+            'button:not([disabled]), textarea:not([disabled])'
+        );
+        var first = focusable[0];
+        var last  = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
     // --- Burbujas ---
     function addBubble(text, role) {
         var div = document.createElement('div');
@@ -74,6 +95,7 @@
         var el = document.createElement('div');
         el.className = 'ai-typing';
         el.id = 'ai-typing-indicator';
+        // Static markup only — no user input, safe to use innerHTML here
         el.innerHTML = '<span></span><span></span><span></span>';
         messages.appendChild(el);
         messages.scrollTop = messages.scrollHeight;

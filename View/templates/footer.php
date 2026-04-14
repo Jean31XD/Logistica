@@ -92,9 +92,9 @@
 </script>
 
 <!-- AI Chat Widget -->
+<meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 <script>
 window.AI_CHAT_PROXY_URL = '<?= $basePath ?>/Logica/chat_proxy.php';
-window.CSRF_TOKEN = '<?= isset($_SESSION["csrf_token"]) ? htmlspecialchars($_SESSION["csrf_token"], ENT_QUOTES, "UTF-8") : "" ?>';
 </script>
 
 <button id="ai-chat-toggle"
