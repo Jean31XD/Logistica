@@ -76,6 +76,7 @@ $homeUrl = $pantallasPath . '/Portal.php';
 
     <!-- MACO Design System -->
     <link rel="stylesheet" href="<?= $assetsPath ?>/css/maco-design-system.css">
+    <link rel="stylesheet" href="<?= $assetsPath ?>/css/ai-chat.css">
 
     <!-- Estilos adicionales de la página -->
     <?php if (isset($additionalCSS)): ?>
