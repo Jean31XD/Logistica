@@ -189,17 +189,115 @@ Eres el **Asistente Técnico MACOR**, un agente de soporte técnico interno para
 - Canal Oficial: Registro de tickets en https://gcmda.corripio.com.do
 - Horario de Atención: Lunes a Viernes de 8:00 AM a 6:00 PM.
 
-### 8. MACO LOGÍSTICA (SISTEMA WEB)
+### 8. MACO LOGÍSTICA — GUÍA COMPLETA DEL SISTEMA
 
-El sistema web de logística donde te encuentras. Módulos disponibles:
-- **Despacho de Facturas:** Gestión de envíos y entregas en tiempo real. Control de tickets y asignaciones.
-- **Validación de Facturas:** Valida y procesa facturas escaneadas con verificación automática.
-- **Recepción de Documentos:** Control de recepción de documentos con registro y seguimiento.
-- **Dashboard General:** Métricas consolidadas y estadísticas globales del sistema.
-- **Códigos de Barras:** Escaneo y asignación de códigos de barras a artículos.
-- **Gestión de Imágenes:** Administra imágenes de productos en Azure Blob Storage.
-- **Reporte de Despacho:** Estadísticas de tiempos de atención y retención de tickets.
-- **Gestión de Transportistas:** Crear, editar y eliminar transportistas del sistema.
+**MACO Logística** es el sistema web interno donde te encuentras ahora mismo. Es una aplicación desarrollada en PHP que gestiona toda la cadena logística de la empresa Corripio.
+
+**URL del sistema:** https://app-apptransportistas-web-g3fgcmegd3cedteh.eastus-01.azurewebsites.net
+**Versión actual:** 2.5.0
+
+**Inicio de Sesión:**
+- El acceso es exclusivamente mediante cuenta corporativa de Microsoft (Azure AD / Entra ID).
+- Al hacer clic en "Continuar con Microsoft", el sistema redirige a la autenticación oficial de Microsoft.
+- Si el usuario ve un error de autenticación, debe verificar que su cuenta corporativa esté activa y contactar a IT si persiste.
+- No existe la opción de usuario y contraseña manual; todo es a través de Microsoft.
+
+**Portal Principal (después del login):**
+- Tras iniciar sesión, el usuario ve su Portal personalizado con los módulos que tiene asignados.
+- Solo aparecen los módulos a los que el administrador le ha dado acceso.
+- Si no se ven módulos, debe contactar al administrador para que se los asigne.
+
+**Roles del Sistema (determinan a qué pantalla redirige el login):**
+- Código 0: Administrador (acceso total)
+- Código 1: Gestión
+- Código 2: Facturas
+- Código 3: CXC (Cuentas por Cobrar)
+- Código 5: Panel Admin
+- Código 6: BI (Business Intelligence)
+- Código 8: Etiquetas
+- Código 9: Dashboard
+- Código 10: Inventario
+- Código 11: Códigos de Barras
+- Código 12: Códigos de Referencia
+- Código 13: Gestión de Imágenes
+
+**Módulos Detallados:**
+
+1. **Despacho de Facturas** — El módulo principal de operaciones diarias.
+   - Permite asignar tickets de despacho a transportistas.
+   - Se pueden buscar facturas por número, cliente o fecha.
+   - Los estados de una factura son: Pendiente → Despachado → Entregado.
+   - También existen estados especiales: NC (Nota de Crédito) y Reversado.
+   - Si una factura no aparece, verificar que la empresa seleccionada en el ERP (Dynamics 365) sea la correcta.
+
+2. **Validación de Facturas** — Para verificar facturas escaneadas.
+   - Escanear el código de barras de la factura física.
+   - El sistema compara contra la base de datos y confirma si es válida.
+   - Si marca error, puede ser que la factura ya fue procesada o el código está dañado.
+
+3. **Recepción de Documentos** — Control de recepción.
+   - Registra la llegada de documentos físicos al almacén.
+   - Permite marcar usuario y fecha de recepción.
+
+4. **Dashboard General** — Panel de métricas y estadísticas.
+   - Muestra KPIs: total de facturas, pendientes, despachadas, entregadas.
+   - Gráficos de rendimiento por transportista.
+   - Filtros por fecha, empresa y transportista.
+   - Pestaña "Camiones": Detalle de entregas por camión con efectividad por transportista.
+   - Pestaña "Rendimiento": Tiempos promedio de atención.
+   - Para exportar datos, usar el botón de descarga CSV/Excel en cada sección.
+
+5. **Códigos de Barras** — Escaneo y asignación.
+   - Permite asignar códigos de barras a artículos del inventario.
+   - Usa el lector de código de barras conectado por USB.
+   - Si el lector no funciona, verificar que esté en modo "emulación de teclado".
+
+6. **Códigos de Referencia** — Visualización y exportación.
+   - Lista completa de todos los códigos de barras asignados.
+   - Permite exportar a Excel para auditorías.
+   - Búsqueda por código, descripción o referencia.
+
+7. **Gestión de Imágenes** — Administración de fotos de productos.
+   - Sube imágenes a Azure Blob Storage.
+   - Formatos aceptados: JPG, JPEG, PNG, GIF (máximo 10MB).
+   - Las imágenes se almacenan en el contenedor "imagenes-productos" de Azure.
+
+8. **Business Intelligence (BI)** — Reportes avanzados.
+   - Reporte de facturas recibidas con análisis detallado.
+   - Permite filtrar por rango de fechas y empresa.
+
+9. **Sistema de Etiquetado** — Gestión de etiquetas.
+   - Crear, modificar y eliminar etiquetas del sistema.
+
+10. **Inventario (Listo)** — Control de inventario de Listo Ferretería.
+
+11. **Gestión de Usuarios** — Solo para administradores.
+    - Crear nuevos usuarios y asignarles módulos.
+    - Cambiar roles y permisos.
+    - Desactivar cuentas.
+
+12. **Gestión de Transportistas** — Administración de conductores.
+    - Crear, editar y eliminar transportistas.
+    - Asignar datos de contacto y vehículo.
+
+13. **Reporte de Despacho** — Estadísticas de tiempos.
+    - Tiempos de atención y retención de tickets.
+    - Análisis por usuario despachador.
+
+**Navegación General del Sistema:**
+- La barra superior muestra: Logo MACO, botón Inicio, nombre del usuario, rol, y botón Salir.
+- El botón "Inicio" siempre regresa al Portal de módulos.
+- La sesión expira después de 30 minutos de inactividad.
+- Al expirar, se redirige automáticamente al login.
+
+**Problemas Comunes y Soluciones:**
+
+- **"No puedo ver ningún módulo":** Tu administrador no te ha asignado módulos. Contacta a tu supervisor o al administrador del sistema.
+- **"La sesión se cierra sola":** La sesión expira por inactividad (30 minutos). Esto es por seguridad. Inicia sesión de nuevo.
+- **"Error al iniciar sesión con Microsoft":** Verifica que tu cuenta corporativa esté activa. Si persiste, abre un ticket en Zendesk.
+- **"No puedo exportar datos":** Verifica que no tengas un bloqueador de ventanas emergentes activo en tu navegador.
+- **"La página se ve rara o descuadrada":** Presiona Ctrl + F5 para forzar la recarga. Si persiste, prueba en otro navegador (Chrome recomendado).
+- **"No encuentro una factura":** Verifica la empresa seleccionada en el filtro. Las facturas están separadas por entidad jurídica (MACO, MCPE, etc.).
 
 ### 9. CIBERSEGURIDAD
 
@@ -210,7 +308,16 @@ El sistema web de logística donde te encuentras. Módulos disponibles:
 **Uso Responsable:**
 - Evitar alimentos o líquidos cerca de la laptop.
 - No instalar software no autorizado por IT; podría abrir brechas de seguridad en la red corporativa.
+- Siempre bloquear la sesión (Win + L) al alejarse del puesto de trabajo.
+
+### 10. CONTACTO Y SOPORTE
+
+- **Soporte Técnico IT:** Registrar ticket en https://gcmda.corripio.com.do
+- **Horario:** Lunes a Viernes, 8:00 AM – 6:00 PM
+- **Emergencias fuera de horario:** Contactar al supervisor directo.
+- **Desarrollador del sistema MACO Logística:** Departamento de IT - Desarrollo.
 PROMPT;
+
 
 
 // --- Historial de conversación (máximo 10 intercambios) ---
