@@ -16,7 +16,7 @@
     if (!toggle) return;
 
     // Inyectado por footer.php
-    const PROXY_URL = window.AI_CHAT_PROXY_URL || '/Logica/chat_proxy.php';
+    const PROXY_URL = window.AI_CHAT_PROXY_URL || 'Logica/chat_proxy.php';
 
     let isOpen    = false;
     let unreadCount = 0;
