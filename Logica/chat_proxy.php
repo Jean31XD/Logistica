@@ -337,11 +337,15 @@ foreach ($_SESSION['chat_history'] as $entry) {
 // Agregar mensaje actual del usuario
 $contents[] = ['role' => 'user', 'parts' => [['text' => $message]]];
 
-// --- Llamar a Gemini API ---
-$model = 'gemini-2.5-flash';
-$url   = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+// --- Llamar a Gemini API con fallback automático ---
+$models = [
+    'gemini-2.5-flash',       // Primario: más potente
+    'gemini-2.5-flash-lite',  // Fallback 1: ligero y rápido
+    'gemini-2.0-flash',       // Fallback 2: versión estable
+    'gemini-2.0-flash-lite',  // Fallback 3: versión ligera
+];
 
-$requestBody = json_encode([
+$requestPayload = [
     'system_instruction' => [
         'parts' => [['text' => $systemPrompt]]
     ],
@@ -357,43 +361,62 @@ $requestBody = json_encode([
         ['category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold' => 'BLOCK_ONLY_HIGH'],
         ['category' => 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold' => 'BLOCK_ONLY_HIGH'],
     ],
-]);
+];
 
-$context = stream_context_create([
-    'http' => [
-        'method'  => 'POST',
-        'header'  => "Content-Type: application/json\r\n",
-        'content' => $requestBody,
-        'timeout' => 30,
-        'ignore_errors' => true,
-    ]
-]);
+$requestBody = json_encode($requestPayload);
+$data = null;
+$response = null;
+$usedModel = null;
 
-$response = file_get_contents($url, false, $context);
+foreach ($models as $model) {
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-if ($response === false) {
-    http_response_code(502);
-    echo json_encode(['error' => 'No se pudo conectar con el servicio de IA']);
+    $context = stream_context_create([
+        'http' => [
+            'method'  => 'POST',
+            'header'  => "Content-Type: application/json\r\n",
+            'content' => $requestBody,
+            'timeout' => 30,
+            'ignore_errors' => true,
+        ]
+    ]);
+
+    $response = @file_get_contents($url, false, $context);
+
+    if ($response === false) {
+        error_log("[ChatProxy] No se pudo conectar con modelo: {$model}");
+        continue; // Intentar siguiente modelo
+    }
+
+    $data = json_decode($response, true);
+
+    // Si es rate limit (429) o servicio no disponible (503), probar siguiente modelo
+    if (isset($data['error'])) {
+        $errorCode = $data['error']['code'] ?? 500;
+        if ($errorCode === 429 || $errorCode === 503) {
+            error_log("[ChatProxy] Modelo {$model} no disponible (code {$errorCode}), intentando siguiente...");
+            continue; // Intentar siguiente modelo
+        }
+    }
+
+    // Si llegamos aquí, el modelo respondió (con éxito o error no-429)
+    $usedModel = $model;
+    break;
+}
+
+// Si ningún modelo respondió
+if ($usedModel === null) {
+    echo json_encode([
+        'reply' => 'Todos los modelos de IA están temporalmente ocupados. Por favor intenta de nuevo en unos segundos.'
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$data = json_decode($response, true);
-
-// Manejar errores de la API
+// Manejar errores que no sean rate limit
 if (isset($data['error'])) {
     $errorCode = $data['error']['code'] ?? 500;
     $errorMsg  = $data['error']['message'] ?? 'Error desconocido';
-
-    error_log("[ChatProxy] Gemini error ({$errorCode}): {$errorMsg}");
-
-    // Si es rate limit, dar mensaje amigable
-    if ($errorCode === 429) {
-        echo json_encode([
-            'reply' => 'El servicio está temporalmente ocupado. Por favor intenta de nuevo en unos segundos.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
+    error_log("[ChatProxy] Gemini error en {$usedModel} ({$errorCode}): {$errorMsg}");
     http_response_code(502);
     echo json_encode(['error' => 'El asistente no pudo procesar la solicitud.']);
     exit;
@@ -405,17 +428,15 @@ $reply = null;
 if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
     $reply = $data['candidates'][0]['content']['parts'][0]['text'];
 } elseif (isset($data['candidates'][0]['content']['parts'])) {
-    // Concatenar todas las partes de texto
     $parts = $data['candidates'][0]['content']['parts'];
     $reply = implode('', array_column($parts, 'text'));
 }
 
 if (!$reply) {
-    // Verificar si fue bloqueado por seguridad
     if (isset($data['candidates'][0]['finishReason']) && $data['candidates'][0]['finishReason'] === 'SAFETY') {
         $reply = 'No puedo responder a esa consulta. Por favor reformula tu pregunta.';
     } else {
-        error_log('[ChatProxy] Respuesta inesperada: ' . $response);
+        error_log('[ChatProxy] Respuesta inesperada de ' . $usedModel . ': ' . $response);
         $reply = 'No pude generar una respuesta. Por favor intenta de nuevo.';
     }
 }
@@ -432,3 +453,4 @@ if (count($_SESSION['chat_history']) > 10) {
 }
 
 echo json_encode(['reply' => $reply], JSON_UNESCAPED_UNICODE);
+
