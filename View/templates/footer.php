@@ -90,5 +90,52 @@
     });
 }());
 </script>
+
+<!-- AI Chat Widget -->
+<script>
+window.AI_CHAT_PROXY_URL = '<?= $basePath ?>/Logica/chat_proxy.php';
+window.CSRF_TOKEN = '<?= isset($_SESSION["csrf_token"]) ? htmlspecialchars($_SESSION["csrf_token"], ENT_QUOTES, "UTF-8") : "" ?>';
+</script>
+
+<button id="ai-chat-toggle"
+        aria-label="Abrir asistente virtual"
+        aria-expanded="false"
+        aria-controls="ai-chat-panel"
+        title="Asistente Técnico MACOR">
+    <i class="fas fa-robot" aria-hidden="true"></i>
+    <span class="ai-chat-badge" id="ai-chat-badge" aria-live="polite"></span>
+</button>
+
+<div id="ai-chat-panel"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Asistente Técnico MACOR"
+     aria-hidden="true">
+    <div class="ai-chat-header">
+        <div class="ai-chat-header-title">
+            <i class="fas fa-robot" aria-hidden="true"></i>
+            <span>Asistente MACOR</span>
+        </div>
+        <button class="ai-chat-close" id="ai-chat-close" aria-label="Cerrar chat">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+    </div>
+    <div class="ai-chat-messages" id="ai-chat-messages" role="log" aria-live="polite"></div>
+    <div class="ai-chat-footer">
+        <textarea
+            class="ai-chat-input"
+            id="ai-chat-input"
+            placeholder="Escribe tu pregunta..."
+            rows="1"
+            aria-label="Mensaje al asistente"
+            maxlength="2000"
+        ></textarea>
+        <button class="ai-chat-send" id="ai-chat-send" aria-label="Enviar mensaje">
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+        </button>
+    </div>
+</div>
+
+<script src="<?= $assetsPath ?>/js/ai-chat.js"></script>
 </body>
 </html>
