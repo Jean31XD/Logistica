@@ -118,7 +118,7 @@ foreach ($_SESSION['chat_history'] as $entry) {
 $contents[] = ['role' => 'user', 'parts' => [['text' => $message]]];
 
 // --- Llamar a Gemini API ---
-$model = 'gemini-2.0-flash';
+$model = 'gemini-2.5-flash';
 $url   = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
 $requestBody = json_encode([
