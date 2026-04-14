@@ -94,7 +94,13 @@
 <!-- AI Chat Widget -->
 <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 <script>
-window.AI_CHAT_PROXY_URL = '<?= $logicaPath ?>/chat_proxy.php';
+<?php
+    // Detect context to provide a correct path for the proxy
+    $currentUrl = $_SERVER['REQUEST_URI'];
+    $isSubfolder = (strpos($currentUrl, '/View/pantallas') !== false || strpos($currentUrl, '/View/modulos') !== false);
+    $proxyRelativePath = $isSubfolder ? '../../Logica/chat_proxy.php' : './Logica/chat_proxy.php';
+?>
+window.AI_CHAT_PROXY_URL = '<?= $proxyRelativePath ?>';
 </script>
 
 <button id="ai-chat-toggle"
