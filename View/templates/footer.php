@@ -120,7 +120,7 @@ window.CSRF_TOKEN = '<?= isset($_SESSION["csrf_token"]) ? htmlspecialchars($_SES
             <i class="fas fa-times" aria-hidden="true"></i>
         </button>
     </div>
-    <div class="ai-chat-messages" id="ai-chat-messages" role="log" aria-live="polite"></div>
+    <div class="ai-chat-messages" id="ai-chat-messages" role="log"></div>
     <div class="ai-chat-footer">
         <textarea
             class="ai-chat-input"

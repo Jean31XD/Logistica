@@ -26,6 +26,7 @@
     function openPanel() {
         isOpen = true;
         panel.classList.add('open');
+        panel.removeAttribute('aria-hidden');
         toggle.setAttribute('aria-expanded', 'true');
         input.focus();
         clearBadge();
@@ -38,6 +39,7 @@
     function closePanel() {
         isOpen = false;
         panel.classList.remove('open');
+        panel.setAttribute('aria-hidden', 'true');
         toggle.setAttribute('aria-expanded', 'false');
     }
 
