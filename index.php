@@ -421,5 +421,9 @@ if (isset($_GET['error']) && $_GET['error'] === 'auth') {
     }
 </script>
 
+<?php 
+    $assetsPath = 'assets'; 
+    require_once __DIR__ . '/View/templates/footer.php'; 
+?>
 </body>
 </html>
