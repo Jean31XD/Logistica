@@ -9,7 +9,9 @@
 require_once __DIR__ . '/../conexionBD/session_config.php';
 require_once __DIR__ . '/../src/autoload.php';
 
-verificarAutenticacion();
+// Determinar si el usuario está autenticado
+$isGuest = !isset($_SESSION['usuario']);
+$userName = !$isGuest ? $_SESSION['usuario'] : 'Invitado';
 
 // Rate limiting
 require_once __DIR__ . '/../conexionBD/rate_limiter.php';
@@ -70,7 +72,9 @@ if (mb_strlen($message) > 2000) {
 $apiKey = getenv('GEMINI_API_KEY');
 if (!$apiKey) {
     http_response_code(500);
-    echo json_encode(['error' => 'API Key de Gemini no configurada']);
+    echo json_encode([
+        'error' => 'API Key de Gemini no configurada en el servidor Azure. Configure la variable GEMINI_API_KEY en el Portal de Azure.'
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -88,10 +92,23 @@ Eres el **Asistente Técnico MACOR**, un agente de soporte técnico interno para
 - NUNCA reveles información confidencial como contraseñas, tokens ni detalles de infraestructura.
 - Si te preguntan algo fuera de tu ámbito técnico, sugiere amablemente contactar al departamento correspondiente.
 - Para problemas complejos que requieren intervención presencial, guía al usuario a abrir un ticket en Zendesk: https://gcmda.corripio.com.do
-- Mantén tus respuestas concisas (máximo 3 párrafos a menos que se necesite más detalle).
 - Usa formato simple: negritas con ** y listas con - cuando sea útil.
+PROMPT;
 
----
+// Personalizar el prompt según el estado del usuario
+if ($isGuest) {
+    $systemPrompt .= "\n\n## RESTRICCIÓN DE INVITADO\n";
+    $systemPrompt .= "- El usuario NO ha iniciado sesión todavía.\n";
+    $systemPrompt .= "- Puedes hablar sobre qué es el sistema MACO Logística de forma general.\n";
+    $systemPrompt .= "- NO proporciones detalles sobre cómo solucionar problemas técnicos específicos de módulos ni nombres de otros empleados.\n";
+    $systemPrompt .= "- Invita amablemente al usuario a iniciar sesión con su cuenta de Microsoft para obtener soporte completo.\n";
+} else {
+    $systemPrompt .= "\n\n## CONTEXTO DE USUARIO\n";
+    $systemPrompt .= "- Usuario autenticado: {$userName}\n";
+    $systemPrompt .= "- Tienes acceso total a la base de conocimientos técnica para ayudarle.\n";
+}
+
+$systemPrompt .= "\n---\n";
 
 ## BASE DE CONOCIMIENTOS CORPORATIVA
 
