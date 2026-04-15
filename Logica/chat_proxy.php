@@ -3,7 +3,7 @@
  * Chat Proxy — Asistente Técnico MACOR (Powered by Gemini)
  *
  * Reenvía mensajes del chat widget al API de Google Gemini.
- * Solo acepta peticiones de usuarios autenticados.
+ * Soporta acceso de invitados y usuarios autenticados.
  */
 
 require_once __DIR__ . '/../conexionBD/session_config.php';
@@ -108,12 +108,12 @@ if ($isGuest) {
     $systemPrompt .= "- Tienes acceso total a la base de conocimientos técnica para ayudarle.\n";
 }
 
+$systemPrompt .= "\n\n---\n\n";
+
 $systemPrompt .= <<<'MANUAL'
 ## BASE DE CONOCIMIENTOS CORPORATIVA
 
 ### 1. FUNDAMENTOS DE COMPUTACIÓN Y WINDOWS
-
-MANUAL;
 
 **Conceptos Básicos de Hardware:**
 - **CPU (Procesador):** El "cerebro" de la PC. Si su uso llega al 100%, el sistema se tornará lento.
@@ -334,9 +334,7 @@ MANUAL;
 - **Horario:** Lunes a Viernes, 8:00 AM – 6:00 PM
 - **Emergencias fuera de horario:** Contactar al supervisor directo.
 - **Desarrollador del sistema MACO Logística:** Departamento de IT - Desarrollo.
-PROMPT;
-
-
+MANUAL;
 
 // --- Historial de conversación (máximo 10 intercambios) ---
 if (!isset($_SESSION['chat_history'])) {
@@ -357,18 +355,16 @@ $contents[] = ['role' => 'user', 'parts' => [['text' => $message]]];
 
 // --- Llamar a Gemini API con fallback automático ---
 $models = [
-    'gemini-2.5-flash',       // Primario: más potente
-    'gemini-2.5-flash-lite',  // Fallback 1: ligero y rápido
-    'gemini-2.0-flash',       // Fallback 2: versión estable
-    'gemini-2.0-flash-lite',  // Fallback 3: versión ligera
+    'gemini-2.5-flash',       // Primario
+    'gemini-2.5-flash-lite',  // Fallback 1
+    'gemini-2.0-flash',       // Fallback 2
+    'gemini-2.0-flash-lite',  // Fallback 3
 ];
 
 $requestPayload = [
-    'system_instruction' => [
-        'parts' => [['text' => $systemPrompt]]
-    ],
-    'contents' => $contents,
-    'generationConfig' => [
+    'system_instruction' => ['parts' => [['text' => $systemPrompt]]],
+    'contents'           => $contents,
+    'generationConfig'   => [
         'temperature'     => 0.7,
         'topP'            => 0.95,
         'maxOutputTokens' => 1024,
@@ -383,92 +379,45 @@ $requestPayload = [
 
 $requestBody = json_encode($requestPayload);
 $data = null;
-$response = null;
 $usedModel = null;
 
 foreach ($models as $model) {
     $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-
-    $context = stream_context_create([
-        'http' => [
-            'method'  => 'POST',
-            'header'  => "Content-Type: application/json\r\n",
-            'content' => $requestBody,
-            'timeout' => 30,
-            'ignore_errors' => true,
-        ]
-    ]);
+    $context = stream_context_create(['http' => [
+        'method'  => 'POST',
+        'header'  => "Content-Type: application/json\r\n",
+        'content' => $requestBody,
+        'timeout' => 30,
+        'ignore_errors' => true,
+    ]]);
 
     $response = @file_get_contents($url, false, $context);
-
-    if ($response === false) {
-        error_log("[ChatProxy] No se pudo conectar con modelo: {$model}");
-        continue; // Intentar siguiente modelo
-    }
+    if ($response === false) continue;
 
     $data = json_decode($response, true);
-
-    // Si es rate limit (429) o servicio no disponible (503), probar siguiente modelo
     if (isset($data['error'])) {
         $errorCode = $data['error']['code'] ?? 500;
-        if ($errorCode === 429 || $errorCode === 503) {
-            error_log("[ChatProxy] Modelo {$model} no disponible (code {$errorCode}), intentando siguiente...");
-            continue; // Intentar siguiente modelo
-        }
+        if ($errorCode === 429 || $errorCode === 503) continue;
     }
 
-    // Si llegamos aquí, el modelo respondió (con éxito o error no-429)
     $usedModel = $model;
     break;
 }
 
-// Si ningún modelo respondió
 if ($usedModel === null) {
-    echo json_encode([
-        'reply' => 'Todos los modelos de IA están temporalmente ocupados. Por favor intenta de nuevo en unos segundos.'
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['reply' => 'Sistemas ocupados. Intenta de nuevo.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Manejar errores que no sean rate limit
 if (isset($data['error'])) {
-    $errorCode = $data['error']['code'] ?? 500;
-    $errorMsg  = $data['error']['message'] ?? 'Error desconocido';
-    error_log("[ChatProxy] Gemini error en {$usedModel} ({$errorCode}): {$errorMsg}");
     http_response_code(502);
-    echo json_encode(['error' => 'El asistente no pudo procesar la solicitud.']);
+    echo json_encode(['error' => 'Error al procesar la solicitud.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Extraer la respuesta
-$reply = null;
+$reply = $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No pude generar respuesta.';
 
-if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
-    $reply = $data['candidates'][0]['content']['parts'][0]['text'];
-} elseif (isset($data['candidates'][0]['content']['parts'])) {
-    $parts = $data['candidates'][0]['content']['parts'];
-    $reply = implode('', array_column($parts, 'text'));
-}
-
-if (!$reply) {
-    if (isset($data['candidates'][0]['finishReason']) && $data['candidates'][0]['finishReason'] === 'SAFETY') {
-        $reply = 'No puedo responder a esa consulta. Por favor reformula tu pregunta.';
-    } else {
-        error_log('[ChatProxy] Respuesta inesperada de ' . $usedModel . ': ' . $response);
-        $reply = 'No pude generar una respuesta. Por favor intenta de nuevo.';
-    }
-}
-
-// Guardar en historial de sesión (máximo 10 intercambios)
-$_SESSION['chat_history'][] = [
-    'user'  => $message,
-    'model' => $reply,
-];
-
-// Mantener solo los últimos 10 intercambios
-if (count($_SESSION['chat_history']) > 10) {
-    $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -10);
-}
+$_SESSION['chat_history'][] = ['user' => $message, 'model' => $reply];
+if (count($_SESSION['chat_history']) > 10) array_shift($_SESSION['chat_history']);
 
 echo json_encode(['reply' => $reply], JSON_UNESCAPED_UNICODE);
-
