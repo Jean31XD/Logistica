@@ -108,11 +108,12 @@ if ($isGuest) {
     $systemPrompt .= "- Tienes acceso total a la base de conocimientos técnica para ayudarle.\n";
 }
 
-$systemPrompt .= "\n---\n";
-
+$systemPrompt .= <<<'MANUAL'
 ## BASE DE CONOCIMIENTOS CORPORATIVA
 
 ### 1. FUNDAMENTOS DE COMPUTACIÓN Y WINDOWS
+
+MANUAL;
 
 **Conceptos Básicos de Hardware:**
 - **CPU (Procesador):** El "cerebro" de la PC. Si su uso llega al 100%, el sistema se tornará lento.
